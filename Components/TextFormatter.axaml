@@ -1,0 +1,28 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.TextFormatter">
+  <Border BorderBrush="#30343B" BorderThickness="0,1" Padding="8,5" Background="#20242A">
+    <Grid ColumnDefinitions="*,Auto">
+      <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+        <StackPanel x:Name="FormatBar" Orientation="Horizontal" Spacing="2">
+          <Button Content="↶" Tag="undo" Classes="tool" Click="Edit_Click" ToolTip.Tip="Undo" />
+          <Button Content="↷" Tag="redo" Classes="tool" Click="Edit_Click" ToolTip.Tip="Redo" />
+          <Button Content="B" Tag="bold" Classes="tool" Click="Format_Click" ToolTip.Tip="Bold" />
+          <Button Content="I" Tag="italic" Classes="tool" Click="Format_Click" ToolTip.Tip="Italic" />
+          <Button Content="S̶" Tag="strike" Classes="tool" Click="Format_Click" ToolTip.Tip="Strikethrough" />
+          <Button Content="&lt;/&gt;" Tag="code" Classes="tool" Click="Format_Click" ToolTip.Tip="Inline code" />
+          <Button Content="H1" Tag="h1" Classes="tool" Click="Format_Click" ToolTip.Tip="Heading 1" />
+          <Button Content="H2" Tag="h2" Classes="tool" Click="Format_Click" ToolTip.Tip="Heading 2" />
+          <Button Content="H3" Tag="h3" Classes="tool" Click="Format_Click" ToolTip.Tip="Heading 3" />
+          <Button Content="• List" Tag="list" Classes="tool" Click="Format_Click" ToolTip.Tip="Bullet list" />
+          <Button Content="1. List" Tag="ordered" Classes="tool" Click="Format_Click" ToolTip.Tip="Numbered list" />
+          <Button Content="❝" Tag="quote" Classes="tool" Click="Format_Click" ToolTip.Tip="Block quote" />
+          <Button Content="Link" Tag="link" Classes="tool" Click="Format_Click" ToolTip.Tip="Insert link" />
+          <Button Content="Table" Tag="table" Classes="tool" Click="Format_Click" ToolTip.Tip="Insert table" />
+        </StackPanel>
+      </ScrollViewer>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="12,0,0,0">
+        <Button Content="Open folder" Classes="tool" Click="OpenFolder_Click" />
+        <Button Content="Save" Classes="tool" Click="Save_Click" />
+      </StackPanel>
+    </Grid>
+  </Border>
+</UserControl>

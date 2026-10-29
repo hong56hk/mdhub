@@ -1,0 +1,56 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.FolderExplorer">
+  <UserControl.Styles>
+    <Style Selector="Button.explorerAction">
+      <Setter Property="Width" Value="28" />
+      <Setter Property="Height" Value="28" />
+      <Setter Property="MinWidth" Value="28" />
+      <Setter Property="MinHeight" Value="28" />
+      <Setter Property="Padding" Value="6" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="#AAB8CC" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.explorerAction:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#303843" />
+    </Style>
+    <Style Selector="Button.explorerAction:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="#3A4657" />
+    </Style>
+    <Style Selector="Path.explorerIcon">
+      <Setter Property="Width" Value="16" />
+      <Setter Property="Height" Value="16" />
+      <Setter Property="StrokeThickness" Value="1.25" />
+      <Setter Property="StrokeLineCap" Value="Round" />
+      <Setter Property="StrokeJoin" Value="Round" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+  </UserControl.Styles>
+  <Grid x:Name="FolderPanel" RowDefinitions="Auto,Auto,*" Background="#17191D">
+    <TextBlock Text="EXPLORER" Classes="section" Margin="14,14,6,8" />
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="14,0,6,8">
+      <TextBlock x:Name="FolderName" Text="Open Folder" Foreground="#BEC6D3" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+      <StackPanel x:Name="FolderActions" Grid.Column="1" Orientation="Horizontal" Spacing="2" IsEnabled="False">
+        <Button x:Name="NewFileButton" Classes="explorerAction" Click="NewFile_Click" ToolTip.Tip="New file" AutomationProperties.Name="New file">
+          <Path Classes="explorerIcon" Data="M 6.5,14 L 2.5,14 2.5,2 8.5,2 12,5.5 12,7 M 8.5,2 L 8.5,5.5 12,5.5 M 11.5,9 L 11.5,15 M 8.5,12 L 14.5,12"
+                Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+        </Button>
+        <Button x:Name="NewFolderButton" Classes="explorerAction" Click="NewFolder_Click" ToolTip.Tip="New folder" AutomationProperties.Name="New folder">
+          <Path Classes="explorerIcon" Data="M 6.5,13.5 L 1.5,13.5 1.5,3 6,3 8,5 14,5 14,7 M 1.5,6.5 L 7,6.5 M 11.5,9 L 11.5,15 M 8.5,12 L 14.5,12"
+                Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+        </Button>
+        <Button x:Name="ReloadFolderButton" Classes="explorerAction" Click="RefreshFolder_Click" ToolTip.Tip="Reload" AutomationProperties.Name="Reload folder">
+          <Path Classes="explorerIcon" Data="M 13,6 A 5.5,5.5 0 1 0 13,10 M 13,2.5 L 13,6 9.5,6"
+                Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+        </Button>
+        <Button x:Name="CollapseAllButton" Classes="explorerAction" Click="CollapseAll_Click" ToolTip.Tip="Collapse all" AutomationProperties.Name="Collapse all folders">
+          <Path Classes="explorerIcon" Data="M 5,2 L 14,2 14,11 M 2,5 L 11,5 11,14 2,14 Z M 4.5,9.5 L 8.5,9.5"
+                Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+        </Button>
+      </StackPanel>
+    </Grid>
+    <TreeView x:Name="FolderTree" Grid.Row="2" SelectionChanged="FolderTree_SelectionChanged" />
+  </Grid>
+</UserControl>

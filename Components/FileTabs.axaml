@@ -1,0 +1,21 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.FileTabs" xmlns:local="using:Mdhub.Models">
+  <Grid ColumnDefinitions="*,Auto" Background="#1B1E23">
+    <ListBox x:Name="Tabs" SelectionChanged="Tabs_SelectionChanged" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+      <ListBox.ItemsPanel>
+        <ItemsPanelTemplate>
+          <StackPanel Orientation="Horizontal" />
+        </ItemsPanelTemplate>
+      </ListBox.ItemsPanel>
+      <ListBox.ItemTemplate>
+        <DataTemplate DataType="local:NoteDocument">
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <TextBlock Text="▤" Foreground="#8DADE8" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Title}" VerticalAlignment="Center" MaxWidth="200" TextTrimming="CharacterEllipsis" />
+            <Button Content="×" Classes="tool" Padding="4,0" MinWidth="20" Click="TabClose_Click" ToolTip.Tip="Close tab" />
+          </StackPanel>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+    <Button Grid.Column="1" Content="+" Classes="tool" Click="New_Click" ToolTip.Tip="New note" Margin="4" />
+  </Grid>
+</UserControl>

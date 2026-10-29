@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug mdhub",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build mdhub",
+      "program": "${workspaceFolder}/bin/Debug/net10.0/Mdhub.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "stopAtEntry": false,
+      "console": "internalConsole"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.TopMenu">
+  <UserControl.Styles>
+    <Style Selector="Button.caption">
+      <Setter Property="Width" Value="46" />
+      <Setter Property="Height" Value="32" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="#D7DCE5" />
+    </Style>
+    <Style Selector="Button.caption:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#30343B" />
+    </Style>
+    <Style Selector="Button.caption.close:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#C42B1C" />
+    </Style>
+  </UserControl.Styles>
+  <Grid ColumnDefinitions="Auto,*,Auto" Height="32" Background="#17191D">
+  <Menu x:Name="MainMenu" Background="#17191D" VerticalAlignment="Center">
+    <MenuItem Header="_File">
+      <MenuItem Header="_New" Click="New_Click" />
+      <MenuItem Header="_Open File…" Click="Open_Click" />
+      <MenuItem Header="Open _Folder…" Click="OpenFolder_Click" />
+      <MenuItem Header="_Save" Click="Save_Click" />
+      <MenuItem Header="Save _As…" Click="SaveAs_Click" />
+      <MenuItem Header="_Close Tab" Click="CloseTab_Click" />
+      <MenuItem Header="E_xit" Click="Exit_Click" />
+    </MenuItem>
+    <MenuItem Header="_Edit">
+      <MenuItem Header="Undo" Click="Edit_Click" Tag="undo" />
+      <MenuItem Header="Redo" Click="Edit_Click" Tag="redo" />
+      <MenuItem Header="Cut" Click="Edit_Click" Tag="cut" />
+      <MenuItem Header="Copy" Click="Edit_Click" Tag="copy" />
+      <MenuItem Header="Paste" Click="Edit_Click" Tag="paste" />
+      <MenuItem Header="Select All" Click="Edit_Click" Tag="select all" />
+    </MenuItem>
+    <MenuItem Header="_View">
+      <MenuItem Header="Toggle Folder Panel" Click="ToggleFolders_Click" />
+      <MenuItem Header="Toggle Preview" Click="TogglePreview_Click" />
+      <MenuItem Header="Toggle Word Wrap" Click="WordWrap_Click" />
+      <MenuItem Header="Refresh Folder" Click="RefreshFolder_Click" />
+    </MenuItem>
+    <MenuItem Header="_Help">
+      <MenuItem Header="Markdown Guide" Click="Guide_Click" />
+      <MenuItem Header="About mdhub" Click="About_Click" />
+    </MenuItem>
+  </Menu>
+  <Border x:Name="TitleBarDragRegion" Grid.Column="1" Background="Transparent"
+          WindowDecorationProperties.ElementRole="TitleBar" />
+  <StackPanel Grid.Column="2" Orientation="Horizontal">
+    <Button x:Name="MinimizeButton" Classes="caption" Click="Minimize_Click"
+            ToolTip.Tip="Minimize" AutomationProperties.Name="Minimize">
+      <Path Data="M 0,5 L 10,5" Width="10" Height="10" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1" />
+    </Button>
+    <Button x:Name="MaximizeButton" Classes="caption" Click="Maximize_Click"
+            ToolTip.Tip="Maximize" AutomationProperties.Name="Maximize">
+      <Path x:Name="MaximizeIcon" Data="M 0.5,0.5 L 9.5,0.5 9.5,9.5 0.5,9.5 Z" Width="10" Height="10"
+            Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1" />
+    </Button>
+    <Button x:Name="CloseWindowButton" Classes="caption close" Click="CloseWindow_Click"
+            ToolTip.Tip="Close" AutomationProperties.Name="Close window">
+      <Path Data="M 0,0 L 10,10 M 10,0 L 0,10" Width="10" Height="10" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1" />
+    </Button>
+  </StackPanel>
+  </Grid>
+</UserControl>

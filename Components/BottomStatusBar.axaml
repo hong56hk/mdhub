@@ -1,0 +1,9 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.BottomStatusBar">
+  <Border BorderBrush="#30343B" BorderThickness="0,1,0,0" Padding="12,7">
+    <Grid ColumnDefinitions="Auto,*,Auto">
+      <TextBlock x:Name="Counts" FontSize="11" Foreground="#B2BCCB" />
+      <TextBlock x:Name="Status" Grid.Column="1" Margin="20,0" FontSize="11" Foreground="#8893A3" TextTrimming="CharacterEllipsis" />
+      <TextBlock x:Name="EncodingLabel" Grid.Column="2" FontSize="11" Foreground="#8DADE8" Text="UTF-8" />
+    </Grid>
+  </Border>
+</UserControl>
