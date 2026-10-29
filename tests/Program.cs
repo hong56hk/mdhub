@@ -228,7 +228,7 @@ try
         Require(Shortcuts.Get("edit.undo").HandledByTextBox && !Shortcuts.Get("file.save").HandledByTextBox, "Entries record whether the editor handles them itself");
     }    {
         Require(new[] { ("editor.bold", "Ctrl+B", "Cmd+B"), ("editor.italic", "Ctrl+I", "Cmd+I"), ("editor.link", "Ctrl+L", "Cmd+L"), ("editor.quote", "Ctrl+\"", "Cmd+\""),
-            ("editor.insertTime", "Ctrl+;", "Cmd+;"), ("editor.goToLine", "Ctrl+G", "Cmd+G"), ("view.previewCaret", "Ctrl+P", "Cmd+P") }
+            ("editor.insertTime", "Ctrl+;", "Cmd+;"), ("editor.goToLine", "Ctrl+G", "Cmd+G"), ("view.previewCaret", "Ctrl+Shift+G", "Cmd+Shift+G"), ("find.replace", "Ctrl+H", "Cmd+H") }
             .All(x => Shortcuts.Format(x.Item1, false) == x.Item2 && Shortcuts.Format(x.Item1, true) == x.Item3), "Item 18 shortcuts are in the table with Windows and macOS text");
         var quote = Shortcuts.Get("editor.quote");
         Require(quote.Gestures.Count == 2 && quote.Gestures.All(g => g.Key == "OemQuotes") && quote.Gestures.Count(g => g.Hidden) == 1, "Block quote accepts Ctrl+' and Ctrl+Shift+' but shows one gesture");

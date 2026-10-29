@@ -1287,14 +1287,14 @@ finally
     Prep(ed, gLongText, 0, 0);
     Pump(); Pump();
 
-    // Focus scoping: away from the editor only Ctrl+G and Ctrl+P act.
+    // Focus scoping: away from the editor only Ctrl+G and Ctrl+Shift+G act.
     ew.GetVisualDescendants().OfType<Button>().First(b => Equals(b.Content, "Open folder")).Focus(); Pump();
     Require(!ed.IsKeyboardFocusWithin, "Focus moved off the editor");
     EKey(Key.B, RawInputModifiers.Control);
     EKey(Key.OemSemicolon, RawInputModifiers.Control);
     Require(ed.Text == gLongText && efired.Count == 0, "Formatting and insert time need the editor to have focus");
-    EKey(Key.P, RawInputModifiers.Control);
-    Require(efired.SequenceEqual(["view.previewCaret"]), "Ctrl+P works with focus elsewhere in the window");
+    EKey(Key.G, RawInputModifiers.Control | RawInputModifiers.Shift);
+    Require(efired.SequenceEqual(["view.previewCaret"]), "Ctrl+Shift+G works with focus elsewhere in the window");
     efired.Clear();
     EKey(Key.G, RawInputModifiers.Control);
     Require(ew.OwnedWindows.Count == 1 && efired.SequenceEqual(["editor.goToLine"]), "Ctrl+G works with focus elsewhere in the window");
@@ -1307,7 +1307,7 @@ finally
     Require(gFindInput.IsKeyboardFocusWithin, "Find field has focus");
     gFindInput.Text = "Para"; Pump(); efired.Clear();
     foreach (var (key, mods) in new[] { (Key.B, RawInputModifiers.Control), (Key.I, RawInputModifiers.Control), (Key.L, RawInputModifiers.Control), (Key.OemQuotes, RawInputModifiers.Control),
-        (Key.OemSemicolon, RawInputModifiers.Control), (Key.G, RawInputModifiers.Control), (Key.P, RawInputModifiers.Control) })
+        (Key.OemSemicolon, RawInputModifiers.Control), (Key.G, RawInputModifiers.Control), (Key.G, RawInputModifiers.Control | RawInputModifiers.Shift) })
         EKey(key, mods);
     Require(efired.Count == 0 && ew.OwnedWindows.Count == 0 && ed.Text == gLongText && gFindInput.Text == "Para", "No editor shortcut fires while a find field has focus");
     EKey(Key.Escape, RawInputModifiers.None);
@@ -1361,23 +1361,23 @@ finally
     Require(ew.OwnedWindows.Count == 0 && ed.CaretIndex == gBefore && gotoLines.Count == gotoCount, "Esc cancels Go to line");
     ew.SetZoom(100, announce: false); Pump();
 
-    // Ctrl+P: center the caret's block without moving the caret.
+    // Ctrl+Shift+G: center the caret's block without moving the caret.
     var gLine101 = Mdhub.Text.EditorCommands.LineStart(gLongText, 101);
     ed.Focus(); ed.SelectionStart = ed.SelectionEnd = gLine101; ed.CaretIndex = gLine101; Pump();
     gPreviewScroll.Offset = new Vector(0, 0); Pump();
     efired.Clear();
-    EKey(Key.P, RawInputModifiers.Control); Pump();
-    Require(efired.SequenceEqual(["view.previewCaret"]) && ed.CaretIndex == gLine101 && ed.SelectionStart == gLine101 && Centered("Paragraph 51"), "Ctrl+P centers the caret's block in the preview without moving the caret");
+    EKey(Key.G, RawInputModifiers.Control | RawInputModifiers.Shift); Pump();
+    Require(efired.SequenceEqual(["view.previewCaret"]) && ed.CaretIndex == gLine101 && ed.SelectionStart == gLine101 && Centered("Paragraph 51"), "Ctrl+Shift+G centers the caret's block in the preview without moving the caret");
     ed.SelectionStart = ed.SelectionEnd = gLine101 + 1; ed.CaretIndex = gLine101 + 1; Pump(); // blank line below uses the block above
     gPreviewScroll.Offset = new Vector(0, 0); Pump();
-    EKey(Key.P, RawInputModifiers.Control); Pump();
-    Require(Centered("Paragraph 51") || Centered("Paragraph 52"), "Ctrl+P on a blank line centers the nearest block");
+    EKey(Key.G, RawInputModifiers.Control | RawInputModifiers.Shift); Pump();
+    Require(Centered("Paragraph 51") || Centered("Paragraph 52"), "Ctrl+Shift+G on a blank line centers the nearest block");
 
     // Dialog and menu show the new shortcuts.
     var emenu = ew.GetVisualDescendants().OfType<Menu>().First(c => c.Name == "MainMenu");
     var etops = emenu.Items.OfType<MenuItem>().ToList();
     MenuItem EItem(int top, string header) => etops[top].Items.OfType<MenuItem>().First(m => (m.Header as string)!.Replace("_", "") == header);
-    Require(new[] { (1, "Bold", "Ctrl+B"), (1, "Italic", "Ctrl+I"), (1, "Insert Link", "Ctrl+L"), (1, "Insert Date and Time", "Ctrl+OemSemicolon"), (1, "Go to Line…", "Ctrl+G"), (2, "Scroll Preview to Caret", "Ctrl+P") }
+    Require(new[] { (1, "Bold", "Ctrl+B"), (1, "Italic", "Ctrl+I"), (1, "Insert Link", "Ctrl+L"), (1, "Insert Date and Time", "Ctrl+OemSemicolon"), (1, "Go to Line…", "Ctrl+G"), (2, "Scroll Preview to Caret", "Ctrl+Shift+G") }
         .All(x => EItem(x.Item1, x.Item2).InputGesture?.ToString() == x.Item3 || x.Item2 == "Insert Date and Time" && EItem(1, x.Item2).InputGesture is { Key: Key.OemSemicolon }), "Menu items carry the new gestures");
     etops[1].Open(); Pump();
     string? MenuText(string header) => EItem(1, header).GetVisualDescendants().OfType<TextBlock>().FirstOrDefault(b => b.Name == "PART_InputGestureText")?.Text;
@@ -1391,7 +1391,7 @@ finally
     var sd = ew.OwnedWindows.Single();
     string RowText(string id) => string.Join("|", sd.GetVisualDescendants().OfType<Grid>().First(g => Equals(g.Tag, id)).Children.OfType<TextBlock>().Select(b => b.Text));
     Require(RowText("editor.quote") == "Block quote (Markdown)|Ctrl+\"" && RowText("editor.insertTime") == "Insert date and time|Ctrl+;" && RowText("editor.goToLine") == "Go to line|Ctrl+G"
-        && RowText("view.previewCaret") == "Scroll preview to caret|Ctrl+P" && RowText("editor.bold") == "Bold (Markdown)|Ctrl+B", "The Shortcut dialog lists the new shortcuts");
+        && RowText("view.previewCaret") == "Scroll preview to caret|Ctrl+Shift+G" && RowText("editor.bold") == "Bold (Markdown)|Ctrl+B", "The Shortcut dialog lists the new shortcuts");
     sd.Close(); Pump();
 
     clockProp.SetValue(null, savedClock);

@@ -30,7 +30,7 @@ Open this folder in VS Code and install the recommended Microsoft C# extension (
 - Offline preview of headings, emphasis, strikethrough, lists, quotes, code blocks, links as styled text, and tables.
 - Live counts: whitespace-delimited words, Unicode text-element characters (including whitespace), and logical lines. An empty document has one line.
 - Plain-text editing with selection, copy/paste, undo/redo, and scrolling.
-- Ctrl+N, Ctrl+O, Ctrl+Shift+O (folder), Ctrl+S, Ctrl+Shift+S, and Ctrl+W (Command on macOS).
+- Ctrl+N, Ctrl+O, Ctrl+Shift+O or Ctrl+Shift+N (folder), Ctrl+S, Ctrl+Shift+S, and Ctrl+W (Command on macOS).
 - Unsaved-change indicator and Save / Discard / Cancel prompts before closing tabs or exiting.
 - UTF-8 text and BOM-marked Unicode files; detected encoding is retained when saving. Legacy non-UTF-8 files without a BOM are not supported.
 - Writes use a temporary file and replacement to avoid truncating the original on a failed write.

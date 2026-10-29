@@ -49,7 +49,7 @@ public static class Shortcuts
     [
         S("file.new", ShortcutArea.File, "New note", C("N")),
         S("file.open", ShortcutArea.File, "Open file", C("O")),
-        S("file.openFolder", ShortcutArea.File, "Open folder", CS("O")),
+        S("file.openFolder", ShortcutArea.File, "Open folder", CS("O"), CS("N")),
         S("file.save", ShortcutArea.File, "Save", C("S")),
         S("file.saveAs", ShortcutArea.File, "Save as", CS("S")),
         S("file.closeTab", ShortcutArea.File, "Close tab", C("W")),
@@ -68,7 +68,7 @@ public static class Shortcuts
         S("zoom.in", ShortcutArea.Zoom, "Zoom in", C("OemPlus"), CS("OemPlus"), C("Add")),
         S("zoom.out", ShortcutArea.Zoom, "Zoom out", C("OemMinus"), C("Subtract")),
         S("zoom.reset", ShortcutArea.Zoom, "Reset zoom", C("D0"), C("NumPad0")),
-        S("view.previewCaret", ShortcutArea.View, "Scroll preview to caret", C("P")),
+        S("view.previewCaret", ShortcutArea.View, "Scroll preview to caret", CS("G")),
         S("editor.bold", ShortcutArea.Editor, "Bold (Markdown)", C("B")),
         S("editor.italic", ShortcutArea.Editor, "Italic (Markdown)", C("I")),
         S("editor.link", ShortcutArea.Editor, "Insert link (Markdown)", C("L")),
