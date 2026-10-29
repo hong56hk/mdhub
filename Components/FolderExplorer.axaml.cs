@@ -42,6 +42,7 @@ public partial class FolderExplorer : UserControl
     public FolderExplorer()
     {
         InitializeComponent();
+        InitializeDragDrop();
         FolderTree.ContextMenu = CreateBackgroundMenu();
     }
     // Empty-space menu: tree items have their own menu, so this opens only for the background.
@@ -136,7 +137,7 @@ public partial class FolderExplorer : UserControl
         _watchTimer.Tick += async (_, _) =>
         {
             _watchTimer?.Stop();
-            if (_busy || _refreshing > 0 || _folder is null) { _watchTimer?.Start(); return; }
+            if (_busy || _dragging || _refreshing > 0 || _folder is null) { _watchTimer?.Start(); return; }
             try { await RefreshAsync(); ExternalChangeRefreshed?.Invoke(); }
             catch (Exception ex) { MessageChanged?.Invoke(ex.Message); }
         };

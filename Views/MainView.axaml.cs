@@ -40,6 +40,7 @@ public partial class MainView : UserControl
         FolderExplorer.FileRequested += async path => await RunAsync(() => OpenPathAsync(path));
         FolderExplorer.RefreshRequested += () => RequestAction(WorkspaceAction.RefreshFolder);
         FolderExplorer.ExplorerRequested += async request => { if (!_busy) await RunAsync(() => HandleExplorerRequestAsync(request)); };
+        FolderExplorer.MoveRequested += async request => await RunAsync(() => MoveExplorerFileAsync(request));
         FolderExplorer.CanPaste = () => ExplorerClipboard is not null;
         FolderExplorer.OpenFolderRequested += () => RequestAction(WorkspaceAction.OpenFolder);
         FolderExplorer.CreateRequested += async isFolder => await RunAsync(() => CreateExplorerItemAsync(isFolder));

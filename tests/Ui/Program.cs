@@ -10,6 +10,7 @@ using Mdhub.Models;
 using Mdhub.Views;
 using Mdhub.Components;
 
+if (args.Contains("--drag-only")) { ExplorerDragTests.Run(); return; }
 AppBuilder.Configure<App>().UseSkia().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).SetupWithoutStarting();
 var window = new MainWindow();
 window.Show();

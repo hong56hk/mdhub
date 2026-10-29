@@ -1,5 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.FolderExplorer">
   <UserControl.Styles>
+    <Style Selector="TreeViewItem.dropTarget">
+      <Setter Property="Background" Value="#394553" />
+    </Style>
     <Style Selector="Button.explorerAction">
       <Setter Property="Width" Value="28" />
       <Setter Property="Height" Value="28" />
@@ -33,6 +36,9 @@
     </Style>
     <Style Selector="Button.folderName:pointerover TextBlock">
       <Setter Property="TextDecorations" Value="Underline" />
+    </Style>
+    <Style Selector="Button.folderName.dropTarget /template/ ContentPresenter">
+      <Setter Property="Background" Value="#394553" />
     </Style>
     <Style Selector="Path.explorerIcon">
       <Setter Property="Width" Value="16" />
