@@ -11,6 +11,11 @@ using Mdhub.Views;
 using Mdhub.Components;
 
 if (args.Contains("--drag-only")) { ExplorerDragTests.Run(); return; }
+if (args.Contains("--file-views")) { FileViewTests.Run(); return; }
+if (args.Contains("--image-layout")) { ImageLayoutTests.Run(); return; }
+if (args.Contains("--rename-only")) { RenameTests.Run(); return; }
+if (args.Contains("--syntax-only")) { SyntaxTests.Run(); return; }
+if (args.Contains("--search-only")) { WorkspaceSearchTests.Run(); return; }
 AppBuilder.Configure<App>().UseSkia().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).SetupWithoutStarting();
 var window = new MainWindow();
 window.Show();
@@ -182,7 +187,7 @@ using (var frame = window.CaptureRenderedFrame()) frame?.Save(output, Avalonia.M
 Console.WriteLine($"Screenshot: {output}");
 
 ClickMenu("Toggle Folder Panel");
-Require(!Find<FolderExplorer>("FolderExplorer")!.IsVisible, "View menu hides the folder component");
+Require(!Find<FolderExplorer>("FolderExplorer")!.IsEffectivelyVisible, "View menu hides the folder component");
 ClickMenu("Toggle Folder Panel");
 ClickMenu("Toggle Preview");
 Require(!Find<MdEditor>("MdEditor")!.IsVisible, "View menu hides the Markdown component");
@@ -331,19 +336,26 @@ RunOperation("OpenPathAsync", Path.Combine(menuRoot, "Docs", "inner.md"));
 var noteTab = tabs.Items.OfType<NoteDocument>().Single(d => d.Path == Path.Combine(menuRoot, "note.md"));
 var innerTab = tabs.Items.OfType<NoteDocument>().Single(d => d.Path == Path.Combine(menuRoot, "Docs", "inner.md"));
 ClickContext(Path.Combine(menuRoot, "note.md"), "RenameMenuItem");
-WaitFor(() => window.OwnedWindows.Count == 1);
-Require(window.OwnedWindows.Single().GetVisualDescendants().OfType<TextBox>().Single().Text == "note.md", "Rename opens a name dialog with the current name");
-SubmitName("note copy.md", "Rename");
-Require(window.OwnedWindows.Count == 1 && File.Exists(Path.Combine(menuRoot, "note.md")), "Rename uses the create dialog's validation and rejects existing names");
-SubmitName("bad/name.md", "Rename");
-Require(window.OwnedWindows.Count == 1, "Rename rejects names with paths");
-SubmitName("renamed.md", "Rename");
+WaitFor(() => explorer.IsRenaming);
+Require(Find<TextBox>("ExplorerRenameBox")!.SelectedText == "note", "Inline rename selects the filename without extension");
+void SubmitRename(string name)
+{
+    var box = Find<TextBox>("ExplorerRenameBox")!;
+    box.Text = name;
+    box.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Enter });
+    Pump();
+}
+SubmitRename("note copy.md");
+Require(explorer.IsRenaming && File.Exists(Path.Combine(menuRoot, "note.md")), "Inline rename rejects existing names");
+SubmitRename("bad/name.md");
+Require(explorer.IsRenaming, "Rename rejects names with paths");
+SubmitRename("renamed.md");
 WaitFor(() => SelectedPath() == Path.Combine(menuRoot, "renamed.md"));
 Require(File.Exists(Path.Combine(menuRoot, "renamed.md")) && !File.Exists(Path.Combine(menuRoot, "note.md")) && noteTab.Path == Path.Combine(menuRoot, "renamed.md") && noteTab.Title == "renamed.md",
     "Rename renames the file, updates its open tab, and reveals it");
 ClickContext(Path.Combine(menuRoot, "Docs"), "RenameMenuItem");
-WaitFor(() => window.OwnedWindows.Count == 1);
-SubmitName("Folder", "Rename");
+WaitFor(() => explorer.IsRenaming);
+SubmitRename("Folder");
 WaitFor(() => SelectedPath() == Path.Combine(menuRoot, "Folder"));
 Require(innerTab.Path == Path.Combine(menuRoot, "Folder", "inner.md"), "Renaming a folder updates tabs for files inside it");
 
@@ -1288,7 +1300,7 @@ finally
     Pump(); Pump();
 
     // Focus scoping: away from the editor only Ctrl+G and Ctrl+Shift+G act.
-    ew.GetVisualDescendants().OfType<Button>().First(b => Equals(b.Content, "Open folder")).Focus(); Pump();
+    ew.GetVisualDescendants().OfType<Button>().First(b => b.Name == "TogglePreviewButton").Focus(); Pump();
     Require(!ed.IsKeyboardFocusWithin, "Focus moved off the editor");
     EKey(Key.B, RawInputModifiers.Control);
     EKey(Key.OemSemicolon, RawInputModifiers.Control);
@@ -1637,14 +1649,6 @@ void WaitFor(Func<bool> condition)
     var deadline = DateTime.UtcNow.AddSeconds(10);
     while (!condition() && DateTime.UtcNow < deadline) Pump();
     Require(condition(), "Explorer action completes");
-}
-
-void SubmitName(string name, string button)
-{
-    var dialog = window.OwnedWindows.Single();
-    dialog.GetVisualDescendants().OfType<TextBox>().Single().Text = name;
-    dialog.GetVisualDescendants().OfType<Button>().Single(b => Equals(b.Content, button)).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-    Pump();
 }
 
 void RemoveTab(NoteDocument document) { tabs.SelectedItem = document; ClickMenu("_Close Tab"); Pump(); }

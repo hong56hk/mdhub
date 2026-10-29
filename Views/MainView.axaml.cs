@@ -41,6 +41,12 @@ public partial class MainView : UserControl
         FolderExplorer.RefreshRequested += () => RequestAction(WorkspaceAction.RefreshFolder);
         FolderExplorer.ExplorerRequested += async request => { if (!_busy) await RunAsync(() => HandleExplorerRequestAsync(request)); };
         FolderExplorer.MoveRequested += async request => await RunAsync(() => MoveExplorerFileAsync(request));
+        FolderExplorer.RenameRequested = RenameExplorerItemAsync;
+        GlobalSearch.OpenBuffers = () => _documents.Where(d => d.Path is not null && !d.IsImage)
+            .ToDictionary(d => d.Path!, d => d.Text, OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+        GlobalSearch.HitRequested += async (file, hit) => await RunAsync(() => OpenSearchHitAsync(file, hit));
+        GlobalSearch.ReplaceRequested = ReplaceSearchResultsAsync;
+        FolderExplorer.ExternalChangeRefreshed += () => { if (GlobalSearch.IsVisible) GlobalSearch.Schedule(); };
         FolderExplorer.CanPaste = () => ExplorerClipboard is not null;
         FolderExplorer.OpenFolderRequested += () => RequestAction(WorkspaceAction.OpenFolder);
         FolderExplorer.CreateRequested += async isFolder => await RunAsync(() => CreateExplorerItemAsync(isFolder));
@@ -52,7 +58,12 @@ public partial class MainView : UserControl
     }
 
     public void FocusEditor() => TextEditor.FocusEditor();
-    public void StopPreview() => MdEditor.Stop();
+    public void StopPreview()
+    {
+        MdEditor.Stop();
+        ImageViewer.ShowImage(null);
+        foreach (var document in _documents) document.Image?.Dispose();
+    }
     public void UpdateWindowState(WindowState state) => TopMenu.UpdateWindowState(state);
 
     // Shown in the status bar after a restore until the user switches tabs or edits.
@@ -63,7 +74,8 @@ public partial class MainView : UserControl
         _sessionNote = null;
         _active = document;
         TextEditor.ShowDocument(document);
-        MdEditor.ShowDocument(document);
+        MdEditor.ShowDocument(document.IsMarkdown ? document : null);
+        UpdateContentLayout();
         UpdateStatus();
         TextEditor.FocusEditor();
         document.RestoreSelection();
@@ -90,6 +102,7 @@ public partial class MainView : UserControl
         _active.Refresh();
         TitleChanged?.Invoke(DocumentTitle);
         BottomStatusBar.UpdateDocument(_active, message ?? TransientStatus ?? _sessionNote);
+        if (!_active.IsMarkdown && !_active.IsImage) BottomStatusBar.UpdateStatistics(Mdhub.Text.TextStatistics.Count(_active.Text));
         TextFormatter.SetFormattingEnabled(_active.IsMarkdown && !_busy);
     }
 
@@ -113,7 +126,7 @@ public partial class MainView : UserControl
         TopMenu.IsEnabled = !busy;
         FolderExplorer.SetBusy(busy);
         TextFormatter.SetFormattingEnabled(!busy && _active?.IsMarkdown == true);
-        foreach (var document in _documents) document.Editor.IsReadOnly = busy;
+        foreach (var document in _documents) document.Editor.IsReadOnly = busy || document.IsImage;
     }
     // Saved file tabs only: untitled buffers and unsaved text are never written to the session.
     public WindowSession CaptureSession()
@@ -141,7 +154,11 @@ public partial class MainView : UserControl
             try
             {
                 await OpenPathAsync(tab);
-                if (_active is { } document && !opened.Contains(document)) opened.Add(document);
+                if (_active is { Path: { } openedPath } document && SamePath(openedPath, Path.GetFullPath(tab)))
+                {
+                    if (!opened.Contains(document)) opened.Add(document);
+                }
+                else failed++;
             }
             catch (Exception) { failed++; }
         }

@@ -49,9 +49,8 @@
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
   </UserControl.Styles>
-  <Grid x:Name="FolderPanel" RowDefinitions="Auto,Auto,*" Background="#17191D">
-    <TextBlock Text="EXPLORER" Classes="section" Margin="14,14,6,8" />
-    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="14,0,6,8">
+  <Grid x:Name="FolderPanel" RowDefinitions="Auto,*" Background="#17191D">
+    <Grid ColumnDefinitions="*,Auto" Margin="14,4,6,8">
       <Button x:Name="FolderNameButton" Classes="folderName" Click="FolderName_Click" Cursor="Hand" ToolTip.Tip="Open a folder (Ctrl+Shift+O)" AutomationProperties.Name="Open folder">
         <TextBlock x:Name="FolderName" Text="Open Folder" Foreground="#BEC6D3" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
       </Button>
@@ -74,6 +73,6 @@
         </Button>
       </StackPanel>
     </Grid>
-    <TreeView x:Name="FolderTree" Grid.Row="2" Background="Transparent" SelectionChanged="FolderTree_SelectionChanged" />
+    <TreeView x:Name="FolderTree" Grid.Row="1" Background="Transparent" SelectionChanged="FolderTree_SelectionChanged" />
   </Grid>
 </UserControl>

@@ -47,7 +47,7 @@ public partial class FolderExplorer
     private void OnDragPressed(object? sender, PointerPressedEventArgs e)
     {
         ClearPendingDrag();
-        if (_busy || _dragging || !e.GetCurrentPoint(FolderTree).Properties.IsLeftButtonPressed) return;
+        if (_busy || _dragging || IsRenaming || !e.GetCurrentPoint(FolderTree).Properties.IsLeftButtonPressed) return;
         if (ItemAt(e.Source)?.Tag is not FolderEntry { IsDirectory: false, IsLink: false } entry) return;
         _dragPress = e;
         _dragOrigin = e.GetPosition(FolderTree);

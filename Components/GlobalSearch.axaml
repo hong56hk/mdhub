@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.GlobalSearch">
+  <UserControl.Styles>
+    <Style Selector="Button.searchTool, ToggleButton.searchTool">
+      <Setter Property="Padding" Value="5,2" /><Setter Property="MinWidth" Value="26" /><Setter Property="MinHeight" Value="26" />
+      <Setter Property="FontSize" Value="12" />
+    </Style>
+  </UserControl.Styles>
+  <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="8,8,4,0">
+    <Grid ColumnDefinitions="Auto,*">
+      <ToggleButton x:Name="GlobalExpandReplace" Content="⌄" Classes="searchTool" ToolTip.Tip="Show replace (Ctrl+Shift+H)" VerticalAlignment="Top" />
+      <StackPanel Grid.Column="1" Spacing="4">
+        <TextBox x:Name="GlobalQuery" PlaceholderText="Search in opened folder" MinWidth="50" FontSize="13" />
+        <StackPanel Orientation="Horizontal" Spacing="3">
+          <ToggleButton x:Name="GlobalMatchCase" Content="Aa" Classes="searchTool" ToolTip.Tip="Match case" />
+          <ToggleButton x:Name="GlobalWholeWord" Content="ab" Classes="searchTool" ToolTip.Tip="Match whole word" />
+          <ToggleButton x:Name="GlobalRegex" Content=".*" Classes="searchTool" ToolTip.Tip="Use regular expression" />
+          <Button x:Name="GlobalRefresh" Content="↻" Classes="searchTool" ToolTip.Tip="Refresh results" />
+        </StackPanel>
+      </StackPanel>
+    </Grid>
+    <StackPanel x:Name="GlobalReplaceRow" Grid.Row="1" Margin="26,6,0,0" Spacing="4" IsVisible="False">
+      <TextBox x:Name="GlobalReplacement" PlaceholderText="Replace" FontSize="13" />
+      <StackPanel Orientation="Horizontal" Spacing="4">
+        <ToggleButton x:Name="GlobalPreserveCase" Content="AB" Classes="searchTool" ToolTip.Tip="Preserve case" />
+        <Button x:Name="GlobalReplaceSelected" Content="Replace" Classes="searchTool" ToolTip.Tip="Replace selected match or file" IsEnabled="False" />
+        <Button x:Name="GlobalReplaceAll" Content="Replace all" Classes="searchTool" IsEnabled="False" />
+      </StackPanel>
+    </StackPanel>
+    <TextBlock x:Name="GlobalSummary" Grid.Row="2" Margin="4,10,4,8" TextWrapping="Wrap" FontSize="12" Foreground="#AAB8CC" Text="Open a folder to search." />
+    <TreeView x:Name="GlobalResults" Grid.Row="3" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
+  </Grid>
+</UserControl>

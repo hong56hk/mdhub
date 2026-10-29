@@ -14,8 +14,11 @@ public sealed class NoteDocument : INotifyPropertyChanged
     public string UntitledName { get; init; } = "Untitled.md";
     public string SavedText { get; set; } = "";
     public Encoding Encoding { get; set; } = TextFileStore.DefaultEncoding;
-    public TextBox Editor { get; } = new()
+    public Avalonia.Media.Imaging.Bitmap? Image { get; init; }
+    public bool IsImage => Image is not null;
+    public TextBox Editor { get; } = new Mdhub.Components.MarkdownTextBox()
     {
+        Classes = { "noteEditor" },
         AcceptsReturn = true, AcceptsTab = true,
         FontFamily = new FontFamily("Consolas, Menlo, monospace"), FontSize = 15,
         Padding = new Thickness(18), BorderThickness = new Thickness(0),
@@ -25,7 +28,7 @@ public sealed class NoteDocument : INotifyPropertyChanged
     };
     public string Text => Editor.Text ?? "";
     public bool IsDirty => Text != SavedText;
-    public bool IsMarkdown => System.IO.Path.GetExtension(Path ?? UntitledName).ToLowerInvariant() is ".md" or ".markdown";
+    public bool IsMarkdown => !IsImage && System.IO.Path.GetExtension(Path ?? UntitledName).ToLowerInvariant() is ".md" or ".markdown";
     public string Title => (IsDirty ? "● " : "") + (Path is null ? UntitledName : System.IO.Path.GetFileName(Path));
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -64,5 +67,9 @@ public sealed class NoteDocument : INotifyPropertyChanged
         finally { _restoring = false; }
     }
 
-    public void Refresh() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Title)));
+    public void Refresh()
+    {
+        ((Mdhub.Components.MarkdownTextBox)Editor).HighlightMarkdown = IsMarkdown;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Title)));
+    }
 }

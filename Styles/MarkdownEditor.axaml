@@ -1,0 +1,24 @@
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:c="using:Mdhub.Components">
+  <Style Selector="TextBox.noteEditor">
+    <Setter Property="Template">
+      <ControlTemplate TargetType="c:MarkdownTextBox">
+        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+          <ScrollViewer Name="PART_ScrollViewer"
+                        HorizontalScrollBarVisibility="{TemplateBinding (ScrollViewer.HorizontalScrollBarVisibility)}"
+                        VerticalScrollBarVisibility="{TemplateBinding (ScrollViewer.VerticalScrollBarVisibility)}">
+            <c:MarkdownTextPresenter Name="PART_TextPresenter"
+                HighlightMarkdown="{TemplateBinding HighlightMarkdown}"
+                Text="{TemplateBinding Text, Mode=TwoWay}"
+                CaretIndex="{TemplateBinding CaretIndex}" CaretBlinkInterval="{TemplateBinding CaretBlinkInterval}"
+                SelectionStart="{TemplateBinding SelectionStart}" SelectionEnd="{TemplateBinding SelectionEnd}"
+                SelectionBrush="{TemplateBinding SelectionBrush}" SelectionForegroundBrush="{TemplateBinding SelectionForegroundBrush}"
+                CaretBrush="{TemplateBinding CaretBrush}" TextWrapping="{TemplateBinding TextWrapping}"
+                TextAlignment="{TemplateBinding TextAlignment}" LineHeight="{TemplateBinding LineHeight}"
+                LetterSpacing="{TemplateBinding LetterSpacing}"
+                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+          </ScrollViewer>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+</Styles>

@@ -23,6 +23,7 @@ public partial class MainView
             document.Refresh();
             if (document.IsDirty) _sessionNote = null;
             if (_active == document) { UpdateStatus(); MdEditor.ScheduleRefresh(); }
+            if (GlobalSearch.IsVisible && !_busy) GlobalSearch.Schedule();
         };
         _documents.Add(document);
         FileTabs.SelectedDocument = document;
@@ -33,7 +34,7 @@ public partial class MainView
     {
         var files = await Host.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "Open text or Markdown files", AllowMultiple = true, FileTypeFilter = [TextFiles, FilePickerFileTypes.All]
+            Title = "Open files", AllowMultiple = true, FileTypeFilter = [FilePickerFileTypes.All, TextFiles]
         });
         foreach (var file in files)
         {
@@ -46,8 +47,24 @@ public partial class MainView
         path = Path.GetFullPath(path);
         var existing = _documents.FirstOrDefault(d => SamePath(d.Path, path));
         if (existing is not null) { FileTabs.SelectedDocument = existing; return; }
-        var loaded = await TextFileStore.ReadAsync(path);
-        if (loaded.Text.Contains('\0')) throw new IOException("This appears to be a binary file. Choose a text or Markdown file.");
+        var kind = await Task.Run(() => FileSupport.Detect(path));
+        if (kind == SupportedFileKind.Unsupported) { UpdateStatus("Unsupported file type or text encoding · " + path); return; }
+        if (kind == SupportedFileKind.Image)
+        {
+            var bitmap = await Task.Run(() =>
+            {
+                using var stream = File.OpenRead(path);
+                return new Avalonia.Media.Imaging.Bitmap(stream);
+            });
+            var imageDocument = new NoteDocument { Path = path, Image = bitmap };
+            _documents.Add(imageDocument);
+            FileTabs.SelectedDocument = imageDocument;
+            return;
+        }
+        (string Text, System.Text.Encoding Encoding) loaded;
+        try { loaded = await TextFileStore.ReadAsync(path); }
+        catch (System.Text.DecoderFallbackException) { UpdateStatus("Unsupported text encoding · " + path); return; }
+        if (!FileSupport.IsText(loaded.Text)) { UpdateStatus("Unsupported binary file · " + path); return; }
         AddDocument(path, loaded.Text, encoding: loaded.Encoding);
     }
 
@@ -59,6 +76,7 @@ public partial class MainView
 
     private async Task<bool> SaveAsync(NoteDocument document, bool saveAs)
     {
+        if (document.IsImage) { UpdateStatus("Images are view-only."); return true; }
         var path = document.Path;
         if (saveAs || path is null)
         {
@@ -83,6 +101,8 @@ public partial class MainView
         document.Path = path;
         document.SavedText = document.Text;
         document.Refresh();
+        if (_active == document) MdEditor.ShowDocument(document.IsMarkdown ? document : null);
+        UpdateContentLayout();
         UpdateStatus("Saved · " + path);
         MdEditor.ScheduleRefresh();
         if (isNewPath && FolderExplorer.Contains(path)) await FolderExplorer.RevealCreatedAsync(path);
@@ -102,6 +122,7 @@ public partial class MainView
         if (!await ConfirmCloseAsync(document)) return;
         var index = _documents.IndexOf(document);
         _documents.Remove(document);
+        document.Image?.Dispose();
         if (_documents.Count == 0) AddDocument(null, "");
         else if (_active == document) FileTabs.SelectedDocument = _documents[Math.Min(index, _documents.Count - 1)];
     }

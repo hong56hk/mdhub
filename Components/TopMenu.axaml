@@ -58,7 +58,7 @@
     </MenuItem>
     <MenuItem Header="_View">
       <MenuItem Header="Toggle Folder Panel" Click="ToggleFolders_Click" />
-      <MenuItem Header="Toggle Preview" Click="TogglePreview_Click" />
+      <MenuItem Header="Toggle Preview" Click="TogglePreview_Click" c:ShortcutKeys.Id="view.togglePreview" />
       <MenuItem Header="Toggle Word Wrap" Click="WordWrap_Click" c:ShortcutKeys.Id="view.wordWrap" />
       <MenuItem Header="Scroll Preview to Caret" Click="Command_Click" c:ShortcutKeys.Id="view.previewCaret" />
       <MenuItem Header="Refresh Folder" Click="RefreshFolder_Click" />

@@ -28,11 +28,21 @@ public partial class MdEditor : UserControl
         PreviewContent.LayoutUpdated += (_, _) => PreviewBlockHighlights.InvalidateVisual();
         PreviewContent.DoubleTapped += OnPreviewDoubleTapped;
     }
-    public void ShowDocument(NoteDocument document)
+    public void ShowDocument(NoteDocument? document)
     {
         CancelPreviewEdit();
         if (_active?.Editor is { } old) old.PropertyChanged -= OnEditorPropertyChanged;
         _active = document;
+        if (document is null)
+        {
+            Stop();
+            _selectionTimer.Stop();
+            _pendingCenter = null;
+            ClearHighlight();
+            _render = null;
+            PreviewContent.Children.Clear();
+            return;
+        }
         document.Editor.PropertyChanged += OnEditorPropertyChanged;
         ScheduleRefresh();
     }

@@ -65,26 +65,8 @@ public partial class MainView
                 break;
             }
             case ExplorerAction.Rename:
-            {
-                var oldName = Path.GetFileName(path);
-                var name = await DialogService.PromptNameAsync(Host, "Rename", parent, oldName, "Rename");
-                if (name is null) return;
-                var target = Path.Combine(parent, name);
-                await Task.Run(() =>
-                {
-                    if (string.Equals(name, oldName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        var temp = Path.Combine(parent, $".mdhub-rename-{Guid.NewGuid():N}");
-                        ExplorerFileOperations.Move(path, temp);
-                        ExplorerFileOperations.Move(temp, target);
-                    }
-                    else ExplorerFileOperations.Move(path, target);
-                });
-                UpdateMovedDocuments(path, target);
-                await FolderExplorer.RevealCreatedAsync(target);
-                UpdateStatus($"Renamed · {target}");
+                FolderExplorer.BeginRename(path);
                 break;
-            }
             case ExplorerAction.Delete:
             {
                 var answer = await DialogService.ShowAsync(Host, "Delete", $"Move {Path.GetFileName(path)} to the Recycle Bin?", "Delete", "Cancel");
@@ -114,12 +96,15 @@ public partial class MainView
             document.Refresh();
         }
         UpdateStatus();
+        if (_active is { } active) MdEditor.ShowDocument(active.IsMarkdown ? active : null);
+        UpdateContentLayout();
     }
 
     private void RemoveDocument(NoteDocument document)
     {
         var index = _documents.IndexOf(document);
         _documents.Remove(document);
+        document.Image?.Dispose();
         if (_documents.Count == 0) AddDocument(null, "");
         else if (_active == document) FileTabs.SelectedDocument = _documents[Math.Min(index, _documents.Count - 1)];
     }

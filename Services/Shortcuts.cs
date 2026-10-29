@@ -11,7 +11,7 @@ public readonly record struct ShortcutGesture(string Key, ShortcutMods Mods, str
 {
     private static readonly Dictionary<string, string> KeyNames = new()
     {
-        ["OemPlus"] = "=", ["OemMinus"] = "-", ["Add"] = "Num +", ["Subtract"] = "Num -", ["NumPad0"] = "Num 0",
+        ["OemPlus"] = "=", ["OemMinus"] = "-", ["OemPipe"] = "\\", ["Add"] = "Num +", ["Subtract"] = "Num -", ["NumPad0"] = "Num 0",
         ["D0"] = "0", ["OemQuotes"] = "'", ["OemSemicolon"] = ";", ["Escape"] = "Esc", ["Left"] = "Left", ["Right"] = "Right"
     };
 
@@ -53,6 +53,10 @@ public static class Shortcuts
         S("file.save", ShortcutArea.File, "Save", C("S")),
         S("file.saveAs", ShortcutArea.File, "Save as", CS("S")),
         S("file.closeTab", ShortcutArea.File, "Close tab", C("W")),
+        S("explorer.rename", ShortcutArea.File, "Rename selected explorer item", P("F2")),
+        S("sidebar.explorer", ShortcutArea.View, "Show explorer", CS("E")),
+        S("sidebar.search", ShortcutArea.Find, "Search in folder", CS("F")),
+        S("sidebar.replace", ShortcutArea.Find, "Replace in folder", CS("H")),
         T("edit.undo", ShortcutArea.Edit, "Undo", C("Z")),
         T("edit.redo", ShortcutArea.Edit, "Redo", C("Y"), CS("Z")),
         T("edit.cut", ShortcutArea.Edit, "Cut", C("X")),
@@ -60,6 +64,7 @@ public static class Shortcuts
         S("edit.paste", ShortcutArea.Edit, "Paste (text or image)", C("V")),
         T("edit.selectAll", ShortcutArea.Edit, "Select all", C("A")),
         S("view.wordWrap", ShortcutArea.View, "Toggle word wrap", new ShortcutGesture("Z", ShortcutMods.Alt)),
+        S("view.togglePreview", ShortcutArea.View, "Toggle preview", C("OemPipe"), new ShortcutGesture("OemBackslash", ShortcutMods.Command, Hidden: true)),
         S("find.find", ShortcutArea.Find, "Find", C("F")),
         S("find.replace", ShortcutArea.Find, "Find and replace", C("H")),
         S("find.next", ShortcutArea.Find, "Next match", P("F3")),

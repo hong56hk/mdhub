@@ -10,8 +10,9 @@ public partial class BottomStatusBar : UserControl
     public void UpdateDocument(NoteDocument document, string? message = null)
     {
         Status.Text = message ?? (document.IsDirty ? "Unsaved changes · " : "") + (document.Path ?? "New note");
-        FileKindLabel.Text = document.IsMarkdown ? "Markdown" : "Plain text";
-        EncodingLabel.Text = document.Encoding.WebName.ToUpperInvariant();
+        FileKindLabel.Text = document.IsImage ? "Image" : document.IsMarkdown ? "Markdown" : "Plain text";
+        EncodingLabel.Text = document.IsImage ? "" : document.Encoding.WebName.ToUpperInvariant();
+        if (document.Image is { } image) Counts.Text = $"{image.PixelSize.Width:N0} × {image.PixelSize.Height:N0} pixels";
     }
     public void SetMessage(string message) => Status.Text = message;
     public void UpdateStatistics(TextStatistics stats) =>

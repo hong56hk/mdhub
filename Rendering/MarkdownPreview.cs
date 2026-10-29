@@ -86,7 +86,7 @@ public static class MarkdownPreview
                 case HeadingBlock heading:
                     var title = InlineText(heading.Inline, heading);
                     title.FontSize = heading.Level switch { 1 => 28, 2 => 23, 3 => 19, _ => 16 };
-                    title.LineHeight = title.FontSize * 1.5;
+                    title.LineHeight = HasInlineImage(title.Inlines!) ? double.NaN : title.FontSize * 1.5;
                     title.FontWeight = FontWeight.SemiBold;
                     title.Margin = new Thickness(0, 10, 0, 4);
                     yield return title;
@@ -238,8 +238,13 @@ public static class MarkdownPreview
         _block = _result is { } result ? result.Map.Blocks.Count - 1 : -1;
         try { if (inline is not null) AddInlines(text.Inlines!, inline); }
         finally { _block = saved; }
+        // A fixed text line height clips embedded controls, notably images after list labels.
+        if (HasInlineImage(text.Inlines!)) text.LineHeight = double.NaN;
         return text;
     }
+
+    private static bool HasInlineImage(InlineCollection inlines) => inlines.Any(inline =>
+        inline is InlineUIContainer { Child: Image } || inline is Span span && HasInlineImage(span.Inlines));
 
     private static void AddInlines(InlineCollection target, ContainerInline container)
     {
@@ -270,7 +275,6 @@ public static class MarkdownPreview
                     AddInlines(span.Inlines, emphasis); target.Add(span);
                     break;
                 case LinkInline { IsImage: true } picture when LoadImage(picture) is { } inlineImage:
-                    inlineImage.MaxHeight = 240;
                     target.Add(new InlineUIContainer(inlineImage));
                     break;
                 case LinkInline link:

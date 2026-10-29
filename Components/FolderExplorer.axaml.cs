@@ -22,7 +22,11 @@ public partial class FolderExplorer : UserControl
         MenuItem Item(string name, string header, ExplorerAction action)
         {
             var item = new MenuItem { Name = name, Header = header };
-            item.Click += (_, _) => ExplorerRequested?.Invoke(new ExplorerRequest(action, path));
+            item.Click += (_, _) =>
+            {
+                if (action == ExplorerAction.Rename) BeginRename(path);
+                else ExplorerRequested?.Invoke(new ExplorerRequest(action, path));
+            };
             return item;
         }
         Separator Line() => new() { Background = Avalonia.Media.Brushes.LightGray, Foreground = Avalonia.Media.Brushes.LightGray };
@@ -139,7 +143,7 @@ public partial class FolderExplorer : UserControl
         _watchTimer.Tick += async (_, _) =>
         {
             _watchTimer?.Stop();
-            if (_busy || _dragging || _refreshing > 0 || _folder is null) { _watchTimer?.Start(); return; }
+            if (_busy || _dragging || IsRenaming || _refreshing > 0 || _folder is null) { _watchTimer?.Start(); return; }
             try { await RefreshAsync(); ExternalChangeRefreshed?.Invoke(); }
             catch (Exception ex) { MessageChanged?.Invoke(ex.Message); }
         };
@@ -173,6 +177,7 @@ public partial class FolderExplorer : UserControl
     public Task LoadRootAsync(string path) => LoadRootAsync(path, restartWatcher: true);
     private async Task LoadRootAsync(string path, bool restartWatcher)
     {
+        if (!_renameSaving) CancelRename();
         var entries = await FolderService.ReadAsync(path);
         if (restartWatcher || _watcher is null) StartWatcher(path);
         _folder = path;
@@ -188,6 +193,11 @@ public partial class FolderExplorer : UserControl
     {
         var item = new ExplorerTreeViewItem { Header = (entry.IsDirectory ? "" : "▤  ") + Path.GetFileName(entry.Path), Tag = entry };
         ToolTip.SetTip(item, entry.Path);
+        if (!entry.IsDirectory && !entry.IsSupported)
+        {
+            item.Opacity = 0.4;
+            ToolTip.SetTip(item, entry.Path + "\nUnsupported file type or text encoding; cannot be opened.");
+        }
         item.ContextMenu = CreateContextMenu(entry.Path);
         if (entry.IsDirectory && !entry.IsLink)
         {
@@ -221,6 +231,7 @@ public partial class FolderExplorer : UserControl
     }
     private void FolderRow_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
+        if (IsRenaming && ItemAt(e.Source) == _renameItem) return;
         if (_busy || !e.GetCurrentPoint(FolderTree).Properties.IsLeftButtonPressed) return;
         if (ItemAt(e.Source) is not { Tag: FolderEntry { IsDirectory: true, IsLink: false } } item) return;
         FolderTree.SelectedItem = item;
@@ -232,12 +243,7 @@ public partial class FolderExplorer : UserControl
 
     private void FolderTree_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (FolderTree.SelectedItem is not TreeViewItem { Tag: FolderEntry entry } || entry.IsDirectory) return;
-        if (Path.GetExtension(entry.Path).ToLowerInvariant() is not (".md" or ".markdown" or ".txt"))
-        {
-            MessageChanged?.Invoke("All files are shown. Select a .txt, .md, or .markdown file to edit.");
-            return;
-        }
+        if (IsRenaming || FolderTree.SelectedItem is not TreeViewItem { Tag: FolderEntry entry } || entry.IsDirectory || !entry.IsSupported) return;
         FileRequested?.Invoke(entry.Path);
     }
     private void RefreshFolder_Click(object? sender, RoutedEventArgs e) => RefreshRequested?.Invoke();

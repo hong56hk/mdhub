@@ -1,6 +1,9 @@
 namespace Mdhub.Services;
 
-public sealed record FolderEntry(string Path, bool IsDirectory, bool IsLink);
+public sealed record FolderEntry(string Path, bool IsDirectory, bool IsLink)
+{
+    public bool IsSupported { get; init; } = true;
+}
 
 public static class FolderService
 {
@@ -45,7 +48,10 @@ public static class FolderService
     public static Task<FolderEntry[]> ReadAsync(string path) => Task.Run(() =>
         new DirectoryInfo(path).EnumerateFileSystemInfos()
             .Where(info => !IsInternal(info.FullName))
-            .Select(info => new FolderEntry(info.FullName, info.Attributes.HasFlag(FileAttributes.Directory), info.Attributes.HasFlag(FileAttributes.ReparsePoint)))
+            .Select(info => new FolderEntry(info.FullName, info.Attributes.HasFlag(FileAttributes.Directory), info.Attributes.HasFlag(FileAttributes.ReparsePoint))
+            {
+                IsSupported = info.Attributes.HasFlag(FileAttributes.Directory) || FileSupport.Detect(info.FullName) != SupportedFileKind.Unsupported
+            })
             .OrderByDescending(e => e.IsDirectory).ThenBy(e => Path.GetFileName(e.Path), StringComparer.OrdinalIgnoreCase)
             .ThenBy(e => Path.GetFileName(e.Path), StringComparer.Ordinal).ToArray());
 }

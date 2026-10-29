@@ -1,0 +1,5 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.ImageViewer">
+  <Border Background="#202329" Padding="20">
+    <Image x:Name="Picture" Stretch="Uniform" AutomationProperties.Name="Image preview" />
+  </Border>
+</UserControl>

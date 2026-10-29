@@ -42,11 +42,15 @@ public partial class MainView
 
     private async void Edit(string action)
     {
-        if (_busy) return;
+        if (_busy || _active?.IsImage == true) return;
         if (action == "paste") await PasteAsync();
         else TextEditor.Edit(action);
     }
-    private Task LoadRootAsync(string path) => FolderExplorer.LoadRootAsync(path);
+    private async Task LoadRootAsync(string path)
+    {
+        await FolderExplorer.LoadRootAsync(path);
+        GlobalSearch.SetFolder(path);
+    }
 
     private async Task OpenFolderAsync()
     {
@@ -67,7 +71,7 @@ public partial class MainView
     public async Task OpenFolderPathAsync(string path)
     {
         await LoadRootAsync(path);
-        if (!FolderExplorer.IsVisible) ToggleFolders_Click(null, new RoutedEventArgs());
+        if (!Sidebar.IsVisible) ToggleFolders_Click(null, new RoutedEventArgs());
     }
 
     private static bool SameFolder(string a, string b)
@@ -93,20 +97,18 @@ public partial class MainView
 
     private void ToggleFolders_Click(object? sender, RoutedEventArgs e)
     {
-        var visible = !FolderExplorer.IsVisible;
+        var visible = !Sidebar.IsVisible;
         if (!visible) _folderWidth = Workspace.ColumnDefinitions[0].Width;
-        FolderExplorer.IsVisible = FolderSplitter.IsVisible = visible;
+        Sidebar.IsVisible = FolderSplitter.IsVisible = visible;
         Workspace.ColumnDefinitions[0].Width = visible ? _folderWidth : new GridLength(0);
         Workspace.ColumnDefinitions[1].Width = new GridLength(visible ? 4 : 0);
     }
 
     private void TogglePreview_Click(object? sender, RoutedEventArgs e)
     {
-        var visible = !MdEditor.IsVisible;
-        if (!visible) _previewWidth = Workspace.ColumnDefinitions[4].Width;
-        MdEditor.IsVisible = PreviewSplitter.IsVisible = visible;
-        Workspace.ColumnDefinitions[4].Width = visible ? _previewWidth : new GridLength(0);
-        Workspace.ColumnDefinitions[3].Width = new GridLength(visible ? 4 : 0);
+        if (_active?.IsMarkdown != true) return;
+        _showPreview = !_showPreview;
+        UpdateContentLayout();
     }
 
     private void WordWrap_Click(object? sender, RoutedEventArgs e)
@@ -117,6 +119,19 @@ public partial class MainView
 
     private async void OnShortcut(object? sender, KeyEventArgs e)
     {
+        if (FolderExplorer.IsRenaming) return;
+        if (!_busy && ShortcutKeys.Match(e, s => s.Id is "sidebar.explorer" or "sidebar.search" or "sidebar.replace") is { } sidebar)
+        {
+            e.Handled = true;
+            ShowSidebar(sidebar != "sidebar.explorer", sidebar == "sidebar.replace");
+            return;
+        }
+        if (!_busy && ShortcutKeys.Match(e, s => s.Id == "explorer.rename") is not null)
+        {
+            e.Handled = true;
+            FolderExplorer.BeginRename();
+            return;
+        }
         if (TextEditor.IsFindOpen && ShortcutKeys.Match(e, s => s.Id is "find.next" or "find.previous" or "find.close") is { } findId)
         {
             e.Handled = true;
@@ -143,21 +158,22 @@ public partial class MainView
             "file.save" => async () => { if (_active is not null) await SaveAsync(_active, false); },
             "file.saveAs" => async () => { if (_active is not null) await SaveAsync(_active, true); },
             "file.closeTab" => async () => { if (_active is not null) await CloseDocumentAsync(_active); },
-            "find.find" => () => { TextEditor.OpenFind(false); return Task.CompletedTask; },
-            "find.replace" => () => { TextEditor.OpenFind(true); return Task.CompletedTask; },
+            "find.find" when _active?.IsImage != true => () => { TextEditor.OpenFind(false); return Task.CompletedTask; },
+            "find.replace" when _active?.IsImage != true => () => { TextEditor.OpenFind(true); return Task.CompletedTask; },
             "edit.paste" when _active?.Editor.IsKeyboardFocusWithin == true => PasteAsync,
             "view.wordWrap" => () => { RequestAction(WorkspaceAction.WordWrap); return Task.CompletedTask; },
+            "view.togglePreview" => () => { RequestAction(WorkspaceAction.TogglePreview); return Task.CompletedTask; },
             // Formatting and insert time act on the focused editor only; go to line / preview work anywhere but the find fields.
             "editor.bold" or "editor.italic" or "editor.link" or "editor.quote" when EditorFocused && _active!.IsMarkdown => EditorCommand(id),
             "editor.insertTime" when EditorFocused => EditorCommand(id),
-            "editor.goToLine" or "view.previewCaret" when _active is not null && !TextEditor.IsFindFocused => EditorCommand(id),
+            "editor.goToLine" or "view.previewCaret" when _active is { IsImage: false } && !TextEditor.IsFindFocused => EditorCommand(id),
             _ => null
         };
         if (action is null) return;
         e.Handled = true;
         ShortcutFired?.Invoke(id!);
         if (id == "edit.paste") await PasteAsync(); // runs busy only while saving an image
-        else if (id is "find.find" or "find.replace" or "view.wordWrap" || id!.StartsWith("editor.") && id != "editor.goToLine" || id == "view.previewCaret") await action(); // find: focus must land in the find bar
+        else if (id is "find.find" or "find.replace" or "view.wordWrap" or "view.togglePreview" || id!.StartsWith("editor.") && id != "editor.goToLine" || id == "view.previewCaret") await action(); // find: focus must land in the find bar
         else await RunAsync(action);
     }
 
@@ -169,7 +185,7 @@ public partial class MainView
     // Menu items carrying one of these ids (not focus-scoped: the menu has focus when clicked).
     private async void RunMenuCommand(string id)
     {
-        if (_busy || _active is null || EditorCommand(id) is not { } action) return;
+        if (_busy || _active is null || _active.IsImage || EditorCommand(id) is not { } action) return;
         if (id == "editor.goToLine") await RunAsync(action); else await action();
     }
 
