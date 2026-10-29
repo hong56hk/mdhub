@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Mdhub.Services;
 
@@ -43,6 +44,11 @@ public partial class FolderExplorer : UserControl
     {
         InitializeComponent();
         InitializeDragDrop();
+        FolderTree.AddHandler(PointerPressedEvent, FolderRow_PointerPressed, RoutingStrategies.Tunnel);
+        FolderTree.AddHandler(DoubleTappedEvent, (_, e) =>
+        {
+            if (ItemAt(e.Source)?.Tag is FolderEntry { IsDirectory: true, IsLink: false }) e.Handled = true;
+        }, RoutingStrategies.Tunnel);
         FolderTree.ContextMenu = CreateBackgroundMenu();
     }
     // Empty-space menu: tree items have their own menu, so this opens only for the background.
@@ -184,7 +190,7 @@ public partial class FolderExplorer : UserControl
     }
     private TreeViewItem CreateTreeItem(FolderEntry entry)
     {
-        var item = new TreeViewItem { Header = (entry.IsDirectory ? "▸  " : "▤  ") + Path.GetFileName(entry.Path), Tag = entry };
+        var item = new TreeViewItem { Header = (entry.IsDirectory ? "" : "▤  ") + Path.GetFileName(entry.Path), Tag = entry };
         ToolTip.SetTip(item, entry.Path);
         item.ContextMenu = CreateContextMenu(entry.Path);
         if (entry.IsDirectory && !entry.IsLink)
@@ -217,6 +223,18 @@ public partial class FolderExplorer : UserControl
         else if (entry.IsLink) ToolTip.SetTip(item, entry.Path + " (linked folder; not followed)");
         return item;
     }
+    private void FolderRow_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        Console.WriteLine($"FOLDER PRESS {e.Source} busy={_busy} item={ItemAt(e.Source)?.Header} expanded={ItemAt(e.Source)?.IsExpanded}");
+        if (_busy || !e.GetCurrentPoint(FolderTree).Properties.IsLeftButtonPressed) return;
+        if (ItemAt(e.Source) is not { Tag: FolderEntry { IsDirectory: true, IsLink: false } } item) return;
+        FolderTree.SelectedItem = item;
+        item.Focus();
+        item.IsExpanded = !item.IsExpanded;
+        // Handle the arrow and row together, preventing the default double-click toggle.
+        e.Handled = true;
+    }
+
     private void FolderTree_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (FolderTree.SelectedItem is not TreeViewItem { Tag: FolderEntry entry } || entry.IsDirectory) return;

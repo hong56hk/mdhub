@@ -45,7 +45,29 @@ internal static class ExplorerDragTests
             var source = Path.Combine(root, "drag.md");
             var target = Path.Combine(folder, "drag.md");
             File.WriteAllText(source, "saved content");
+            File.WriteAllText(Path.Combine(folder, "child.txt"), "child");
             RunOperation("LoadRootAsync", root);
+            Dispatcher.UIThread.RunJobs();
+            var folderItem = tree.Items.OfType<TreeViewItem>().Single(i => i.Tag is FolderEntry { IsDirectory: true });
+            var label = folderItem.GetVisualDescendants().OfType<TextBlock>().First(t => t.Text == "Nested");
+            void Click(Control control)
+            {
+                var point = control.TranslatePoint(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), window)!.Value;
+                window.MouseDown(point, MouseButton.Left);
+                window.MouseUp(point, MouseButton.Left);
+                Dispatcher.UIThread.RunJobs();
+            }
+            Click(label);
+            Check(folderItem.IsExpanded && ReferenceEquals(tree.SelectedItem, folderItem), "single click selects and expands folder");
+            window.UpdateLayout();
+            label = folderItem.GetVisualDescendants().OfType<TextBlock>().First(t => t.Text == "Nested");
+            Click(label);
+            Check(!folderItem.IsExpanded, "second click collapses folder without extra double-click toggle");
+            var arrow = folderItem.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ToggleButton>().First();
+            Click(arrow);
+            Check(folderItem.IsExpanded, "arrow click expands exactly once");
+            Click(arrow);
+            Check(!folderItem.IsExpanded, "arrow click collapses exactly once");
             Check(DragDrop.GetAllowDrop(tree) && DragDrop.GetAllowDrop(rootButton), "tree and folder name accept drops");
             RunOperation("OpenPathAsync", source);
             var document = (NoteDocument)tabs.SelectedItem!;
