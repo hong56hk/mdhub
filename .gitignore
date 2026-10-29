@@ -1,0 +1,12 @@
+# data file
+test-folder
+
+# Ignore Visual Studio temporary files, build results, and
+bin/
+obj/
+.vs/
+.idea/
+.dotnet-home/
+.nuget/
+artifacts/
+*.user
