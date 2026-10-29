@@ -117,15 +117,21 @@ public partial class MainView
         foreach (var doc in _documents) doc.Editor.TextWrapping = _wrap ? TextWrapping.Wrap : TextWrapping.NoWrap;
     }
 
+    // Ctrl+Shift+E/F/H. MainWindow calls this from a window-level tunnelled KeyDown, so it works whatever has
+    // focus, including nothing (focus on the window itself, outside MainView); OnShortcut calls it as a fallback.
+    internal bool HandleSidebarShortcut(KeyEventArgs e)
+    {
+        if (e.Handled || _busy || FolderExplorer.IsRenaming) return false;
+        if (ShortcutKeys.Match(e, s => s.Id is "sidebar.explorer" or "sidebar.search" or "sidebar.replace") is not { } sidebar) return false;
+        e.Handled = true;
+        ShowSidebar(sidebar != "sidebar.explorer", sidebar == "sidebar.replace");
+        return true;
+    }
+
     private async void OnShortcut(object? sender, KeyEventArgs e)
     {
         if (FolderExplorer.IsRenaming) return;
-        if (!_busy && ShortcutKeys.Match(e, s => s.Id is "sidebar.explorer" or "sidebar.search" or "sidebar.replace") is { } sidebar)
-        {
-            e.Handled = true;
-            ShowSidebar(sidebar != "sidebar.explorer", sidebar == "sidebar.replace");
-            return;
-        }
+        if (HandleSidebarShortcut(e)) return;
         if (!_busy && ShortcutKeys.Match(e, s => s.Id == "explorer.rename") is not null)
         {
             e.Handled = true;

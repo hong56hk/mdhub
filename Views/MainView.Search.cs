@@ -23,7 +23,12 @@ public partial class MainView
             GlobalSearch.SetFolder(FolderExplorer.OpenedFolder);
             GlobalSearch.Open(replace);
         }
-        else FolderExplorer.Focus();
+        else
+        {
+            // The sidebar may have just become visible; focus again once it is laid out.
+            FolderExplorer.FocusTree();
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (FolderExplorer.IsVisible && !FolderExplorer.IsKeyboardFocusWithin) FolderExplorer.FocusTree(); }, Avalonia.Threading.DispatcherPriority.Loaded);
+        }
     }
 
     private async Task OpenSearchHitAsync(SearchFile file, SearchHit hit)

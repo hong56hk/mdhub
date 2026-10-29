@@ -28,6 +28,8 @@ public partial class MainWindow : Window
         Closed += (_, _) => MainView.StopPreview();
         Opened += (_, _) => { Title = MainView.DocumentTitle; MainView.FocusEditor(); };
         AddHandler(KeyDownEvent, OnZoomKey, RoutingStrategies.Tunnel);
+        // Sidebar shortcuts at window level: they must work from any focus state, even with nothing focused.
+        AddHandler(KeyDownEvent, (_, e) => MainView.HandleSidebarShortcut(e), RoutingStrategies.Tunnel);
         AddHandler(PointerWheelChangedEvent, OnZoomWheel, RoutingStrategies.Tunnel, handledEventsToo: true);
         SetZoom(ZoomLevel.Default, announce: false);
         SessionManager.Track(this); // after Closing above, so it sees the unsaved prompt's decision

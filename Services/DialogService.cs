@@ -83,7 +83,8 @@ public static class DialogService
         var mac = OperatingSystem.IsMacOS();
         var dialog = new Window { Title = "Shortcuts", Width = 520, Height = 560, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
         var list = new StackPanel { Name = "ShortcutList", Spacing = 4, Margin = new Thickness(20, 16) };
-        foreach (var group in Shortcuts.All.GroupBy(s => s.Area))
+        // Areas in enum order (File, Edit, View, Find, Zoom, Editor), not first-appearance order in the table.
+        foreach (var group in Shortcuts.All.GroupBy(s => s.Area).OrderBy(g => g.Key))
         {
             list.Children.Add(new TextBlock { Text = group.Key.ToString(), FontWeight = Avalonia.Media.FontWeight.SemiBold, FontSize = 15, Margin = new Thickness(0, 10, 0, 2), Classes = { "shortcut-area" } });
             foreach (var s in group)

@@ -280,4 +280,14 @@ public partial class FolderExplorer : UserControl
             items = item.Items.OfType<TreeViewItem>();
         }
     }
+
+    // Keyboard focus for Ctrl+Shift+E: the selected item, else the tree itself.
+    public void FocusTree()
+    {
+        if (FolderTree.SelectedItem is TreeViewItem { IsEffectivelyVisible: true } item && item.Focus()) return;
+        if (FolderTree.Items.OfType<TreeViewItem>().FirstOrDefault() is { } first && first.Focus()) return;
+        // An empty tree has no item to focus; let the tree itself take focus so keys leave the editor.
+        FolderTree.Focusable = true;
+        FolderTree.Focus();
+    }
 }

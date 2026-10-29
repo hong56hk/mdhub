@@ -152,6 +152,8 @@ tree.SelectedItem = null;
 Find<Button>("NewFileButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 EnterName("fallback.txt");
 Require(File.Exists(Path.Combine(creationFixture, "fallback.txt")), "No explorer selection falls back to the active file's directory");
+// The explorer reloads asynchronously after a create; wait for the reveal instead of relying on a fixed pump.
+for (var wait = 0; wait < 40 && TreeNodes(tree.Items.OfType<TreeViewItem>()).Count(item => item.IsExpanded) < 2; wait++) Pump();
 var allNodes = TreeNodes(tree.Items.OfType<TreeViewItem>()).ToArray();
 Require(allNodes.Count(item => item.IsExpanded) >= 2, "Creating a nested item reveals its ancestor folders");
 Find<Button>("CollapseAllButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -208,7 +210,8 @@ RunOperation("OpenPathAsync", Path.Combine(fixture, "Ideas.txt"));
 Pump();
 Require(!Find<StackPanel>("FormatBar")!.IsEnabled, "Plain text disables Markdown formatting");
 Require(Find<TextBlock>("FileKindLabel")!.Text == "Plain text", "Status bar shows Plain text for .txt files");
-Require(preview.Children.OfType<SelectableTextBlock>().Any(t => t.Text == "A plain-text note"), "Plain text preview remains literal");
+// Plain text has no rendered preview (only Markdown does), so its text can never be reinterpreted as Markdown.
+Require(!Find<MdEditor>("MdEditor")!.IsVisible && !preview.Children.Any(), "Plain text preview remains literal");
 ClickMenu("_Close Tab");
 
 tabs.SelectedItem = first;
@@ -1581,6 +1584,55 @@ finally
     foreach (var d in cw.GetVisualDescendants().OfType<ListBox>().First(c => c.Name == "Tabs").Items.OfType<NoteDocument>().Where(d => !d.IsImage)) { d.Editor.Text = ""; d.SavedText = ""; }
     cw.Close(); Pump();
     try { File.Delete(png); } catch (IOException) { }
+}{
+    // Ctrl+Shift+F / Ctrl+Shift+E work from every focus state (window-level tunnelled KeyDown).
+    var fw = new MainWindow { Width = 1300, Height = 800 };
+    fw.Show(); Pump();
+    var fflags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+    var fview = fw.GetVisualDescendants().OfType<MainView>().First();
+    T FFind<T>(string name) where T : Control => fw.GetVisualDescendants().OfType<T>().First(c => c.Name == name);
+    var froot = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), $"mdhub-focus-{Guid.NewGuid():N}")).FullName;
+    File.WriteAllText(Path.Combine(froot, "a.md"), "# A\n\ntext");
+    var fload = (Task)typeof(MainView).GetMethod("LoadRootAsync", fflags)!.Invoke(fview, [froot])!;
+    for (var i = 0; i < 20 && !fload.IsCompleted; i++) Pump();
+    var fdoc = (NoteDocument)typeof(MainView).GetMethod("AddDocument", fflags)!.Invoke(fview, [null, "# Title\n\nbody", "focus.md", null])!; Pump(); Pump();
+    void Chord(Key key) { fw.KeyPress(key, RawInputModifiers.Control | RawInputModifiers.Shift, PhysicalKey.None, null); fw.KeyRelease(key, RawInputModifiers.Control | RawInputModifiers.Shift, PhysicalKey.None, null); Pump(); }
+    bool SearchFocused() => FFind<GlobalSearch>("GlobalSearch").IsVisible && FFind<TextBox>("GlobalQuery").IsFocused;
+    bool ExplorerFocused() => FFind<FolderExplorer>("FolderExplorer").IsVisible && !FFind<GlobalSearch>("GlobalSearch").IsVisible && FFind<FolderExplorer>("FolderExplorer").IsKeyboardFocusWithin;
+    var focusStates = new (string Name, Action Focus)[]
+    {
+        ("the editor", () => fdoc.Editor.Focus()),
+        ("the explorer", () => FFind<FolderExplorer>("FolderExplorer").FocusTree()),
+        ("the preview", () => { var s = FFind<ScrollViewer>("PreviewScroll"); s.Focusable = true; s.Focus(); }),
+        ("an empty window", () => { Chord(Key.F); FFind<TextBox>("GlobalQuery").Focus(); Pump(); FFind<GlobalSearch>("GlobalSearch").IsVisible = false; Pump(); }),
+        ("after Ctrl+Shift+E", () => Chord(Key.E)),
+        ("the search box", () => { Chord(Key.F); FFind<TextBox>("GlobalQuery").Text = "abc"; }),
+        ("a search option toggle", () => { Chord(Key.F); FFind<Avalonia.Controls.Primitives.ToggleButton>("GlobalRegex").Focus(); }),
+        ("the search results", () => { Chord(Key.F); FFind<TreeView>("GlobalResults").Focus(); }),
+        ("a hidden sidebar", () => { typeof(MainView).GetMethod("ToggleFolders_Click", fflags)!.Invoke(fview, [null, new RoutedEventArgs()]); Pump(); fdoc.Editor.Focus(); }),
+    };
+    foreach (var (name, focus) in focusStates)
+    {
+        focus(); Pump();
+        if (name == "an empty window") Require(TopLevel.GetTopLevel(fw)!.FocusManager!.GetFocusedElement() is null, $"Nothing inside the window has focus in the empty-window case ({TopLevel.GetTopLevel(fw)!.FocusManager!.GetFocusedElement()})");
+        Chord(Key.F);
+        Require(SearchFocused(), $"Ctrl+Shift+F opens global search and focuses its box from {name}");
+        if (name == "the search box") Require(FFind<TextBox>("GlobalQuery").SelectedText == "abc", "Ctrl+Shift+F in the search box selects its text");
+    }
+    foreach (var (name, focus) in focusStates)
+    {
+        if (name == "after Ctrl+Shift+E") continue;
+        focus(); Pump();
+        if (name == "a hidden sidebar") Require(!FFind<Grid>("Sidebar").IsVisible || !FFind<FolderExplorer>("FolderExplorer").IsEffectivelyVisible, "Sidebar is hidden before Ctrl+Shift+E");
+        Chord(Key.E);
+        Require(ExplorerFocused(), $"Ctrl+Shift+E shows the explorer and focuses it from {name} (visible={FFind<FolderExplorer>("FolderExplorer").IsVisible}, focus={(TopLevel.GetTopLevel(fw)!.FocusManager!.GetFocusedElement() as Control)?.GetType().Name}:{(TopLevel.GetTopLevel(fw)!.FocusManager!.GetFocusedElement() as Control)?.Name})");
+    }
+    Chord(Key.H);
+    Require(SearchFocused() && FFind<StackPanel>("GlobalReplaceRow").IsVisible, "Ctrl+Shift+H opens search with replace from the explorer");
+    fdoc.Editor.Text = ""; fdoc.SavedText = "";
+    foreach (var d in fw.GetVisualDescendants().OfType<ListBox>().First(c => c.Name == "Tabs").Items.OfType<NoteDocument>()) d.SavedText = d.Text;
+    fw.Close(); Pump();
+    try { Directory.Delete(froot, true); } catch (IOException) { }
 }if (OperatingSystem.IsWindows() && Environment.GetEnvironmentVariable("MDHUB_TEST_RECYCLE") == "1")
 {
     var recycleRoot = Path.Combine(Path.GetTempPath(), $"mdhub-recycle-{Guid.NewGuid():N}");
