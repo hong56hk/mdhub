@@ -1,4 +1,9 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.TopMenu">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:c="using:Mdhub.Components" x:Class="Mdhub.Components.TopMenu">
+  <UserControl.Resources>
+    <SolidColorBrush x:Key="MenuFlyoutItemKeyboardAcceleratorTextForeground" Color="#7D8796" />
+    <SolidColorBrush x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundPointerOver" Color="#7D8796" />
+    <SolidColorBrush x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundPressed" Color="#7D8796" />
+  </UserControl.Resources>
   <UserControl.Styles>
     <Style Selector="Button.caption">
       <Setter Property="Width" Value="46" />
@@ -15,31 +20,51 @@
     <Style Selector="Button.caption.close:pointerover /template/ ContentPresenter">
       <Setter Property="Background" Value="#C42B1C" />
     </Style>
+    <!-- Dropdown items: 8px more room before the text, and a muted right-aligned shortcut. -->
+    <Style Selector="MenuItem MenuItem">
+      <Setter Property="Padding" Value="19,9,11,10" />
+    </Style>
+    <Style Selector="MenuItem /template/ TextBlock#PART_InputGestureText">
+      <Setter Property="Foreground" Value="#7D8796" />
+      <Setter Property="HorizontalAlignment" Value="Right" />
+    </Style>
   </UserControl.Styles>
   <Grid ColumnDefinitions="Auto,*,Auto" Height="32" Background="#17191D">
   <Menu x:Name="MainMenu" Background="#17191D" VerticalAlignment="Center">
     <MenuItem Header="_File">
-      <MenuItem Header="_New" Click="New_Click" />
-      <MenuItem Header="_Open File…" Click="Open_Click" />
-      <MenuItem Header="Open _Folder…" Click="OpenFolder_Click" />
-      <MenuItem Header="_Save" Click="Save_Click" />
-      <MenuItem Header="Save _As…" Click="SaveAs_Click" />
-      <MenuItem Header="_Close Tab" Click="CloseTab_Click" />
+      <MenuItem Header="_New" Click="New_Click" c:ShortcutKeys.Id="file.new" />
+      <MenuItem Header="_Open File…" Click="Open_Click" c:ShortcutKeys.Id="file.open" />
+      <MenuItem Header="Open _Folder…" Click="OpenFolder_Click" c:ShortcutKeys.Id="file.openFolder" />
+      <MenuItem Header="_Save" Click="Save_Click" c:ShortcutKeys.Id="file.save" />
+      <MenuItem Header="Save _As…" Click="SaveAs_Click" c:ShortcutKeys.Id="file.saveAs" />
+      <MenuItem Header="_Close Tab" Click="CloseTab_Click" c:ShortcutKeys.Id="file.closeTab" />
       <MenuItem Header="E_xit" Click="Exit_Click" />
     </MenuItem>
     <MenuItem Header="_Edit">
-      <MenuItem Header="Undo" Click="Edit_Click" Tag="undo" />
-      <MenuItem Header="Redo" Click="Edit_Click" Tag="redo" />
-      <MenuItem Header="Cut" Click="Edit_Click" Tag="cut" />
-      <MenuItem Header="Copy" Click="Edit_Click" Tag="copy" />
-      <MenuItem Header="Paste" Click="Edit_Click" Tag="paste" />
-      <MenuItem Header="Select All" Click="Edit_Click" Tag="select all" />
+      <MenuItem Header="Undo" Click="Edit_Click" Tag="undo" c:ShortcutKeys.Id="edit.undo" />
+      <MenuItem Header="Redo" Click="Edit_Click" Tag="redo" c:ShortcutKeys.Id="edit.redo" />
+      <MenuItem Header="Cut" Click="Edit_Click" Tag="cut" c:ShortcutKeys.Id="edit.cut" />
+      <MenuItem Header="Copy" Click="Edit_Click" Tag="copy" c:ShortcutKeys.Id="edit.copy" />
+      <MenuItem Header="Paste" Click="Edit_Click" Tag="paste" c:ShortcutKeys.Id="edit.paste" />
+      <MenuItem Header="Select All" Click="Edit_Click" Tag="select all" c:ShortcutKeys.Id="edit.selectAll" />
+      <Separator />
+      <MenuItem Header="Bold" Click="Command_Click" c:ShortcutKeys.Id="editor.bold" />
+      <MenuItem Header="Italic" Click="Command_Click" c:ShortcutKeys.Id="editor.italic" />
+      <MenuItem Header="Insert Link" Click="Command_Click" c:ShortcutKeys.Id="editor.link" />
+      <MenuItem Header="Block Quote" Click="Command_Click" c:ShortcutKeys.Id="editor.quote" />
+      <MenuItem Header="Insert Date and Time" Click="Command_Click" c:ShortcutKeys.Id="editor.insertTime" />
+      <Separator />
+      <MenuItem Header="Go to Line…" Click="Command_Click" c:ShortcutKeys.Id="editor.goToLine" />
     </MenuItem>
     <MenuItem Header="_View">
       <MenuItem Header="Toggle Folder Panel" Click="ToggleFolders_Click" />
       <MenuItem Header="Toggle Preview" Click="TogglePreview_Click" />
-      <MenuItem Header="Toggle Word Wrap" Click="WordWrap_Click" />
+      <MenuItem Header="Toggle Word Wrap" Click="WordWrap_Click" c:ShortcutKeys.Id="view.wordWrap" />
+      <MenuItem Header="Scroll Preview to Caret" Click="Command_Click" c:ShortcutKeys.Id="view.previewCaret" />
       <MenuItem Header="Refresh Folder" Click="RefreshFolder_Click" />
+    </MenuItem>
+    <MenuItem Header="_Settings">
+      <MenuItem Header="Shortcut" Click="Shortcuts_Click" />
     </MenuItem>
     <MenuItem Header="_Help">
       <MenuItem Header="Markdown Guide" Click="Guide_Click" />

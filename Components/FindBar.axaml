@@ -1,0 +1,141 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.FindBar"
+             HorizontalAlignment="Right" VerticalAlignment="Top" IsVisible="False">
+  <UserControl.Styles>
+    <Style Selector="Button.findAction, ToggleButton.findAction">
+      <Setter Property="Width" Value="24" />
+      <Setter Property="Height" Value="24" />
+      <Setter Property="MinWidth" Value="24" />
+      <Setter Property="MinHeight" Value="24" />
+      <Setter Property="Padding" Value="4" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="#AAB8CC" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="ToggleButton.fieldToggle">
+      <Setter Property="Width" Value="22" />
+      <Setter Property="Height" Value="20" />
+      <Setter Property="MinWidth" Value="22" />
+      <Setter Property="MinHeight" Value="20" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="1,0" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="CornerRadius" Value="3" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="#AAB8CC" />
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.findAction:pointerover /template/ ContentPresenter, ToggleButton.findAction:pointerover /template/ ContentPresenter, ToggleButton.fieldToggle:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#303843" />
+      <Setter Property="Foreground" Value="#AAB8CC" />
+    </Style>
+    <Style Selector="Button.findAction:pressed /template/ ContentPresenter, ToggleButton.findAction:pressed /template/ ContentPresenter, ToggleButton.fieldToggle:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="#3A4657" />
+    </Style>
+    <Style Selector="ToggleButton.fieldToggle:checked /template/ ContentPresenter, ToggleButton.findAction.accent:checked /template/ ContentPresenter">
+      <Setter Property="Background" Value="#3D8DADE8" />
+      <Setter Property="BorderBrush" Value="#8DADE8" />
+      <Setter Property="Foreground" Value="#D7DCE5" />
+    </Style>
+    <Style Selector="ToggleButton.findAction:checked:not(.accent) /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.textAction">
+      <Setter Property="Height" Value="24" />
+      <Setter Property="MinHeight" Value="24" />
+      <Setter Property="Padding" Value="8,0" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Background" Value="#2B313A" />
+      <Setter Property="Foreground" Value="#D7DCE5" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.textAction:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#303843" />
+    </Style>
+    <Style Selector="Button.textAction:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="#3A4657" />
+    </Style>
+    <Style Selector="Path.findIcon">
+      <Setter Property="Width" Value="16" />
+      <Setter Property="Height" Value="16" />
+      <Setter Property="StrokeThickness" Value="1.25" />
+      <Setter Property="StrokeLineCap" Value="Round" />
+      <Setter Property="StrokeJoin" Value="Round" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="TextBox.findField">
+      <Setter Property="Width" Value="250" />
+      <Setter Property="Height" Value="26" />
+      <Setter Property="MinHeight" Value="26" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Padding" Value="6,3,2,3" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Background" Value="#1B1E23" />
+      <Setter Property="Foreground" Value="#D7DCE5" />
+      <Setter Property="BorderBrush" Value="#30343B" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="TextBox.findField:focus /template/ Border#PART_BorderElement, TextBox.findField:pointerover /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="#1B1E23" />
+      <Setter Property="BorderBrush" Value="#8DADE8" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="TextBox.findField.invalid">
+      <Setter Property="BorderBrush" Value="#C42B1C" />
+    </Style>
+    <Style Selector="TextBox.findField.invalid:focus /template/ Border#PART_BorderElement, TextBox.findField.invalid:pointerover /template/ Border#PART_BorderElement">
+      <Setter Property="BorderBrush" Value="#C42B1C" />
+    </Style>
+  </UserControl.Styles>
+  <Border Background="#252A32" BorderBrush="#3A4252" BorderThickness="1" CornerRadius="0,0,6,6" Padding="4,4,6,4" BoxShadow="0 2 8 0 #66000000">
+    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+      <ToggleButton x:Name="ExpandReplaceToggle" Classes="findAction" Grid.RowSpan="2" VerticalAlignment="Stretch" Height="NaN" Width="18" MinWidth="18" Padding="1"
+                    ToolTip.Tip="Toggle replace (Ctrl+H)" AutomationProperties.Name="Toggle replace">
+        <Path x:Name="ExpandIcon" Classes="findIcon" Data="M 6,4 L 10,8 6,12" Stroke="#AAB8CC" />
+      </ToggleButton>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" Margin="3,0,0,0">
+        <TextBox x:Name="FindInput" Classes="findField" Watermark="Find" AutomationProperties.Name="Find">
+          <TextBox.InnerRightContent>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,2,0">
+              <ToggleButton x:Name="MatchCaseToggle" Classes="fieldToggle" Content="Aa" ToolTip.Tip="Match case" AutomationProperties.Name="Match case" />
+              <ToggleButton x:Name="WholeWordToggle" Classes="fieldToggle" ToolTip.Tip="Match whole word" AutomationProperties.Name="Match whole word">
+                <TextBlock Text="ab" TextDecorations="Underline" />
+              </ToggleButton>
+              <ToggleButton x:Name="RegexToggle" Classes="fieldToggle" Content=".*" ToolTip.Tip="Use regular expression" AutomationProperties.Name="Use regular expression" />
+            </StackPanel>
+          </TextBox.InnerRightContent>
+        </TextBox>
+        <TextBlock x:Name="FindCount" Text="No results" MinWidth="74" Margin="6,0,4,0" FontSize="12" Foreground="#AAB8CC" VerticalAlignment="Center" />
+        <Button x:Name="FindPreviousButton" Classes="findAction" ToolTip.Tip="Previous match (Shift+Enter)" AutomationProperties.Name="Previous match">
+          <Path Classes="findIcon" Data="M 8,13 L 8,3 M 4,7 L 8,3 12,7" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+        </Button>
+        <Button x:Name="FindNextButton" Classes="findAction" ToolTip.Tip="Next match (Enter)" AutomationProperties.Name="Next match">
+          <Path Classes="findIcon" Data="M 8,3 L 8,13 M 4,9 L 8,13 12,9" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+        </Button>
+        <ToggleButton x:Name="FindInSelectionToggle" Classes="findAction accent" ToolTip.Tip="Find in selection" AutomationProperties.Name="Find in selection">
+          <Path Classes="findIcon" Data="M 2.5,4 L 13.5,4 M 2.5,8 L 13.5,8 M 2.5,12 L 9,12" Stroke="#AAB8CC" />
+        </ToggleButton>
+        <Button x:Name="FindCloseButton" Classes="findAction" ToolTip.Tip="Close (Escape)" AutomationProperties.Name="Close find">
+          <Path Classes="findIcon" Data="M 4.5,4.5 L 11.5,11.5 M 11.5,4.5 L 4.5,11.5" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+        </Button>
+      </StackPanel>
+      <StackPanel x:Name="ReplaceRow" Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="3,4,0,0" IsVisible="False">
+        <TextBox x:Name="ReplaceInput" Classes="findField" Watermark="Replace" AutomationProperties.Name="Replace">
+          <TextBox.InnerRightContent>
+            <ToggleButton x:Name="PreserveCaseToggle" Classes="fieldToggle" Content="AB" Margin="0,0,3,0" VerticalAlignment="Center" ToolTip.Tip="Preserve case" AutomationProperties.Name="Preserve case" />
+          </TextBox.InnerRightContent>
+        </TextBox>
+        <Button x:Name="ReplaceButton" Classes="textAction" Content="Replace" ToolTip.Tip="Replace (Enter)" />
+        <Button x:Name="ReplaceAllButton" Classes="textAction" Content="Replace all" ToolTip.Tip="Replace all (Ctrl+Alt+Enter)" />
+      </StackPanel>
+    </Grid>
+  </Border>
+</UserControl>

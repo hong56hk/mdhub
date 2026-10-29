@@ -23,6 +23,7 @@ public partial class MainView
             case WorkspaceAction.WordWrap: WordWrap_Click(null, new RoutedEventArgs()); return;
             case WorkspaceAction.Guide: Guide_Click(null, new RoutedEventArgs()); return;
             case WorkspaceAction.About: About_Click(null, new RoutedEventArgs()); return;
+            case WorkspaceAction.Shortcuts: await RunAsync(() => DialogService.ShowShortcutsAsync(Host)); return;
         }
         await RunAsync(async () =>
         {
@@ -39,17 +40,55 @@ public partial class MainView
         });
     }
 
-    private void Edit(string action) { if (!_busy) TextEditor.Edit(action); }
+    private async void Edit(string action)
+    {
+        if (_busy) return;
+        if (action == "paste") await PasteAsync();
+        else TextEditor.Edit(action);
+    }
     private Task LoadRootAsync(string path) => FolderExplorer.LoadRootAsync(path);
 
     private async Task OpenFolderAsync()
     {
-        var folders = await Host.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Open notes folder", AllowMultiple = false });
-        if (folders.Count == 0) return;
-        using var folder = folders[0];
-        var path = folder.TryGetLocalPath() ?? throw new IOException("Choose a local folder.");
+        var path = await (FolderPickerOverride ?? PickFolderAsync)();
+        if (path is null) return;
+        if (FolderExplorer.OpenedFolder is { } current)
+        {
+            if (SameFolder(current, path)) { ActivationCount++; Host.Activate(); return; }
+            // A folder is already open here: open the new one in its own window and leave this one as it is.
+            var window = (WindowFactory ?? (() => new MainWindow()))();
+            window.Show();
+            await window.MainView.OpenFolderPathAsync(path);
+            return;
+        }
+        await OpenFolderPathAsync(path);
+    }
+
+    public async Task OpenFolderPathAsync(string path)
+    {
         await LoadRootAsync(path);
         if (!FolderExplorer.IsVisible) ToggleFolders_Click(null, new RoutedEventArgs());
+    }
+
+    private static bool SameFolder(string a, string b)
+    {
+        static string Normalize(string p) => Path.TrimEndingDirectorySeparator(Path.GetFullPath(p));
+        return string.Equals(Normalize(a), Normalize(b), OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+    }
+
+    // Test seams: window creation for Open Folder, and how often the same folder re-activated this window.
+    internal static Func<MainWindow>? WindowFactory { get; set; }
+    internal int ActivationCount { get; private set; }
+
+    // Test seam: headless UI tests replace the system folder picker.
+    internal Func<Task<string?>>? FolderPickerOverride { get; set; }
+
+    private async Task<string?> PickFolderAsync()
+    {
+        var folders = await Host.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Open notes folder", AllowMultiple = false });
+        if (folders.Count == 0) return null;
+        using var folder = folders[0];
+        return folder.TryGetLocalPath() ?? throw new IOException("Choose a local folder.");
     }
 
     private void ToggleFolders_Click(object? sender, RoutedEventArgs e)
@@ -78,21 +117,104 @@ public partial class MainView
 
     private async void OnShortcut(object? sender, KeyEventArgs e)
     {
-        var modifier = OperatingSystem.IsMacOS() ? KeyModifiers.Meta : KeyModifiers.Control;
-        if (e.KeyModifiers != modifier && e.KeyModifiers != (modifier | KeyModifiers.Shift)) return;
-        var shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
-        Func<Task>? action = e.Key switch
+        if (TextEditor.IsFindOpen && ShortcutKeys.Match(e, s => s.Id is "find.next" or "find.previous" or "find.close") is { } findId)
         {
-            Key.N => () => { AddDocument(null, ""); return Task.CompletedTask; },
-            Key.O => shift ? OpenFolderAsync : OpenAsync,
-            Key.S => async () => { if (_active is not null) await SaveAsync(_active, shift); },
-            Key.W => async () => { if (_active is not null) await CloseDocumentAsync(_active); },
+            e.Handled = true;
+            if (findId == "find.close") TextEditor.CloseFind();
+            else if (findId == "find.previous") TextEditor.FindPrevious();
+            else TextEditor.FindNext();
+            return;
+        }
+        // Focus in the preview (not its edit box): undo/redo act on the note's source.
+        if (MdEditor.IsKeyboardFocusWithin && !MdEditor.IsEditingPreview && _active is { } undoDoc && ShortcutKeys.Match(e, s => s.Id is "edit.undo" or "edit.redo") is { } undoId)
+        {
+            e.Handled = true;
+            ShortcutFired?.Invoke(undoId);
+            if (undoId == "edit.undo") undoDoc.Editor.Undo(); else undoDoc.Editor.Redo();
+            return;
+        }
+        // Built-in TextBox keys and zoom (MainWindow) are listed in the table but handled elsewhere.
+        var id = ShortcutKeys.Match(e, s => !s.HandledByTextBox && s.Area != ShortcutArea.Zoom && s.Id is not ("find.next" or "find.previous" or "find.close"));
+        Func<Task>? action = id switch
+        {
+            "file.new" => () => { AddDocument(null, ""); return Task.CompletedTask; },
+            "file.open" => OpenAsync,
+            "file.openFolder" => OpenFolderAsync,
+            "file.save" => async () => { if (_active is not null) await SaveAsync(_active, false); },
+            "file.saveAs" => async () => { if (_active is not null) await SaveAsync(_active, true); },
+            "file.closeTab" => async () => { if (_active is not null) await CloseDocumentAsync(_active); },
+            "find.find" => () => { TextEditor.OpenFind(false); return Task.CompletedTask; },
+            "find.replace" => () => { TextEditor.OpenFind(true); return Task.CompletedTask; },
+            "edit.paste" when _active?.Editor.IsKeyboardFocusWithin == true => PasteAsync,
+            "view.wordWrap" => () => { RequestAction(WorkspaceAction.WordWrap); return Task.CompletedTask; },
+            // Formatting and insert time act on the focused editor only; go to line / preview work anywhere but the find fields.
+            "editor.bold" or "editor.italic" or "editor.link" or "editor.quote" when EditorFocused && _active!.IsMarkdown => EditorCommand(id),
+            "editor.insertTime" when EditorFocused => EditorCommand(id),
+            "editor.goToLine" or "view.previewCaret" when _active is not null && !TextEditor.IsFindFocused => EditorCommand(id),
             _ => null
         };
         if (action is null) return;
         e.Handled = true;
-        await RunAsync(action);
+        ShortcutFired?.Invoke(id!);
+        if (id == "edit.paste") await PasteAsync(); // runs busy only while saving an image
+        else if (id is "find.find" or "find.replace" or "view.wordWrap" || id!.StartsWith("editor.") && id != "editor.goToLine" || id == "view.previewCaret") await action(); // find: focus must land in the find bar
+        else await RunAsync(action);
     }
+
+    private bool EditorFocused => _active?.Editor.IsKeyboardFocusWithin == true;
+
+    // Clock for Ctrl+; (tests replace it).
+    internal static Func<DateTime> Clock { get; set; } = () => DateTime.Now;
+
+    // Menu items carrying one of these ids (not focus-scoped: the menu has focus when clicked).
+    private async void RunMenuCommand(string id)
+    {
+        if (_busy || _active is null || EditorCommand(id) is not { } action) return;
+        if (id == "editor.goToLine") await RunAsync(action); else await action();
+    }
+
+    private Func<Task>? EditorCommand(string id) => id switch
+    {
+        "editor.bold" => Sync(() => TextEditor.Format("bold")),
+        "editor.italic" => Sync(() => TextEditor.Format("italic")),
+        "editor.link" => Sync(() => TextEditor.Format("link")),
+        "editor.quote" => Sync(() => TextEditor.Format("quote")),
+        "editor.insertTime" => Sync(InsertTime),
+        "editor.goToLine" => GoToLineAsync,
+        "view.previewCaret" => Sync(() => { if (_active is { } d) MdEditor.CenterPreviewOnLine(d.Editor.CaretIndex); }),
+        _ => null
+    };
+    private static Func<Task> Sync(Action a) => () => { a(); return Task.CompletedTask; };
+
+    // Replaces the selection with the local time as a single edit (one undo step).
+    private void InsertTime()
+    {
+        if (_active is not { } document) return;
+        var editor = document.Editor;
+        editor.SelectedText = Mdhub.Text.EditorCommands.Timestamp(Clock());
+        editor.Focus();
+    }
+
+    private async Task GoToLineAsync()
+    {
+        if (_active is not { } document) return;
+        var editor = document.Editor;
+        var text = editor.Text ?? "";
+        var count = Mdhub.Text.EditorCommands.LineCount(text);
+        var current = Mdhub.Text.EditorCommands.LineCount(text[..Math.Clamp(editor.CaretIndex, 0, text.Length)]);
+        if (await DialogService.PromptLineAsync(Host, count, current) is not { } line || document != _active) return;
+        var start = Mdhub.Text.EditorCommands.LineStart(text, line);
+        editor.Focus();
+        editor.SelectionStart = editor.SelectionEnd = start;
+        editor.CaretIndex = start;
+        if (editor.TextWrapping == TextWrapping.NoWrap) editor.ScrollToLine(line - 1);
+        GoToLineCompleted?.Invoke(line);
+        MdEditor.CenterPreviewOnLine(start);
+    }
+    internal event Action<int>? GoToLineCompleted;
+
+    // Raised once per handled shortcut (tests count it to prove nothing double-fires).
+    internal event Action<string>? ShortcutFired;
 
     private async void Guide_Click(object? sender, RoutedEventArgs e) => await RunAsync(() =>
     {

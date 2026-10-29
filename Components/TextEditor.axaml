@@ -1,11 +1,11 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.TextEditor">
-  <Grid RowDefinitions="Auto,*" Background="#202329" MinWidth="180">
-    <Border Padding="16,12" BorderBrush="#30343B" BorderThickness="0,0,0,1">
-      <Grid ColumnDefinitions="*,Auto">
-        <TextBlock Text="EDITOR" Classes="section" />
-        <TextBlock x:Name="FileKind" Grid.Column="1" Text="Markdown" FontSize="11" Foreground="#788393" />
-      </Grid>
-    </Border>
-    <ContentControl x:Name="EditorHost" Grid.Row="1" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:components="using:Mdhub.Components" x:Class="Mdhub.Components.TextEditor">
+  <Grid Background="#202329" MinWidth="180">
+    <Grid ColumnDefinitions="Auto,*">
+      <components:LineNumberGutter x:Name="LineGutter" />
+      <components:CurrentLineOverlay x:Name="CurrentLine" Grid.Column="1" />
+      <ContentControl x:Name="EditorHost" Grid.Column="1" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
+      <components:FindHighlightOverlay x:Name="FindHighlights" Grid.Column="1" />
+    </Grid>
+    <components:FindBar x:Name="FindBar" Margin="0,0,18,0" />
   </Grid>
 </UserControl>

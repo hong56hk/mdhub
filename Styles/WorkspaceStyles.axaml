@@ -1,4 +1,8 @@
 <Styles xmlns="https://github.com/avaloniaui">
+  <!-- Popups (menus, context menus, tooltips) copy the window zoom transform from their placement target. -->
+  <Style Selector="Popup">
+    <Setter Property="InheritsTransform" Value="True" />
+  </Style>
   <Style Selector="Button.tool">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="Padding" Value="10,5" />

@@ -7,14 +7,28 @@ namespace Mdhub.Components;
 public partial class TextEditor : UserControl
 {
     private NoteDocument? _document;
-    public TextEditor() => InitializeComponent();
+    public TextEditor()
+    {
+        InitializeComponent();
+        FindBar.Overlay = FindHighlights;
+        FindBar.Closed += FocusEditor;
+    }
+    public bool IsFindOpen => FindBar.IsOpen;
+    public bool IsFindFocused => FindBar.IsKeyboardFocusWithin;
+    public void OpenFind(bool replace) { if (_document is not null) FindBar.Open(replace); }
+    public void CloseFind() => FindBar.Close();
+    public void FindNext() => FindBar.Next();
+    public void FindPrevious() => FindBar.Previous();
     public void ShowDocument(NoteDocument document)
     {
         _document = document;
         EditorHost.Content = document.Editor;
-        UpdateFileKind(document);
+        LineGutter.Attach(document.Editor);
+        CurrentLine.Attach(document.Editor);
+        FindBar.Attach(document.Editor, () => document.SavedSelection);
+        LineGutter.InvalidateMeasure();
+        LineGutter.InvalidateVisual();
     }
-    public void UpdateFileKind(NoteDocument document) => FileKind.Text = document.IsMarkdown ? "Markdown" : "Plain text";
     public void FocusEditor() => _document?.Editor.Focus();
     public void Edit(string action)
     {

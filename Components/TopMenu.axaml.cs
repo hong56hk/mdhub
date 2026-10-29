@@ -10,7 +10,17 @@ public partial class TopMenu : UserControl
     public event Action<WorkspaceAction>? ActionRequested;
     public event Action<string>? EditRequested;
     public event Action<WindowAction>? WindowActionRequested;
-    public TopMenu() => InitializeComponent();
+    public event Action<string>? CommandRequested;
+    private void Command_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem item && ShortcutKeys.GetId(item) is { } id) CommandRequested?.Invoke(id);
+    }
+    public TopMenu()
+    {
+        InitializeComponent();
+        ShortcutKeys.ApplyGestures(MainMenu.Items.OfType<MenuItem>());
+    }
+    private void Shortcuts_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.Shortcuts);
     public void UpdateWindowState(WindowState state)
     {
         var maximized = state == WindowState.Maximized;

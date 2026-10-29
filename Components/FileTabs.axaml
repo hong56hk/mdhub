@@ -1,9 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.FileTabs" xmlns:local="using:Mdhub.Models">
   <Grid ColumnDefinitions="*,Auto" Background="#1B1E23">
-    <ListBox x:Name="Tabs" SelectionChanged="Tabs_SelectionChanged" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+    <ListBox x:Name="Tabs" SelectionChanged="Tabs_SelectionChanged" DoubleTapped="Tabs_DoubleTapped" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled">
       <ListBox.ItemsPanel>
         <ItemsPanelTemplate>
-          <StackPanel Orientation="Horizontal" />
+          <StackPanel Orientation="Horizontal" Background="Transparent" />
         </ItemsPanelTemplate>
       </ListBox.ItemsPanel>
       <ListBox.ItemTemplate>

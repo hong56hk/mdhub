@@ -1,13 +1,10 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.MdEditor">
-  <Grid x:Name="PreviewPanel" RowDefinitions="Auto,*" Background="#101318" MinWidth="180">
-    <Border Padding="16,12" BorderBrush="#30343B" BorderThickness="0,0,0,1">
-      <Grid ColumnDefinitions="*,Auto">
-        <TextBlock Text="PREVIEW" Classes="section" />
-        <TextBlock Grid.Column="1" Text="Live · Offline" FontSize="11" Foreground="#788393" />
-      </Grid>
-    </Border>
-    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
-      <StackPanel x:Name="PreviewContent" Margin="24" Spacing="14" />
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:c="using:Mdhub.Components" x:Class="Mdhub.Components.MdEditor">
+  <Grid x:Name="PreviewPanel" Background="#101318" MinWidth="180">
+    <ScrollViewer x:Name="PreviewScroll" HorizontalScrollBarVisibility="Disabled">
+      <Panel x:Name="PreviewLayer">
+        <c:PreviewBlockHighlight x:Name="PreviewBlockHighlights" IsHitTestVisible="False" />
+        <StackPanel x:Name="PreviewContent" Margin="24" Spacing="14" />
+      </Panel>
     </ScrollViewer>
   </Grid>
 </UserControl>

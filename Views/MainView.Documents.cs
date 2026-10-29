@@ -21,6 +21,7 @@ public partial class MainView
         document.Editor.TextChanged += (_, _) =>
         {
             document.Refresh();
+            if (document.IsDirty) _sessionNote = null;
             if (_active == document) { UpdateStatus(); MdEditor.ScheduleRefresh(); }
         };
         _documents.Add(document);
@@ -53,28 +54,38 @@ public partial class MainView
     private static bool SamePath(string? a, string b) => string.Equals(a, b,
         OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 
+    // Test seam: headless UI tests replace the system save picker.
+    internal Func<NoteDocument, Task<string?>>? SaveFilePickerOverride { get; set; }
+
     private async Task<bool> SaveAsync(NoteDocument document, bool saveAs)
     {
         var path = document.Path;
         if (saveAs || path is null)
         {
-            using var file = await Host.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            if (SaveFilePickerOverride is not null) path = await SaveFilePickerOverride(document);
+            else
             {
-                Title = "Save note", SuggestedFileName = path is null ? document.UntitledName : Path.GetFileName(path),
-                DefaultExtension = document.IsMarkdown ? "md" : "txt",
-                FileTypeChoices = [TextFiles, FilePickerFileTypes.All], ShowOverwritePrompt = true
-            });
-            if (file is null) return false;
-            path = file.TryGetLocalPath() ?? throw new IOException("Choose a local file.");
+                using var file = await Host.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+                {
+                    Title = "Save note", SuggestedFileName = path is null ? document.UntitledName : Path.GetFileName(path),
+                    DefaultExtension = document.IsMarkdown ? "md" : "txt",
+                    FileTypeChoices = [TextFiles, FilePickerFileTypes.All], ShowOverwritePrompt = true
+                });
+                if (file is null) return false;
+                path = file.TryGetLocalPath() ?? throw new IOException("Choose a local file.");
+            }
+            if (path is null) return false;
             if (_documents.Any(d => d != document && SamePath(d.Path, path)))
                 throw new IOException("That file is already open in another tab. Save to a different name.");
         }
         await TextFileStore.WriteAsync(path, document.Text, document.Encoding);
+        var isNewPath = document.Path is null || !SamePath(document.Path, Path.GetFullPath(path));
         document.Path = path;
         document.SavedText = document.Text;
         document.Refresh();
         UpdateStatus("Saved · " + path);
         MdEditor.ScheduleRefresh();
+        if (isNewPath && FolderExplorer.Contains(path)) await FolderExplorer.RevealCreatedAsync(path);
         return true;
     }
 

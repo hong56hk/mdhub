@@ -6,12 +6,25 @@ namespace Mdhub;
 
 public partial class App : Application
 {
+    public const Avalonia.Controls.ShutdownMode ShutdownModeSetting = Avalonia.Controls.ShutdownMode.OnLastWindowClose;
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            desktop.MainWindow = new MainWindow();
+        {
+            // Each folder can have its own window; the app exits when the last one closes.
+            desktop.ShutdownMode = ShutdownModeSetting;
+            // Reopen the last session's windows; a missing or unusable session starts as a single new window.
+            Services.SessionManager.Enabled = true;
+            List<MainWindow> restored;
+            try { restored = Services.SessionManager.Restore(); }
+            catch (Exception) { restored = []; }
+            if (restored.Count == 0) restored.Add(new MainWindow());
+            desktop.MainWindow = restored[0];
+            desktop.ShutdownRequested += (_, e) => { if (!e.Cancel) Services.SessionManager.BeginShutdown(); };
+            restored[0].Opened += (_, _) => { foreach (var window in restored.Skip(1)) window.Show(); };
+        }
         base.OnFrameworkInitializationCompleted();
     }
 }

@@ -4,6 +4,13 @@ public sealed record FolderEntry(string Path, bool IsDirectory, bool IsLink);
 
 public static class FolderService
 {
+    public static bool IsInternal(string path)
+    {
+        var name = Path.GetFileName(path);
+        return name.Equals(".md-trash", StringComparison.OrdinalIgnoreCase)
+            || (name.StartsWith(".mdhub-") && name.EndsWith(".tmp"));
+    }
+
     public static string CreationDirectory(string? selectedPath, string? activeFilePath, string openedFolder)
     {
         var reference = selectedPath ?? activeFilePath;
@@ -37,6 +44,8 @@ public static class FolderService
 
     public static Task<FolderEntry[]> ReadAsync(string path) => Task.Run(() =>
         new DirectoryInfo(path).EnumerateFileSystemInfos()
+            .Where(info => !IsInternal(info.FullName))
             .Select(info => new FolderEntry(info.FullName, info.Attributes.HasFlag(FileAttributes.Directory), info.Attributes.HasFlag(FileAttributes.ReparsePoint)))
-            .OrderByDescending(e => e.IsDirectory).ThenBy(e => Path.GetFileName(e.Path), StringComparer.OrdinalIgnoreCase).ToArray());
+            .OrderByDescending(e => e.IsDirectory).ThenBy(e => Path.GetFileName(e.Path), StringComparer.OrdinalIgnoreCase)
+            .ThenBy(e => Path.GetFileName(e.Path), StringComparer.Ordinal).ToArray());
 }

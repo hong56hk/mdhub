@@ -19,6 +19,21 @@
     <Style Selector="Button.explorerAction:pressed /template/ ContentPresenter">
       <Setter Property="Background" Value="#3A4657" />
     </Style>
+    <Style Selector="Button.folderName">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.folderName:pointerover /template/ ContentPresenter, Button.folderName:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.folderName:pointerover TextBlock">
+      <Setter Property="TextDecorations" Value="Underline" />
+    </Style>
     <Style Selector="Path.explorerIcon">
       <Setter Property="Width" Value="16" />
       <Setter Property="Height" Value="16" />
@@ -31,7 +46,9 @@
   <Grid x:Name="FolderPanel" RowDefinitions="Auto,Auto,*" Background="#17191D">
     <TextBlock Text="EXPLORER" Classes="section" Margin="14,14,6,8" />
     <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="14,0,6,8">
-      <TextBlock x:Name="FolderName" Text="Open Folder" Foreground="#BEC6D3" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+      <Button x:Name="FolderNameButton" Classes="folderName" Click="FolderName_Click" Cursor="Hand" ToolTip.Tip="Open a folder (Ctrl+Shift+O)" AutomationProperties.Name="Open folder">
+        <TextBlock x:Name="FolderName" Text="Open Folder" Foreground="#BEC6D3" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+      </Button>
       <StackPanel x:Name="FolderActions" Grid.Column="1" Orientation="Horizontal" Spacing="2" IsEnabled="False">
         <Button x:Name="NewFileButton" Classes="explorerAction" Click="NewFile_Click" ToolTip.Tip="New file" AutomationProperties.Name="New file">
           <Path Classes="explorerIcon" Data="M 6.5,14 L 2.5,14 2.5,2 8.5,2 12,5.5 12,7 M 8.5,2 L 8.5,5.5 12,5.5 M 11.5,9 L 11.5,15 M 8.5,12 L 14.5,12"
@@ -51,6 +68,6 @@
         </Button>
       </StackPanel>
     </Grid>
-    <TreeView x:Name="FolderTree" Grid.Row="2" SelectionChanged="FolderTree_SelectionChanged" />
+    <TreeView x:Name="FolderTree" Grid.Row="2" Background="Transparent" SelectionChanged="FolderTree_SelectionChanged" />
   </Grid>
 </UserControl>

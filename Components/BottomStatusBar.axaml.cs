@@ -10,6 +10,7 @@ public partial class BottomStatusBar : UserControl
     public void UpdateDocument(NoteDocument document, string? message = null)
     {
         Status.Text = message ?? (document.IsDirty ? "Unsaved changes · " : "") + (document.Path ?? "New note");
+        FileKindLabel.Text = document.IsMarkdown ? "Markdown" : "Plain text";
         EncodingLabel.Text = document.Encoding.WebName.ToUpperInvariant();
     }
     public void SetMessage(string message) => Status.Text = message;

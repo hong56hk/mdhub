@@ -31,11 +31,37 @@ public sealed class NoteDocument : INotifyPropertyChanged
 
     public NoteDocument()
     {
-        Editor.Resources["TextControlBackgroundFocused"] = Brush.Parse("#202329");
-        Editor.Resources["TextControlBackgroundPointerOver"] = Brush.Parse("#202329");
+        // Transparent so the current-line band behind the text shows; the editor pane is #202329 already.
+        Editor.Resources["TextControlBackgroundFocused"] = Brushes.Transparent;
+        Editor.Resources["TextControlBackgroundPointerOver"] = Brushes.Transparent;
         Editor.Resources["TextControlBorderBrushFocused"] = Brush.Parse("#30343B");
         ScrollViewer.SetHorizontalScrollBarVisibility(Editor, ScrollBarVisibility.Auto);
         ScrollViewer.SetVerticalScrollBarVisibility(Editor, ScrollBarVisibility.Auto);
+        // A horizontal scroll viewer gives the text unlimited width, so wrapping needs it disabled.
+        Editor.PropertyChanged += (_, e) =>
+        {
+            // Remember the selection, but ignore the collapse the TextBox does when it loses focus or leaves the tab.
+            if ((e.Property == TextBox.SelectionStartProperty || e.Property == TextBox.SelectionEndProperty) && !_restoring
+                && (Editor.IsFocused || Editor.SelectionStart != Editor.SelectionEnd))
+                SavedSelection = (Editor.SelectionStart, Editor.SelectionEnd);
+            if (e.Property == TextBox.TextWrappingProperty)
+                ScrollViewer.SetHorizontalScrollBarVisibility(Editor, Editor.TextWrapping == TextWrapping.NoWrap ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled);
+        };
+    }
+
+    private bool _restoring;
+    public (int Start, int End) SavedSelection { get; private set; }
+    public void RestoreSelection()
+    {
+        var length = Text.Length;
+        var (start, end) = SavedSelection;
+        _restoring = true;
+        try
+        {
+            Editor.SelectionStart = Math.Clamp(start, 0, length);
+            Editor.SelectionEnd = Math.Clamp(end, 0, length);
+        }
+        finally { _restoring = false; }
     }
 
     public void Refresh() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Title)));

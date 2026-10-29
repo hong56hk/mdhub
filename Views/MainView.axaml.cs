@@ -33,11 +33,15 @@ public partial class MainView : UserControl
         TopMenu.ActionRequested += RequestAction;
         TopMenu.WindowActionRequested += action => WindowActionRequested?.Invoke(action);
         TopMenu.EditRequested += Edit;
+        TopMenu.CommandRequested += RunMenuCommand;
         TextFormatter.ActionRequested += RequestAction;
         TextFormatter.EditRequested += Edit;
         TextFormatter.FormatRequested += action => { if (!_busy) TextEditor.Format(action); };
         FolderExplorer.FileRequested += async path => await RunAsync(() => OpenPathAsync(path));
         FolderExplorer.RefreshRequested += () => RequestAction(WorkspaceAction.RefreshFolder);
+        FolderExplorer.ExplorerRequested += async request => { if (!_busy) await RunAsync(() => HandleExplorerRequestAsync(request)); };
+        FolderExplorer.CanPaste = () => ExplorerClipboard is not null;
+        FolderExplorer.OpenFolderRequested += () => RequestAction(WorkspaceAction.OpenFolder);
         FolderExplorer.CreateRequested += async isFolder => await RunAsync(() => CreateExplorerItemAsync(isFolder));
         FolderExplorer.MessageChanged += BottomStatusBar.SetMessage;
         MdEditor.StatisticsChanged += BottomStatusBar.UpdateStatistics;
@@ -50,13 +54,33 @@ public partial class MainView : UserControl
     public void StopPreview() => MdEditor.Stop();
     public void UpdateWindowState(WindowState state) => TopMenu.UpdateWindowState(state);
 
+    // Shown in the status bar after a restore until the user switches tabs or edits.
+    private string? _sessionNote;
+
     private void SelectDocument(NoteDocument document)
     {
+        _sessionNote = null;
         _active = document;
         TextEditor.ShowDocument(document);
         MdEditor.ShowDocument(document);
         UpdateStatus();
         TextEditor.FocusEditor();
+        document.RestoreSelection();
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (_active == document) document.RestoreSelection(); });
+    }
+
+    private Avalonia.Threading.DispatcherTimer? _transientTimer;
+    internal string? TransientStatus { get; private set; }
+    internal static TimeSpan TransientStatusDuration { get; set; } = TimeSpan.FromSeconds(1.5);
+    // Shows a short message (e.g. "Zoom 120%") that clears itself.
+    public void ShowTransientStatus(string message)
+    {
+        TransientStatus = message;
+        _transientTimer?.Stop();
+        _transientTimer = new Avalonia.Threading.DispatcherTimer { Interval = TransientStatusDuration };
+        _transientTimer.Tick += (_, _) => { _transientTimer!.Stop(); TransientStatus = null; UpdateStatus(); };
+        _transientTimer.Start();
+        UpdateStatus();
     }
 
     private void UpdateStatus(string? message = null)
@@ -64,8 +88,7 @@ public partial class MainView : UserControl
         if (_active is null) return;
         _active.Refresh();
         TitleChanged?.Invoke(DocumentTitle);
-        BottomStatusBar.UpdateDocument(_active, message);
-        TextEditor.UpdateFileKind(_active);
+        BottomStatusBar.UpdateDocument(_active, message ?? TransientStatus ?? _sessionNote);
         TextFormatter.SetFormattingEnabled(_active.IsMarkdown && !_busy);
     }
 
@@ -91,6 +114,45 @@ public partial class MainView : UserControl
         TextFormatter.SetFormattingEnabled(!busy && _active?.IsMarkdown == true);
         foreach (var document in _documents) document.Editor.IsReadOnly = busy;
     }
+    // Saved file tabs only: untitled buffers and unsaved text are never written to the session.
+    public WindowSession CaptureSession()
+    {
+        var saved = _documents.Where(d => d.Path is not null).ToList();
+        return new WindowSession
+        {
+            Folder = FolderExplorer.OpenedFolder,
+            Tabs = saved.Select(d => d.Path!).ToList(),
+            ActiveTab = _active is null ? -1 : saved.IndexOf(_active)
+        };
+    }
+
+    public async Task RestoreSessionAsync(WindowSession session, string? note)
+    {
+        var failed = 0;
+        var placeholder = _documents.Count == 1 && _documents[0].Path is null && !_documents[0].IsDirty && _documents[0].Text.Length == 0 ? _documents[0] : null;
+        if (session.Folder is { } folder)
+        {
+            try { await LoadRootAsync(folder); } catch (Exception) { failed++; }
+        }
+        var opened = new List<NoteDocument>();
+        foreach (var tab in session.Tabs)
+        {
+            try
+            {
+                await OpenPathAsync(tab);
+                if (_active is { } document && !opened.Contains(document)) opened.Add(document);
+            }
+            catch (Exception) { failed++; }
+        }
+        if (opened.Count > 0 && placeholder is not null && _documents.Contains(placeholder)) await CloseDocumentAsync(placeholder);
+        if (session.ActiveTab >= 0 && session.ActiveTab < session.Tabs.Count
+            && _documents.FirstOrDefault(d => d.Path is { } p && SamePath(p, Path.GetFullPath(session.Tabs[session.ActiveTab]))) is { } active)
+            FileTabs.SelectedDocument = active;
+        if (failed > 0) note = $"{note} Could not reopen {failed} {(failed == 1 ? "item" : "items")}.".Trim();
+        _sessionNote = note;
+        UpdateStatus();
+    }
+
     public async void HandleClosing(WindowClosingEventArgs e)
     {
         if (_allowClose) return;
