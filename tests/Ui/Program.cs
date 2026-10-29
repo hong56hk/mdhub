@@ -1633,6 +1633,58 @@ finally
     foreach (var d in fw.GetVisualDescendants().OfType<ListBox>().First(c => c.Name == "Tabs").Items.OfType<NoteDocument>()) d.SavedText = d.Text;
     fw.Close(); Pump();
     try { Directory.Delete(froot, true); } catch (IOException) { }
+}{
+    // Item 26: I-beam over the editor text area in md and txt tabs; igutter and scrollbars keep the arrow.
+    var iw = new MainWindow { Width = 1300, Height = 800 };
+    iw.Show(); Pump();
+    var iflags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+    var iview = iw.GetVisualDescendants().OfType<MainView>().First();
+    static string? CursorKind(Cursor? cursor)
+    {
+        if (cursor is null) return null;
+        object? Probe(object o, int depth)
+        {
+            if (depth > 3) return null;
+            foreach (var f in o.GetType().GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public))
+            {
+                var v = f.GetValue(o);
+                if (v is StandardCursorType s) return s;
+                if (v is not null && !f.FieldType.IsPrimitive && f.FieldType != typeof(string) && Probe(v, depth + 1) is { } inner) return inner;
+            }
+            return null;
+        }
+        return Probe(cursor, 0)?.ToString() ?? cursor.ToString();
+    }
+    // The cursor an element shows: its own Cursor, inherited from ancestors (null means the default arrow).
+    string Effective(IInputElement? element) => CursorKind((element as InputElement)?.Cursor) ?? "Arrow";
+    IInputElement? HitAt(Control target, Point local) => iw.InputHitTest(target.TranslatePoint(local, iw)!.Value);
+    var longText = string.Join("\n", Enumerable.Range(1, 200).Select(i => $"line {i} find me"));
+    foreach (var (iname, itext) in new[] { ("cursor.md", "# Heading\n\n" + longText), ("cursor.txt", longText) })
+    {
+        var idoc = (NoteDocument)typeof(MainView).GetMethod("AddDocument", iflags)!.Invoke(iview, [null, itext, iname, null])!; Pump(); Pump();
+        iw.UpdateLayout();
+        var ied = idoc.Editor;
+        var presenter = ied.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.TextPresenter>().First();
+        Require(Effective(HitAt(presenter, new Point(20, 8))) == "Ibeam", $"I-beam over the text in {iname} (got {Effective(HitAt(presenter, new Point(20, 8)))})");
+        Require(Effective(HitAt(ied, new Point(ied.Bounds.Width / 2, ied.Bounds.Height - 30))) == "Ibeam", $"I-beam over the lower text area in {iname}");
+        var scrollBar = ied.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ScrollBar>().First(b => b.Orientation == Avalonia.Layout.Orientation.Vertical && b.IsEffectivelyVisible && b.Bounds.Height > 0);
+        Require(Effective(HitAt(scrollBar, new Point(scrollBar.Bounds.Width / 2, scrollBar.Bounds.Height / 2))) == "Arrow", $"Vertical scrollbar keeps the arrow in {iname} (got {Effective(HitAt(scrollBar, new Point(scrollBar.Bounds.Width / 2, scrollBar.Bounds.Height / 2)))})");
+        var igutter = iw.GetVisualDescendants().OfType<LineNumberGutter>().First(g => g.IsEffectivelyVisible);
+        Require(Effective(HitAt(igutter, new Point(igutter.Bounds.Width / 2, 10))) == "Arrow", $"Line-number gutter keeps the arrow in {iname}");
+        // Overlays drawn over the text must let the pointer through to the editor.
+        var findBar = iw.GetVisualDescendants().OfType<FindBar>().First();
+        ied.Focus();
+        iw.GetVisualDescendants().OfType<TextEditor>().First().OpenFind(false); Pump();
+        var findInput = findBar.GetVisualDescendants().OfType<TextBox>().First(b => b.Classes.Contains("findField")); findInput.Text = "find"; Pump();
+        var overlays = iw.GetVisualDescendants().Where(v => v is CurrentLineOverlay or FindHighlightOverlay).Cast<Control>().ToList();
+        Require(overlays.Count >= 2 && overlays.All(o => !o.IsHitTestVisible), $"Current-line and find-highlight overlays are hit-test invisible in {iname}");
+        var underOverlay = HitAt(ied, new Point(ied.Bounds.Width / 2, ied.Bounds.Height / 2));
+        Require(underOverlay is Visual hv && (hv == ied || hv.GetVisualAncestors().Contains(ied)) && Effective(underOverlay) == "Ibeam", $"Pointer over highlighted text reaches the editor with the I-beam in {iname}");
+        iw.GetVisualDescendants().OfType<TextEditor>().First().CloseFind(); Pump();
+        idoc.SavedText = idoc.Text;
+    }
+    foreach (var d in iw.GetVisualDescendants().OfType<ListBox>().First(c => c.Name == "Tabs").Items.OfType<NoteDocument>()) d.SavedText = d.Text;
+    iw.Close(); Pump();
 }if (OperatingSystem.IsWindows() && Environment.GetEnvironmentVariable("MDHUB_TEST_RECYCLE") == "1")
 {
     var recycleRoot = Path.Combine(Path.GetTempPath(), $"mdhub-recycle-{Guid.NewGuid():N}");

@@ -1,5 +1,7 @@
 <Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:c="using:Mdhub.Components">
+  <!-- I-beam over the whole text area (including space below the last line); scrollbars keep the arrow. -->
   <Style Selector="TextBox.noteEditor">
+    <Setter Property="Cursor" Value="Ibeam" />
     <Setter Property="Template">
       <ControlTemplate TargetType="c:MarkdownTextBox">
         <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
@@ -20,5 +22,8 @@
         </Border>
       </ControlTemplate>
     </Setter>
+  </Style>
+  <Style Selector="TextBox.noteEditor /template/ ScrollViewer#PART_ScrollViewer /template/ ScrollBar">
+    <Setter Property="Cursor" Value="Arrow" />
   </Style>
 </Styles>
