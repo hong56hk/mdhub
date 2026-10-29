@@ -5,5 +5,6 @@
     <FluentTheme />
     <StyleInclude Source="avares://Mdhub/Styles/WorkspaceStyles.axaml" />
     <StyleInclude Source="avares://Mdhub/Styles/MarkdownEditor.axaml" />
+    <StyleInclude Source="avares://Mdhub/Styles/FindStyles.axaml" />
   </Application.Styles>
 </Application>

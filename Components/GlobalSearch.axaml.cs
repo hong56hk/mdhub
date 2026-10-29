@@ -12,6 +12,8 @@ public sealed record WorkspaceReplaceRequest(IReadOnlyList<SearchFile> Files, st
 
 public partial class GlobalSearch : UserControl
 {
+    private static readonly Geometry CollapsedIcon = Geometry.Parse("M 6,4 L 10,8 6,12");
+    private static readonly Geometry ExpandedIcon = Geometry.Parse("M 4,6 L 8,10 12,6");
     private string? _root;
     private CancellationTokenSource? _search;
     private readonly DispatcherTimer _debounce = new() { Interval = TimeSpan.FromMilliseconds(250) };
@@ -28,7 +30,12 @@ public partial class GlobalSearch : UserControl
         InitializeComponent();
         GlobalQuery.TextChanged += (_, _) => Schedule();
         foreach (var toggle in new[] { GlobalMatchCase, GlobalWholeWord, GlobalRegex }) toggle.IsCheckedChanged += (_, _) => Schedule();
-        GlobalExpandReplace.IsCheckedChanged += (_, _) => GlobalReplaceRow.IsVisible = GlobalExpandReplace.IsChecked == true;
+        GlobalExpandReplace.IsCheckedChanged += (_, _) =>
+        {
+            var expanded = GlobalExpandReplace.IsChecked == true;
+            GlobalReplaceRow.IsVisible = expanded;
+            GlobalExpandIcon.Data = expanded ? ExpandedIcon : CollapsedIcon;
+        };
         GlobalRefresh.Click += async (_, _) => await SearchAsync();
         GlobalQuery.KeyDown += async (_, e) => { if (e.Key == Key.Enter) { e.Handled = true; await SearchAsync(); } };
         _debounce.Tick += async (_, _) => await SearchAsync();
@@ -83,7 +90,7 @@ public partial class GlobalSearch : UserControl
         try
         {
             var result = await WorkspaceSearch.SearchAsync(_root, query, options, OpenBuffers?.Invoke() ?? new Dictionary<string, string>(), cancellation.Token);
-            if (cancellation.IsCancellationRequested) return;
+            if (cancellation.IsCancellationRequested || result.Cancelled) return;
             Result = result;
             _resultQuery = query;
             _resultOptions = options;
@@ -109,7 +116,9 @@ public partial class GlobalSearch : UserControl
             }
             GlobalSummary.Text = result.Error ?? $"{result.Count:N0} results in {result.Files.Count:N0} files" +
                 (result.Limited ? $" · First {WorkspaceSearch.MaxResults:N0} matches shown" : "") +
-                (result.Skipped > 0 ? $" · {result.Skipped} unreadable or large files skipped (5 MB limit)" : "");
+                (result.Skipped > 0 ? $" · {result.Skipped} unreadable or large files skipped (5 MB limit)" : "") +
+                (result.Lossy > 0 ? $" · {result.Lossy} files have undecodable bytes (shown as �, not replaced)" : "");
+            GlobalQuery.Classes.Set("invalid", result.Error is not null);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { if (!cancellation.IsCancellationRequested) GlobalSummary.Text = ex.Message; }

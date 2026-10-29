@@ -103,6 +103,91 @@ internal static class WorkspaceSearchTests
             window.OwnedWindows.Single().GetVisualDescendants().OfType<Button>().Single(button => Equals(button.Content, "Replace")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Await(staleTask);
             Check(File.ReadAllText(b) == "external edit" && staleTask.Result.Contains("skipped"), "stale search results never overwrite changed files");
+            // UI alignment: global search uses the find bar's shared styles (Styles/FindStyles.axaml).
+            var findBar = window.GetVisualDescendants().OfType<FindBar>().First();
+            T FindIn<T>(Control host, string name) where T : Control => host.FindControl<T>(name) ?? throw new Exception("missing " + name);
+            var findBarWasVisible = findBar.IsVisible;
+            findBar.IsVisible = true; FindIn<ToggleButton>(findBar, "ExpandReplaceToggle").IsChecked = true;
+            Find<ToggleButton>("GlobalExpandReplace").IsChecked = true; Pump(); window.UpdateLayout();
+            string Look(Control c)
+            {
+                var presenter = c.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.ContentPresenter>().FirstOrDefault(p => p.Name == "PART_ContentPresenter");
+                return c switch
+                {
+                    TemplatedControl t => $"{t.Classes.Count(x => !x.StartsWith(':'))}|{string.Join(",", t.Classes.Where(x => !x.StartsWith(':')).Order())}|{t.Height}|{t.Padding}|{t.CornerRadius}|{t.FontSize}|{t.FontWeight}|{t.Background}|{t.Foreground}|{t.BorderBrush}|{t.BorderThickness}|{presenter?.Background}|{presenter?.CornerRadius}",
+                    _ => ""
+                } + (c is Avalonia.Layout.Layoutable l && c is not TextBox ? $"|{l.Width}" : "");
+            }
+            foreach (var (mine, theirs) in new[] { ("GlobalMatchCase", "MatchCaseToggle"), ("GlobalWholeWord", "WholeWordToggle"), ("GlobalRegex", "RegexToggle"), ("GlobalPreserveCase", "PreserveCaseToggle"), ("GlobalReplaceSelected", "ReplaceButton"), ("GlobalReplaceAll", "ReplaceAllButton") })
+            {
+                FindIn<Control>(findBar, theirs).IsEnabled = FindIn<Control>(search, mine).IsEnabled; Pump();
+                Check(Look(FindIn<Control>(search, mine)) == Look(FindIn<Control>(findBar, theirs)), $"{mine} looks like find bar {theirs} ({Look(FindIn<Control>(search, mine))} vs {Look(FindIn<Control>(findBar, theirs))})");
+            }
+            var refreshButton = FindIn<Button>(search, "GlobalRefresh");
+            Check(Look(refreshButton) == Look(FindIn<Control>(findBar, "FindCloseButton")) && refreshButton.Width == 24, "refresh uses the find bar icon button style");
+            var expandMine = FindIn<ToggleButton>(search, "GlobalExpandReplace"); var expandTheirs = FindIn<ToggleButton>(findBar, "ExpandReplaceToggle");
+            Check(expandMine.Classes.Contains("findAction") && expandMine.Width == expandTheirs.Width && expandMine.CornerRadius == expandTheirs.CornerRadius && expandMine.Foreground?.ToString() == expandTheirs.Foreground?.ToString(), "expand toggle matches the find bar chevron toggle");
+            Check(FindIn<Avalonia.Controls.Shapes.Path>(search, "GlobalExpandIcon").Data?.ToString() != null && search.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().All(path => path.Classes.Contains("findIcon") && path.Width == 16 && path.StrokeThickness == 1.25), "global search icons use the find bar 16px icon style");
+            var queryBox = Find<TextBox>("GlobalQuery"); var findInput = findBar.GetVisualDescendants().OfType<TextBox>().First(b => b.Classes.Contains("findField"));
+            Check(queryBox.Classes.Contains("findField") && Find<TextBox>("GlobalReplacement").Classes.Contains("findField") && queryBox.Height == findInput.Height && queryBox.Background?.ToString() == findInput.Background?.ToString() && queryBox.BorderBrush?.ToString() == findInput.BorderBrush?.ToString() && queryBox.CornerRadius == findInput.CornerRadius, "search inputs use the find bar dark field style");
+            Check(queryBox.InnerRightContent is StackPanel inner && inner.Children.Contains(Find<ToggleButton>("GlobalRegex")) && Find<TextBox>("GlobalReplacement").InnerRightContent == Find<ToggleButton>("GlobalPreserveCase"), "option toggles sit inside the inputs like the find bar");
+            foreach (var (mine, theirs) in new[] { ("GlobalMatchCase", "MatchCaseToggle"), ("GlobalPreserveCase", "PreserveCaseToggle") })
+            {
+                FindIn<ToggleButton>(search, mine).IsChecked = true; FindIn<ToggleButton>(findBar, theirs).IsChecked = true; Pump();
+                Check(Look(FindIn<Control>(search, mine)) == Look(FindIn<Control>(findBar, theirs)), $"checked {mine} matches checked {theirs}");
+                FindIn<ToggleButton>(search, mine).IsChecked = false; FindIn<ToggleButton>(findBar, theirs).IsChecked = false; Pump();
+            }
+            Check(!Find<Avalonia.Controls.Shapes.Path>("GlobalExpandIcon").Data!.Bounds.Equals(Avalonia.Media.Geometry.Parse("M 6,4 L 10,8 6,12").Bounds), "expanded chevron points down");
+            Find<ToggleButton>("GlobalExpandReplace").IsChecked = false; Pump();
+            Check(!Find<StackPanel>("GlobalReplaceRow").IsVisible && Find<Avalonia.Controls.Shapes.Path>("GlobalExpandIcon").Data!.Bounds.Equals(Avalonia.Media.Geometry.Parse("M 6,4 L 10,8 6,12").Bounds), "collapsing hides replace and restores the chevron");
+
+            FindIn<ToggleButton>(findBar, "ExpandReplaceToggle").IsChecked = false; findBar.IsVisible = findBarWasVisible; Pump();
+
+            // Encoding resilience: invalid bytes never abort a search, and superseded searches are quiet.
+            var noisy = new List<string>();
+            EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs> watch = (_, e) => { if (e.Exception is OperationCanceledException or System.Text.DecoderFallbackException) lock (noisy) noisy.Add(e.Exception.GetType().Name + " @ " + Environment.StackTrace.Replace("\r\n", " / ")); };
+            AppDomain.CurrentDomain.FirstChanceException += watch;
+            try
+            {
+                var bad = Path.Combine(root, "cp1252.md");
+                var badBytes = System.Text.Encoding.ASCII.GetBytes("gamma here, it's a smart quote. gamma").ToArray();
+                badBytes[31] = 0x92; // 'Unable to translate bytes [92] at index 31' (replaces the '.')
+                File.WriteAllBytes(bad, badBytes);
+                File.WriteAllText(Path.Combine(root, "plain.md"), "gamma plain");
+                File.WriteAllBytes(Path.Combine(root, "bom.md"), [0xEF, 0xBB, 0xBF, .. System.Text.Encoding.UTF8.GetBytes("gamma bom")]);
+                Query("gamma");
+                var badFile = search.Result.Files.SingleOrDefault(f => f.Path == bad);
+                Check(search.Result.Error is null && search.Result.Files.Count == 3 && badFile is { Lossy: true, Hits.Count: 2 } && search.Result.Lossy == 1, $"file with invalid bytes is searched with replacement characters (files={search.Result.Files.Count})");
+                Check(Find<TextBlock>("GlobalSummary").Text!.Contains("undecodable"), "summary reports files with undecodable bytes");
+                Check(search.Result.Files.Single(f => f.Path.EndsWith("bom.md")).Encoding.GetPreamble().Length == 3, "BOM file keeps its UTF-8 BOM encoding");
+                using (var locked = new FileStream(Path.Combine(root, "locked.md"), FileMode.Create, FileAccess.ReadWrite, FileShare.None))
+                {
+                    locked.Write(System.Text.Encoding.UTF8.GetBytes("gamma locked")); locked.Flush();
+                    Query("gamma");
+                    Check(search.Result.Files.Count == 3 && search.Result.Skipped >= 1, "a locked file is skipped without aborting the search");
+                }
+                var lossyReplace = (Task<string>)typeof(MainView).GetMethod("ReplaceSearchResultsAsync", BindingFlags.NonPublic | BindingFlags.Instance)!.Invoke(view, [new WorkspaceReplaceRequest([badFile!], "gamma", "delta", new())])!;
+                Pump();
+                if (window.OwnedWindows.SingleOrDefault() is { } confirm) confirm.GetVisualDescendants().OfType<Button>().Single(button => Equals(button.Content, "Replace")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Await(lossyReplace);
+                Check(File.ReadAllBytes(bad).SequenceEqual(badBytes) && lossyReplace.Result.Contains("skipped"), "replace never rewrites a file with undecodable bytes");
+                using (var cancelledToken = new CancellationTokenSource())
+                {
+                    cancelledToken.Cancel();
+                    var cancelledSearch = WorkspaceSearch.SearchAsync(root, "gamma", new(), new Dictionary<string, string>(), cancelledToken.Token);
+                    Await(cancelledSearch);
+                    Check(cancelledSearch.Status == TaskStatus.RanToCompletion && cancelledSearch.Result.Cancelled, "a cancelled search completes quietly with a Cancelled result");
+                }
+                Find<TextBox>("GlobalQuery").Text = "gamma";
+                var first = search.SearchAsync(); var second = search.SearchAsync(); var third = search.SearchAsync();
+                Await(Task.WhenAll(first, second, third));
+                Check(search.Result.Files.Count == 4 && Find<TextBlock>("GlobalSummary").Text!.Contains("4 files"), "superseded searches are cancelled and the last one wins");
+                for (var typing = 0; typing < 5; typing++) { Find<TextBox>("GlobalQuery").Text = "gamm" + new string('a', typing % 2); search.Schedule(); }
+                Find<TextBox>("GlobalQuery").Text = "gamma"; Pump(); Pump();
+                Await(search.SearchAsync());
+                Check(noisy.Count == 0, $"search raises no OperationCanceledException or DecoderFallbackException ({string.Join(",", noisy)})");
+            }
+            finally { AppDomain.CurrentDomain.FirstChanceException -= watch; }
             document.SavedText = document.Text;
         }
         finally { window.Close(); Directory.Delete(root, true); }

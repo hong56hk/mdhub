@@ -29,6 +29,27 @@ try
         await TextFileStore.WriteAsync(path, "", loaded.Encoding);
         Require((await TextFileStore.ReadAsync(path)).Text == "", "Saving empty text removes old content");
     }
+{
+    // Lenient search decoding: never throws, detects BOMs, flags undecodable bytes.
+    var invalid = Encoding.ASCII.GetBytes("Don't worry: this line has a  smart quote").ToList();
+    invalid[29] = 0x92; // cp1252 right quote, invalid in UTF-8 (as in the reported 'Unable to translate bytes [92]')
+    var lenient = TextFileStore.DecodeLenient(invalid.ToArray());
+    Require(lenient.Lossy && lenient.Text.Contains('\uFFFD') && lenient.Text.StartsWith("Don't worry") && lenient.Text.EndsWith("smart quote"), "Lenient decode replaces invalid UTF-8 bytes instead of throwing");
+    Require(!TextFileStore.DecodeLenient(Encoding.UTF8.GetBytes("héllo")).Lossy && TextFileStore.DecodeLenient(Encoding.UTF8.GetBytes("héllo")).Text == "héllo" && TextFileStore.DecodeLenient(Encoding.UTF8.GetBytes("héllo")).Encoding.GetPreamble().Length == 0, "Lenient decode keeps valid BOM-less UTF-8");
+    foreach (var bomEncoding in new Encoding[] { new UTF8Encoding(true), Encoding.Unicode, Encoding.BigEndianUnicode, Encoding.UTF32, new UTF32Encoding(true, true) })
+    {
+        var decoded = TextFileStore.DecodeLenient([.. bomEncoding.GetPreamble(), .. bomEncoding.GetBytes("ab\r\nçd")]);
+        Require(decoded.Text == "ab\r\nçd" && !decoded.Lossy && decoded.Encoding.GetPreamble().SequenceEqual(bomEncoding.GetPreamble()), $"Lenient decode detects {bomEncoding.WebName} BOM");
+    }
+    var badUtf8Bom = TextFileStore.DecodeLenient([0xEF, 0xBB, 0xBF, (byte)'a', 0xFF, (byte)'b']);
+    Require(badUtf8Bom.Lossy && badUtf8Bom.Text == "a\uFFFDb", "Lenient decode replaces invalid bytes after a UTF-8 BOM");
+    Require(TextFileStore.DecodeLenient([]).Text == "" && !TextFileStore.DecodeLenient([]).Lossy, "Lenient decode handles empty files");
+    var lenientPath = Path.Combine(Path.GetTempPath(), "mdhub-lenient-" + Guid.NewGuid().ToString("N") + ".md");
+    await File.WriteAllBytesAsync(lenientPath, invalid.ToArray());
+    var read = await TextFileStore.ReadLenientAsync(lenientPath);
+    Require(read.Lossy && read.Text == lenient.Text, "ReadLenientAsync reads invalid bytes without throwing");
+    File.Delete(lenientPath);
+}
 
     var newPath = Path.Combine(root, "new.txt");
     await TextFileStore.WriteAsync(newPath, "New note", TextFileStore.DefaultEncoding);

@@ -56,6 +56,8 @@ public partial class MainView
             {
                 try
                 {
+                    // Lossy search text has U+FFFD in place of undecodable bytes; writing it back would corrupt the file.
+                    if (file.Lossy) { skipped++; continue; }
                     if (FolderExplorer.OpenedFolder is not { } root || !ExplorerFileOperations.Contains(root, file.Path)) { skipped++; continue; }
                     var document = _documents.FirstOrDefault(d => d.Path is { } path && SamePath(path, file.Path));
                     var current = document?.Text ?? (await TextFileStore.ReadAsync(file.Path)).Text;

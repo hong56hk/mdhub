@@ -1,0 +1,98 @@
+﻿<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Shared by the find bar (Components/FindBar.axaml) and global search (Components/GlobalSearch.axaml). -->
+    <Style Selector="Button.findAction, ToggleButton.findAction">
+      <Setter Property="Width" Value="24" />
+      <Setter Property="Height" Value="24" />
+      <Setter Property="MinWidth" Value="24" />
+      <Setter Property="MinHeight" Value="24" />
+      <Setter Property="Padding" Value="4" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="#AAB8CC" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="ToggleButton.fieldToggle">
+      <Setter Property="Width" Value="22" />
+      <Setter Property="Height" Value="20" />
+      <Setter Property="MinWidth" Value="22" />
+      <Setter Property="MinHeight" Value="20" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="1,0" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="CornerRadius" Value="3" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="#AAB8CC" />
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.findAction:pointerover /template/ ContentPresenter, ToggleButton.findAction:pointerover /template/ ContentPresenter, ToggleButton.fieldToggle:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#303843" />
+      <Setter Property="Foreground" Value="#AAB8CC" />
+    </Style>
+    <Style Selector="Button.findAction:pressed /template/ ContentPresenter, ToggleButton.findAction:pressed /template/ ContentPresenter, ToggleButton.fieldToggle:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="#3A4657" />
+    </Style>
+    <Style Selector="ToggleButton.fieldToggle:checked /template/ ContentPresenter, ToggleButton.findAction.accent:checked /template/ ContentPresenter">
+      <Setter Property="Background" Value="#3D8DADE8" />
+      <Setter Property="BorderBrush" Value="#8DADE8" />
+      <Setter Property="Foreground" Value="#D7DCE5" />
+    </Style>
+    <Style Selector="ToggleButton.findAction:checked:not(.accent) /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.textAction">
+      <Setter Property="Height" Value="24" />
+      <Setter Property="MinHeight" Value="24" />
+      <Setter Property="Padding" Value="8,0" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Background" Value="#2B313A" />
+      <Setter Property="Foreground" Value="#D7DCE5" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.textAction:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#303843" />
+    </Style>
+    <Style Selector="Button.textAction:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="#3A4657" />
+    </Style>
+    <Style Selector="Path.findIcon">
+      <Setter Property="Width" Value="16" />
+      <Setter Property="Height" Value="16" />
+      <Setter Property="StrokeThickness" Value="1.25" />
+      <Setter Property="StrokeLineCap" Value="Round" />
+      <Setter Property="StrokeJoin" Value="Round" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="TextBox.findField">
+      <Setter Property="Width" Value="250" />
+      <Setter Property="Height" Value="26" />
+      <Setter Property="MinHeight" Value="26" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Padding" Value="6,3,2,3" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Background" Value="#1B1E23" />
+      <Setter Property="Foreground" Value="#D7DCE5" />
+      <Setter Property="BorderBrush" Value="#30343B" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="TextBox.findField:focus /template/ Border#PART_BorderElement, TextBox.findField:pointerover /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="#1B1E23" />
+      <Setter Property="BorderBrush" Value="#8DADE8" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="TextBox.findField.invalid">
+      <Setter Property="BorderBrush" Value="#C42B1C" />
+    </Style>
+    <Style Selector="TextBox.findField.invalid:focus /template/ Border#PART_BorderElement, TextBox.findField.invalid:pointerover /template/ Border#PART_BorderElement">
+      <Setter Property="BorderBrush" Value="#C42B1C" />
+    </Style>
+
+</Styles>
+
