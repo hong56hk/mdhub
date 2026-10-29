@@ -25,6 +25,11 @@ public partial class MainView
             if (_active == document) { UpdateStatus(); MdEditor.ScheduleRefresh(); }
             if (GlobalSearch.IsVisible && !_busy) GlobalSearch.Schedule();
         };
+        document.Editor.PropertyChanged += (_, e) =>
+        {
+            if (_active == document && (e.Property == Avalonia.Controls.TextBox.SelectionStartProperty || e.Property == Avalonia.Controls.TextBox.SelectionEndProperty || e.Property == Avalonia.Controls.TextBox.CaretIndexProperty))
+                UpdateCaretStatus();
+        };
         _documents.Add(document);
         FileTabs.SelectedDocument = document;
         return document;

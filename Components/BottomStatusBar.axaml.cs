@@ -15,6 +15,12 @@ public partial class BottomStatusBar : UserControl
         if (document.Image is { } image) Counts.Text = $"{image.PixelSize.Width:N0} × {image.PixelSize.Height:N0} pixels";
     }
     public void SetMessage(string message) => Status.Text = message;
+    // null hides the caret position (preview focused, image or no editor).
+    public void SetCaret(string? position)
+    {
+        CaretLabel.Text = position ?? "";
+        CaretLabel.IsVisible = position is not null;
+    }
     public void UpdateStatistics(TextStatistics stats) =>
         Counts.Text = $"{stats.Words:N0} words    {stats.Characters:N0} characters    {stats.Lines:N0} lines";
 }

@@ -30,6 +30,18 @@ try
         Require((await TextFileStore.ReadAsync(path)).Text == "", "Saving empty text removes old content");
     }
 {
+{
+    // Status-bar caret position: 1-based, CRLF/LF/CR each one line break, selection counts a CRLF as 1.
+    var cp = global::Mdhub.Text.CaretPosition.Measure;
+    Require(cp("", 0, 0) == (1, 1, 0), "Caret position of empty text is Ln 1, Col 1");
+    Require(cp("ab\r\ncd", 6, 6) == (2, 3, 0) && cp("ab\ncd", 3, 3) == (2, 1, 0) && cp("ab\rcd", 4, 4) == (2, 2, 0), "Caret line counts CRLF, LF and CR breaks");
+    Require(cp("ab\r\ncd", 3, 3) == (1, 4, 0), "Caret between CR and LF stays on the first line");
+    Require(cp("ab\r\ncd\n\nx", 0, 9) == (4, 2, 8), "Selection counts each line break as one character");
+    Require(cp("hello", 4, 1) == (1, 2, 3), "Backward selection reports the caret end and its length");
+    Require(cp("abc", -5, 99) == (1, 4, 3), "Out-of-range selection is clamped");
+    Require(global::Mdhub.Text.CaretPosition.Format("a\n" + new string('x', 1200), 2, 1202) == "Ln 2, Col 1201 (1200 selected)", "Caret position text formats line, column and selection");
+    Require(global::Mdhub.Text.CaretPosition.Format("abc", 1, 1) == "Ln 1, Col 2", "No selection count without a selection");
+}
     // Lenient search decoding: never throws, detects BOMs, flags undecodable bytes.
     var invalid = Encoding.ASCII.GetBytes("Don't worry: this line has a  smart quote").ToList();
     invalid[29] = 0x92; // cp1252 right quote, invalid in UTF-8 (as in the reported 'Unable to translate bytes [92]')

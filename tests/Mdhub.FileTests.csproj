@@ -19,6 +19,7 @@
     <Compile Include="../Services/Shortcuts.cs" Link="Shortcuts.cs" />
     <Compile Include="../Text/EditorCommands.cs" Link="EditorCommands.cs" />
     <Compile Include="../Rendering/PreviewEdit.cs" Link="PreviewEdit.cs" />
+    <Compile Include="../Text/CaretPosition.cs" Link="CaretPosition.cs" />
     <Compile Remove="Ui/**/*.cs" />
   </ItemGroup>
 </Project>

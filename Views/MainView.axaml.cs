@@ -54,6 +54,9 @@ public partial class MainView : UserControl
         MdEditor.StatisticsChanged += BottomStatusBar.UpdateStatistics;
         MdEditor.MessageChanged += BottomStatusBar.SetMessage;
         AddHandler(KeyDownEvent, OnShortcut, RoutingStrategies.Tunnel);
+        // Focus moving into or out of the preview shows or hides the caret position.
+        AddHandler(GotFocusEvent, (_, _) => UpdateCaretStatus(), RoutingStrategies.Bubble, handledEventsToo: true);
+        AddHandler(LostFocusEvent, (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateCaretStatus), RoutingStrategies.Bubble, handledEventsToo: true);
         AddDocument(null, "", "Untitled.md");
     }
 
@@ -104,6 +107,15 @@ public partial class MainView : UserControl
         BottomStatusBar.UpdateDocument(_active, message ?? TransientStatus ?? _sessionNote);
         if (!_active.IsMarkdown && !_active.IsImage) BottomStatusBar.UpdateStatistics(Mdhub.Text.TextStatistics.Count(_active.Text));
         TextFormatter.SetFormattingEnabled(_active.IsMarkdown && !_busy);
+        UpdateCaretStatus();
+    }
+
+    // "Ln 12, Col 5 (9 selected)" for the active md/txt editor; hidden for images, no editor, or when the preview has focus.
+    private void UpdateCaretStatus()
+    {
+        var previewFocused = MdEditor.PreviewPanel.IsKeyboardFocusWithin || MdEditor.IsEditingPreview;
+        if (_active is not { IsImage: false } document || !_documents.Contains(document) || previewFocused) { BottomStatusBar.SetCaret(null); return; }
+        BottomStatusBar.SetCaret(Mdhub.Text.CaretPosition.Format(document.Text, document.Editor.SelectionStart, document.Editor.SelectionEnd));
     }
 
     private async Task RunAsync(Func<Task> action)

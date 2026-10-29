@@ -1535,7 +1535,53 @@ finally
     foreach (var d in pw.GetVisualDescendants().OfType<ListBox>().First(c => c.Name == "Tabs").Items.OfType<NoteDocument>()) { d.Editor.Text = ""; d.SavedText = ""; }
     pw.Close(); Pump();
 }
-if (OperatingSystem.IsWindows() && Environment.GetEnvironmentVariable("MDHUB_TEST_RECYCLE") == "1")
+{
+    // Item 20: "Ln 12, Col 5 (9 selected)" in the status bar.
+    var cw = new MainWindow { Width = 1300, Height = 800 };
+    cw.Show(); Pump();
+    var cflags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+    var cview = cw.GetVisualDescendants().OfType<MainView>().First();
+    var cmd = cw.GetVisualDescendants().OfType<MdEditor>().First();
+    TextBlock Caret() => cw.GetVisualDescendants().OfType<TextBlock>().First(c => c.Name == "CaretLabel");
+    string? Shown() => Caret().IsVisible ? Caret().Text : null;
+    NoteDocument CAdd(string text, string name) { var d = (NoteDocument)typeof(MainView).GetMethod("AddDocument", cflags)!.Invoke(cview, [null, text, name, null])!; Pump(); return d; }
+    var cdoc = CAdd("first line\r\nsecond\nthird", "caret.md");
+    cdoc.Editor.Focus(); cdoc.Editor.SelectionStart = cdoc.Editor.SelectionEnd = 0; Pump();
+    Require(Shown() == "Ln 1, Col 1", $"Caret position starts at Ln 1, Col 1 ({Shown()})");
+    cdoc.Editor.SelectionStart = cdoc.Editor.SelectionEnd = 17; Pump();
+    Require(Shown() == "Ln 2, Col 6", $"Caret moves update line and column after a CRLF ({Shown()})");
+    cdoc.Editor.SelectionStart = cdoc.Editor.SelectionEnd = cdoc.Text.Length; Pump();
+    Require(Shown() == "Ln 3, Col 6", $"Caret at end of text is on the last line ({Shown()})");
+    cdoc.Editor.SelectionStart = 6; cdoc.Editor.SelectionEnd = 15; Pump();
+    Require(Shown() == "Ln 2, Col 4 (8 selected)", $"Selection across CRLF counts the break as 1 ({Shown()})");
+    cdoc.Editor.SelectionStart = 15; cdoc.Editor.SelectionEnd = 6; Pump();
+    Require(Shown() == "Ln 1, Col 7 (8 selected)", $"Backward selection reports the active end ({Shown()})");
+    cdoc.Editor.SelectAll(); Pump();
+    Require(Shown()!.EndsWith("(23 selected)"), $"Select all counts characters with each line break as 1 ({Shown()})");
+    cdoc.Editor.SelectionStart = cdoc.Editor.SelectionEnd = 3; Pump();
+    Require(!Shown()!.Contains("selected"), "No selection count without a selection");
+    cw.KeyPress(Key.Right, RawInputModifiers.Shift, PhysicalKey.None, null); cw.KeyRelease(Key.Right, RawInputModifiers.Shift, PhysicalKey.None, null); Pump();
+    Require(Shown() == "Ln 1, Col 5 (1 selected)", $"Keyboard selection updates live ({Shown()})");
+    var tdoc = CAdd("a\nbc", "caret.txt");
+    tdoc.Editor.Focus(); tdoc.Editor.SelectionStart = tdoc.Editor.SelectionEnd = 4; Pump();
+    Require(Shown() == "Ln 2, Col 3", $"Plain text notes show the caret position ({Shown()})");
+    cw.GetVisualDescendants().OfType<ListBox>().First(c => c.Name == "Tabs").SelectedItem = cdoc; Pump(); Pump();
+    cdoc.Editor.SelectionStart = cdoc.Editor.SelectionEnd = 3; Pump();
+    Require(Shown() == "Ln 1, Col 4", $"Switching tabs shows that tab's caret ({Shown()})");
+    var cscroll = cmd.GetVisualDescendants().OfType<ScrollViewer>().First(c => c.Name == "PreviewScroll"); cscroll.Focusable = true; cscroll.Focus(); Pump();
+    Require(Shown() is null, "Caret position hides while the preview has focus");
+    cdoc.Editor.Focus(); Pump();
+    Require(Shown() == "Ln 1, Col 4", "Caret position returns when the editor regains focus");
+    var png = Path.Combine(Path.GetTempPath(), $"mdhub-caret-{Guid.NewGuid():N}.png");
+    File.WriteAllBytes(png, Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=="));
+    var openImage = (Task)typeof(MainView).GetMethod("OpenPathAsync", cflags)!.Invoke(cview, [png])!;
+    for (var i = 0; i < 20 && !openImage.IsCompleted; i++) Pump();
+    Pump();
+    Require(Shown() is null, "Caret position hides for images (no text editor)");
+    foreach (var d in cw.GetVisualDescendants().OfType<ListBox>().First(c => c.Name == "Tabs").Items.OfType<NoteDocument>().Where(d => !d.IsImage)) { d.Editor.Text = ""; d.SavedText = ""; }
+    cw.Close(); Pump();
+    try { File.Delete(png); } catch (IOException) { }
+}if (OperatingSystem.IsWindows() && Environment.GetEnvironmentVariable("MDHUB_TEST_RECYCLE") == "1")
 {
     var recycleRoot = Path.Combine(Path.GetTempPath(), $"mdhub-recycle-{Guid.NewGuid():N}");
     Directory.CreateDirectory(Path.Combine(recycleRoot, "dir"));
