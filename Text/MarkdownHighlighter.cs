@@ -6,7 +6,8 @@ namespace Mdhub.Text;
 public enum SyntaxColor : byte
 {
     Default, H1, H2, H3, H4, Marker, InlineCode, Link, Url, ListMarker, Quote, Checkbox, Checked, FrontMatter, Rule,
-    CodeText, CodeKeyword, CodeString, CodeComment, CodeNumber, CodeType, CodeProperty, CodeTag, CodeAttribute
+    CodeText, CodeKeyword, CodeString, CodeComment, CodeNumber, CodeType, CodeProperty, CodeTag, CodeAttribute,
+    Bold, Italic, Strike // item 44: emphasis text colours (only where no heading/link/forced colour applies)
 }
 
 [Flags] public enum SyntaxFont : byte { None = 0, Bold = 1, Italic = 2, Strike = 4 }
@@ -233,6 +234,14 @@ public sealed class MarkdownHighlighter
     // ---------------------------------------------------------------- inline level
 
     /// <summary>Tokenizes line[from..to) with a base colour and font; emits spans for every char that is not plain default.</summary>
+    // Item 44: emphasis gets its own colour unless an enclosing heading/link/checked colour is in force.
+    // Nested emphasis: strike wins over bold, bold over italic.
+    private static SyntaxColor Emphasis(SyntaxColor color, SyntaxFont f, bool forceColor)
+    {
+        if (forceColor || color is not (SyntaxColor.Default or SyntaxColor.Bold or SyntaxColor.Italic or SyntaxColor.Strike)) return color;
+        return (f & SyntaxFont.Strike) != 0 ? SyntaxColor.Strike : (f & SyntaxFont.Bold) != 0 ? SyntaxColor.Bold : SyntaxColor.Italic;
+    }
+
     private static void Inline(string s, int from, int to, SyntaxColor color, SyntaxFont font, List<SyntaxSpan> o, bool forceColor = false)
     {
         var plainStart = from;
@@ -292,7 +301,7 @@ public sealed class MarkdownHighlighter
                     {
                         Flush(i);
                         o.Add(new(i, 2, C(SyntaxColor.Marker), font));
-                        Inline(s, i + 2, close, color, font | SyntaxFont.Strike, o, forceColor);
+                        Inline(s, i + 2, close, Emphasis(color, font | SyntaxFont.Strike, forceColor), font | SyntaxFont.Strike, o, forceColor);
                         o.Add(new(close, 2, C(SyntaxColor.Marker), font));
                         i = plainStart = close + 2; continue;
                     }
@@ -315,7 +324,7 @@ public sealed class MarkdownHighlighter
                         var start = i + n - take;
                         var f = font | (take == 1 ? SyntaxFont.Italic : take == 2 ? SyntaxFont.Bold : SyntaxFont.Bold | SyntaxFont.Italic);
                         o.Add(new(start, take, C(SyntaxColor.Marker), font));
-                        Inline(s, start + take, close, color, f, o, forceColor);
+                        Inline(s, start + take, close, Emphasis(color, f, forceColor), f, o, forceColor);
                         o.Add(new(close, take, C(SyntaxColor.Marker), font));
                         i = plainStart = close + take;
                         goto next;

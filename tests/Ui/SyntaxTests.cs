@@ -55,7 +55,14 @@ internal static class SyntaxTests
             && C(r, t, "bold**", 4) == SyntaxColor.Marker && C(r, t, "gone~~", 4) == SyntaxColor.Marker, "** __ * _ ~~ ` markers are dimmed");
         Check(F(r, t, "bold") == SyntaxFont.Bold && F(r, t, "strong") == SyntaxFont.Bold && F(r, t, "it*") == SyntaxFont.Italic && F(r, t, "em_") == SyntaxFont.Italic
             && F(r, t, "gone") == SyntaxFont.Strike && F(r, t, "both") == (SyntaxFont.Bold | SyntaxFont.Italic), "Bold is bold, italic is italic, strikethrough is struck, *** is both");
-        Check(C(r, t, "bold") == SyntaxColor.Default && C(r, t, " b ") == SyntaxColor.Default, "Emphasised text keeps the text colour; plain text is untouched");
+        Check(C(r, t, "bold") == SyntaxColor.Bold && C(r, t, "strong") == SyntaxColor.Bold && C(r, t, "it*") == SyntaxColor.Italic && C(r, t, "em_") == SyntaxColor.Italic
+            && C(r, t, "gone") == SyntaxColor.Strike && C(r, t, "both") == SyntaxColor.Bold && C(r, t, " b ") == SyntaxColor.Default, "Item 44: emphasis uses Syntax Bold/Italic/Strike colours; plain text is untouched");
+        var em = "[**lb** and *li* and ~~ls~~](u) - [x] done **cb**\n### H **hb** *hi* ~~hs~~\n**b ~~bs~~ *bi***\n";
+        r = MarkdownHighlighter.Highlight(em);
+        Check(C(r, em, "lb") == SyntaxColor.Link && C(r, em, "li") == SyntaxColor.Link && C(r, em, "ls") == SyntaxColor.Link && F(r, em, "ls") == SyntaxFont.Strike, "Item 44: inside links the link colour wins (strike still struck)");
+        Check(C(r, em, "hb") == SyntaxColor.H3 && C(r, em, "hi") == SyntaxColor.H3 && C(r, em, "hs") == SyntaxColor.H3 && F(r, em, "hs").HasFlag(SyntaxFont.Strike), "Item 44: inside headings the heading colour wins");
+        Check(C(r, em, "bs") == SyntaxColor.Strike && F(r, em, "bs") == (SyntaxFont.Bold | SyntaxFont.Strike) && C(r, em, "bi") == SyntaxColor.Bold, "Item 44: nested emphasis: strike over bold, bold over italic");
+        Check(C(r, em, "**hb", 0) == SyntaxColor.Marker && C(r, em, "~~bs") == SyntaxColor.Marker && C(r, em, "**b ") == SyntaxColor.Marker, "Item 44: emphasis markers stay Marker colour");
         var nested = "**bold *and italic* text**\n";
         r = MarkdownHighlighter.Highlight(nested);
         Check(F(r, nested, "and") == (SyntaxFont.Bold | SyntaxFont.Italic) && F(r, nested, "text") == SyntaxFont.Bold, "Nested emphasis combines fonts");
@@ -186,6 +193,11 @@ internal static class SyntaxTests
             && Fg(I("code`")) == L("SyntaxInlineCode") && (RunAt(I("code`"))?.BackgroundBrush as ISolidColorBrush)?.Color == L("SyntaxInlineCodeBackground")
             && Fg(I("quote")) == L("SyntaxQuote") && Fg(I("public")) == L("SyntaxCodeKeyword") && Fg(I("link")) == L("SyntaxLink") && Fg(I("u)")) == L("SyntaxUrl");
         Check(Colours(), "Dark: each construct reaches the rendered runs in its theme colour");
+        Check(ThemeService.Lookup("SyntaxBold", AppTheme.Dark) == Color.Parse("#FFFFFF") && ThemeService.Lookup("SyntaxItalic", AppTheme.Dark) == Color.Parse("#E0E0E0")
+            && ThemeService.Lookup("SyntaxStrike", AppTheme.Dark) == Color.Parse("#C8C8C8") && ThemeService.Lookup("SyntaxMarker", AppTheme.Dark) == Color.Parse("#6A6A6A"), "Item 44: Dark emphasis colours #FFFFFF/#E0E0E0/#C8C8C8, markers #6A6A6A");
+        Check(new[] { "SyntaxBold", "SyntaxItalic", "SyntaxStrike" }.All(k => ThemeService.Lookup(k, AppTheme.Light) == ThemeService.Lookup("TextPrimary", AppTheme.Light)), "Item 44: Light emphasis colours equal the Light text colour (unchanged look)");
+        Check(Fg(I("bold")) == Color.Parse("#FFFFFF") && Fg(I("it*")) == Color.Parse("#E0E0E0") && Fg(I("gone")) == Color.Parse("#C8C8C8") && Fg(I("~~gone")) == Color.Parse("#6A6A6A")
+            && RunAt(I("gone"))!.TextDecorations?.Any(d => d.Location == TextDecorationLocation.Strikethrough) == true, "Item 44: Dark bold/italic/strike runs render in their colours, strike still struck, markers dim");
         Check(L("SyntaxH1") == Color.Parse("#569CD6") && L("SyntaxH2") == Color.Parse("#4EC9B0") && L("SyntaxH3") == Color.Parse("#C586C0") && L("SyntaxH4") == Color.Parse("#9CDCFE")
             && L("SyntaxMarker") == Color.Parse("#6A6A6A") && L("SyntaxInlineCode") == Color.Parse("#CE9178") && L("SyntaxInlineCodeBackground") == Color.Parse("#2D2D2D")
             && L("SyntaxCodeBlockBackground") == Color.Parse("#1E1E1E") && L("SyntaxLink") == Color.Parse("#3794FF") && L("SyntaxListMarker") == Color.Parse("#D7BA7D")

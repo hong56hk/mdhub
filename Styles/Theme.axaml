@@ -74,6 +74,9 @@
       <SolidColorBrush x:Key="SyntaxCodeProperty" Color="#9CDCFE" />
       <SolidColorBrush x:Key="SyntaxCodeTag" Color="#569CD6" />
       <SolidColorBrush x:Key="SyntaxCodeAttribute" Color="#9CDCFE" />
+      <SolidColorBrush x:Key="SyntaxBold" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="SyntaxItalic" Color="#E0E0E0" />
+      <SolidColorBrush x:Key="SyntaxStrike" Color="#C8C8C8" />
       <SolidColorBrush x:Key="PreviewHighlight" Color="#5C4F8FE8" />
       <SolidColorBrush x:Key="PreviewSelectionBackground" Color="#99306FB8" />
         <!-- Explorer rows, VS Code Dark Modern: focused selection, selection while focus is elsewhere, hover. -->
@@ -166,6 +169,9 @@
       <SolidColorBrush x:Key="SyntaxCodeProperty" Color="#0451A5" />
       <SolidColorBrush x:Key="SyntaxCodeTag" Color="#800000" />
       <SolidColorBrush x:Key="SyntaxCodeAttribute" Color="#C80000" />
+      <SolidColorBrush x:Key="SyntaxBold" Color="#1F2328" />
+      <SolidColorBrush x:Key="SyntaxItalic" Color="#1F2328" />
+      <SolidColorBrush x:Key="SyntaxStrike" Color="#1F2328" />
       <SolidColorBrush x:Key="PreviewHighlight" Color="#404F8FE8" />
       <SolidColorBrush x:Key="PreviewSelectionBackground" Color="#99ADD6FF" />
         <!-- Explorer rows, VS Code Light Modern: focused selection, selection while focus is elsewhere, hover. -->
