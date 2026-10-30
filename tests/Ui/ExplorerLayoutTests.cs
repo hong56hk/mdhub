@@ -62,13 +62,33 @@ internal static class ExplorerLayoutTests
                 "files reserve the chevron slot");
             foreach (var (row, sibling, level) in new[] { (top, alpha, 0), (inner, nested, 1), (deep, deep, 2), (nested, inner, 1) })
             {
-                var before = TextX(row);
+                // Item 30: only the name becomes the box; the icon, font, text x and row height stay put.
                 tree.SelectedItem = row; for (var k = 0; k < 6; k++) Pump();
+                var rowText = Part(row, "PART_HeaderPresenter").GetVisualDescendants().OfType<TextBlock>().First();
+                var entryName = Path.GetFileName(((FolderEntry)row.Tag!).Path);
+                var full = rowText.Text!; var prefixLen = full.Length - entryName.Length;
+                var iconX = X(rowText);
+                var nameX = iconX + rowText.TextLayout.HitTestTextPosition(prefixLen).X;
+                var rowHeight = Part(row, "PART_Header").Bounds.Height;
+                var (family, size, weight) = (rowText.FontFamily, rowText.FontSize, rowText.FontWeight);
+                var lineHeight = rowText.TextLayout.Height;
+                var kind = ((FolderEntry)row.Tag!).IsDirectory ? "folder" : "file";
                 explorer.BeginRename(((FolderEntry)row.Tag!).Path); Pump(); Pump(); window.UpdateLayout();
                 var box = row.GetVisualDescendants().OfType<TextBox>().First(b => b.Name == "ExplorerRenameBox");
-                var boxText = X(box.GetVisualDescendants().OfType<TextPresenter>().First());
-                Console.WriteLine($"INFO rename level {level}: text {before} box text {boxText}");
-                Check(Same(boxText, before) && Same(boxText, TextX(sibling)), $"inline rename text lines up with the row and its level (level {level}, {((FolderEntry)row.Tag!).IsDirectory switch { true => "folder", _ => "file" }})");
+                var presenter = box.GetVisualDescendants().OfType<TextPresenter>().First();
+                var boxText = X(presenter);
+                Console.WriteLine($"INFO rename level {level}: icon {iconX} name {nameX} box text {boxText}");
+                Check(Same(boxText, nameX) && Same(iconX, TextX(sibling)), $"inline rename text starts exactly where the name was (level {level}, {kind})");
+                Check(box.Text == entryName && box.FontFamily == family && box.FontSize == size && box.FontWeight == weight && Same(presenter.TextLayout.Height, lineHeight),
+                    $"rename box uses the row font ({family} {size} {weight}) with the same line height (level {level}, {kind})");
+                Check(Same(Part(row, "PART_Header").Bounds.Height, rowHeight), $"row height is unchanged while renaming ({rowHeight:0.#}px, level {level}, {kind})");
+                var icon = row.GetVisualDescendants().OfType<TextBlock>().FirstOrDefault(b => b.Name == "ExplorerRenameIcon");
+                Check(prefixLen == 0 ? icon is null : icon is { IsEffectivelyVisible: true } && Same(X(icon), iconX) && icon.Text == full[..prefixLen] && icon.FontSize == size,
+                    $"the type icon stays visible at the same x while renaming (level {level}, {kind})");
+                var frame = box.GetVisualDescendants().OfType<Border>().First(b => b.Name == "PART_BorderElement");
+                Check(frame.BorderThickness == new Thickness(1) && frame.BorderBrush is ISolidColorBrush fb && fb.Color == ThemeService.Lookup("ExplorerRenameBorder") && box.Padding == default,
+                    $"rename box has a 1px ExplorerRenameBorder border and no padding (level {level}, {kind})");
+                Check(box.SelectionStart == 0 && box.SelectionEnd == FolderExplorer.RenameSelectionLength(entryName, kind == "folder"), $"the name is pre-selected without its extension (level {level}, {kind})");
                 box.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Escape }); Pump();
             }
             FocusColors(window, tree, top, Node(Path.Combine(sub, "inner.md")), Node(Path.Combine(sub, "Nested")), Node(Path.Combine(root, "Empty")), Pump);
@@ -90,9 +110,10 @@ internal static class ExplorerLayoutTests
         Color? Line(TreeViewItem i) => (Root(i).BorderBrush as ISolidColorBrush)?.Color;
         Point At(Control c) => c.TranslatePoint(new Point(20, c.Bounds.Height / 2), window)!.Value;
         Point HeaderPos(TreeViewItem i) => i.GetVisualDescendants().OfType<Control>().First(c => c.Name == "PART_HeaderPresenter").TranslatePoint(default, tree)!.Value;
-        void Key(Key k, RawInputModifiers m) { window.KeyPress(k, m, PhysicalKey.None, null); window.KeyRelease(k, m, PhysicalKey.None, null); Pump(); }
+        void Key(Key k, RawInputModifiers m = RawInputModifiers.None) { window.KeyPress(k, m, PhysicalKey.None, null); window.KeyRelease(k, m, PhysicalKey.None, null); Pump(); }
         void Click(Point p) { window.MouseDown(p, MouseButton.Left); window.MouseUp(p, MouseButton.Left); Pump(); }
         var parkPoint = new Point(window.Bounds.Width - 5, window.Bounds.Height - 5);
+        var explorer0 = window.GetVisualDescendants().OfType<FolderExplorer>().Single();
         var topPath = ((FolderEntry)top.Tag!).Path; var innerPath = ((FolderEntry)inner.Tag!).Path;
         try
         {
@@ -106,9 +127,21 @@ internal static class ExplorerLayoutTests
                     $"{theme}: explorer row colours are Theme.axaml resources with the VS Code values");
                 window.MouseMove(parkPoint); Open(topPath); Open(innerPath);
 
-                // Clicking a file opens it and (as before this item) hands focus to the editor: the row shows the inactive selection.
+                // Item 30 (VS Code): a single click opens the file but keeps focus in the explorer, so the row stays focused-blue.
                 Click(At(Root(top)));
-                Check(top.IsSelected && !tree.IsKeyboardFocusWithin && Bg(top) == C("ExplorerSelectionInactiveBackground") && Line(top) is { A: 0 }, $"{theme}: clicking a file opens it in the editor and its row shows the inactive selection");
+                Check(top.IsSelected && tree.IsKeyboardFocusWithin && Bg(top) == C("ExplorerSelectionBackground") && Line(top) == C("ExplorerSelectionBorder") && tabs.SelectedItem is Mdhub.Models.NoteDocument { Path: var clicked } && clicked == topPath,
+                    $"{theme}: a single click opens the file and keeps the explorer focused");
+                Key(Avalonia.Input.Key.Enter);
+                Check(Editor().IsKeyboardFocusWithin && !tree.IsKeyboardFocusWithin && Bg(top) == C("ExplorerSelectionInactiveBackground"), $"{theme}: Enter on a file moves focus to the editor");
+                Click(At(Root(inner)));
+                Check(tree.IsKeyboardFocusWithin && tabs.SelectedItem is Mdhub.Models.NoteDocument { Path: var p2 } && p2 == innerPath, $"{theme}: a single click from the editor focuses the explorer and opens the file");
+                window.MouseDown(At(Root(top)), MouseButton.Left); window.MouseUp(At(Root(top)), MouseButton.Left);
+                window.MouseDown(At(Root(top)), MouseButton.Left, RawInputModifiers.None); window.MouseUp(At(Root(top)), MouseButton.Left); Pump();
+                Check(Editor().IsKeyboardFocusWithin && tabs.SelectedItem is Mdhub.Models.NoteDocument { Path: var p3 } && p3 == topPath, $"{theme}: a double-click opens the file and moves focus to the editor");
+                Click(At(Root(top)));
+                Key(Avalonia.Input.Key.F2);
+                Check(explorer0.IsRenaming, $"{theme}: after a single click F2 renames the row");
+                explorer0.GetVisualDescendants().OfType<TextBox>().First(b => b.Name == "ExplorerRenameBox").RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Avalonia.Input.Key.Escape }); Pump();
                 // Clicking a folder row keeps focus in the explorer.
                 Click(At(Root(folderRow)));
                 Check(tree.IsKeyboardFocusWithin && folderRow.IsSelected && Bg(folderRow) == C("ExplorerSelectionBackground") && Line(folderRow) == C("ExplorerSelectionBorder") && Root(folderRow).BorderThickness == new Thickness(1),

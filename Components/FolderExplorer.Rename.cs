@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Mdhub.Services;
@@ -26,14 +27,28 @@ public partial class FolderExplorer
         if (item?.Tag is not FolderEntry entry) return;
         CancelRename();
         var name = Path.GetFileName(entry.Path);
-        var box = new TextBox { Name = "ExplorerRenameBox", Text = name, MinWidth = 100, Padding = new Thickness(3, 0), BorderThickness = new Thickness(1), FontSize = 13 };
-        // Pull the box left by its border and padding so the edited text starts where the row's name starts.
-        box.Margin = new Thickness(-(box.Padding.Left + box.BorderThickness.Left), 0, 0, 0);
+        // Like VS Code only the name becomes editable: the type icon (the header's prefix) stays where it was.
+        var prefix = item.Header is string text && text.EndsWith(name, StringComparison.Ordinal) ? text[..^name.Length] : "";
+        // Same font as the row; no padding, and a -1 margin hides the 1px border from layout so neither the text x nor the row height moves.
+        var box = new TextBox
+        {
+            Name = "ExplorerRenameBox", Text = name, MinWidth = 100, MinHeight = 0, Padding = new Thickness(0), BorderThickness = new Thickness(1), Margin = new Thickness(-1),
+            FontFamily = item.FontFamily, FontSize = item.FontSize, FontWeight = item.FontWeight, FontStyle = item.FontStyle, VerticalContentAlignment = VerticalAlignment.Center,
+        };
+        var header = new StackPanel { Name = "ExplorerRenameHeader", Orientation = Orientation.Horizontal };
+        if (prefix.Length > 0)
+        {
+            var icon = new TextBlock { Name = "ExplorerRenameIcon", Text = prefix, VerticalAlignment = VerticalAlignment.Center };
+            // Trailing spaces count towards the width so the name starts exactly where it did.
+            icon.Width = new Avalonia.Media.TextFormatting.TextLayout(prefix, new Typeface(item.FontFamily, item.FontStyle, item.FontWeight), item.FontSize, null).WidthIncludingTrailingWhitespace;
+            header.Children.Add(icon);
+        }
+        header.Children.Add(box);
         _renameItem = item;
         _renameHeader = item.Header;
         _renameBox = box;
         FolderTree.SelectedItem = item;
-        item.Header = box;
+        item.Header = header;
         box.AddHandler(KeyDownEvent, async (_, e) =>
         {
             if (e.Key == Key.Escape) { e.Handled = true; CancelRename(); FocusTree(); }

@@ -12,6 +12,16 @@ public partial class FolderExplorer : UserControl
     private bool _busy;
     private readonly Dictionary<TreeViewItem, Func<Task>> _loadChildren = [];
     public event Action<string>? FileRequested;
+    // Enter or double-click on a file: open it and move focus to the editor.
+    public event Action<string>? FileActivated;
+
+    private void FolderTree_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (IsRenaming || e.Key != Key.Enter || e.KeyModifiers != KeyModifiers.None) return;
+        if (FolderTree.SelectedItem is not TreeViewItem { Tag: FolderEntry { IsDirectory: false, IsSupported: true } entry }) return;
+        e.Handled = true;
+        FileActivated?.Invoke(entry.Path);
+    }
     public event Action<string>? MessageChanged;
     public event Action? RefreshRequested;
     public event Action<bool>? CreateRequested;
@@ -52,6 +62,7 @@ public partial class FolderExplorer : UserControl
         InitializeComponent();
         InitializeDragDrop();
         FolderTree.AddHandler(PointerPressedEvent, FolderRow_PointerPressed, RoutingStrategies.Tunnel);
+        FolderTree.AddHandler(KeyDownEvent, FolderTree_KeyDown, RoutingStrategies.Tunnel);
         FolderTree.ContextMenu = CreateBackgroundMenu();
         UpdateLanguage();
         AttachedToVisualTree += (_, _) => { Loc.Changed += UpdateLanguage; UpdateLanguage(); };
@@ -257,6 +268,13 @@ public partial class FolderExplorer : UserControl
     {
         if (IsRenaming && ItemAt(e.Source) == _renameItem) return;
         if (_busy || !e.GetCurrentPoint(FolderTree).Properties.IsLeftButtonPressed) return;
+        // VS Code: a single click opens a file and keeps focus here; a double-click moves focus to the editor.
+        if (e.ClickCount == 2 && ItemAt(e.Source) is { Tag: FolderEntry { IsDirectory: false, IsSupported: true } file })
+        {
+            FileActivated?.Invoke(file.Path);
+            e.Handled = true;
+            return;
+        }
         if (ItemAt(e.Source) is not { Tag: FolderEntry { IsDirectory: true, IsLink: false } } item) return;
         FolderTree.SelectedItem = item;
         item.Focus();

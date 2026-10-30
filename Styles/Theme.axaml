@@ -55,6 +55,7 @@
         <SolidColorBrush x:Key="ExplorerSelectionBorder" Color="#0078D4" />
         <SolidColorBrush x:Key="ExplorerSelectionInactiveBackground" Color="#37373D" />
         <SolidColorBrush x:Key="ExplorerHoverBackground" Color="#2A2D2E" />
+        <SolidColorBrush x:Key="ExplorerRenameBorder" Color="#0078D4" />
       <SolidColorBrush x:Key="SearchLineNumberForeground" Color="#8993A4" />
       <SolidColorBrush x:Key="SearchMatchForeground" Color="#FFD580" />
       <SolidColorBrush x:Key="SearchMatchBackground" Color="#55452A" />
@@ -120,6 +121,7 @@
         <SolidColorBrush x:Key="ExplorerSelectionBorder" Color="#0078D4" />
         <SolidColorBrush x:Key="ExplorerSelectionInactiveBackground" Color="#E4E6F1" />
         <SolidColorBrush x:Key="ExplorerHoverBackground" Color="#E8E8E8" />
+        <SolidColorBrush x:Key="ExplorerRenameBorder" Color="#0078D4" />
       <SolidColorBrush x:Key="SearchLineNumberForeground" Color="#5F6875" />
       <SolidColorBrush x:Key="SearchMatchForeground" Color="#6B4100" />
       <SolidColorBrush x:Key="SearchMatchBackground" Color="#FFE3A3" />

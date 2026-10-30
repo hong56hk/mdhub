@@ -44,7 +44,9 @@ public partial class MainView : UserControl
         TextFormatter.ActionRequested += RequestAction;
         TextFormatter.EditRequested += Edit;
         TextFormatter.FormatRequested += action => { if (!_busy) TextEditor.Format(action); };
-        FolderExplorer.FileRequested += async path => await RunAsync(() => OpenPathAsync(path));
+        // VS Code: selecting a file opens it but leaves focus in the explorer; Enter or double-click moves focus to the editor.
+        FolderExplorer.FileRequested += async path => await RunAsync(() => OpenPathAsync(path), focusEditor: false);
+        FolderExplorer.FileActivated += async path => { _focusEditorAfterBusy = true; await RunAsync(() => OpenPathAsync(path)); };
         FolderExplorer.RefreshRequested += () => RequestAction(WorkspaceAction.RefreshFolder);
         FolderExplorer.ExplorerRequested += async request => { if (!_busy) await RunAsync(() => HandleExplorerRequestAsync(request)); };
         FolderExplorer.MoveRequested += async request => await RunAsync(() => MoveExplorerFileAsync(request));
@@ -133,9 +135,12 @@ public partial class MainView : UserControl
         BottomStatusBar.SetCaret(Mdhub.Text.CaretPosition.Format(document.Text, document.Editor.SelectionStart, document.Editor.SelectionEnd));
     }
 
-    private async Task RunAsync(Func<Task> action)
+    // An Enter/double-click that arrives while the single-click open is still running still ends with the editor focused.
+    private bool _focusEditorAfterBusy;
+    private async Task RunAsync(Func<Task> action, bool focusEditor = true)
     {
         if (_busy) return;
+        var explorerFocused = FolderExplorer.IsKeyboardFocusWithin;
         SetBusy(true);
         try { await action(); }
         catch (Exception ex)
@@ -143,7 +148,12 @@ public partial class MainView : UserControl
             UpdateStatus(Loc.T("OperationFailed"));
             await DialogService.ShowAsync(Host, Loc.T("UnableToComplete"), ex.Message, "OK");
         }
-        finally { SetBusy(false); TextEditor.FocusEditor(); }
+        finally
+        {
+            SetBusy(false);
+            if (focusEditor || _focusEditorAfterBusy) { _focusEditorAfterBusy = false; TextEditor.FocusEditor(); }
+            else if (explorerFocused && !FolderExplorer.IsKeyboardFocusWithin) FolderExplorer.FocusTree();
+        }
     }
 
     private void SetBusy(bool busy)

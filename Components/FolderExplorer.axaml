@@ -27,6 +27,35 @@
       <Setter Property="Background" Value="{DynamicResource ExplorerSelectionBackground}" />
       <Setter Property="BorderBrush" Value="{DynamicResource ExplorerSelectionBorder}" />
     </Style>
+    <!-- Inline rename: a thin accent border, square corners, no focus thickening; errors keep their red border. -->
+    <!-- Separate styles: the Fluent theme's :focus/:pointerover setters are triggers, so ours must be triggers too to win. -->
+    <Style Selector="TextBox#ExplorerRenameBox /template/ Border#PART_BorderElement">
+      <Setter Property="BorderBrush" Value="{DynamicResource ExplorerRenameBorder}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="MinHeight" Value="0" />
+    </Style>
+    <Style Selector="TextBox#ExplorerRenameBox:pointerover /template/ Border#PART_BorderElement">
+      <Setter Property="BorderBrush" Value="{DynamicResource ExplorerRenameBorder}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="MinHeight" Value="0" />
+    </Style>
+    <Style Selector="TextBox#ExplorerRenameBox:focus /template/ Border#PART_BorderElement">
+      <Setter Property="BorderBrush" Value="{DynamicResource ExplorerRenameBorder}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="MinHeight" Value="0" />
+    </Style>
+    <Style Selector="TextBox#ExplorerRenameBox.renameError /template/ Border#PART_BorderElement">
+      <Setter Property="BorderBrush" Value="{DynamicResource RenameErrorBorder}" />
+    </Style>
+    <Style Selector="TextBox#ExplorerRenameBox.renameError:pointerover /template/ Border#PART_BorderElement">
+      <Setter Property="BorderBrush" Value="{DynamicResource RenameErrorBorder}" />
+    </Style>
+    <Style Selector="TextBox#ExplorerRenameBox.renameError:focus /template/ Border#PART_BorderElement">
+      <Setter Property="BorderBrush" Value="{DynamicResource RenameErrorBorder}" />
+    </Style>
     <Style Selector="TreeViewItem.dropTarget">
       <Setter Property="Background" Value="{DynamicResource DropTargetBackground}" />
     </Style>
