@@ -7,7 +7,8 @@ public enum SyntaxColor : byte
 {
     Default, H1, H2, H3, H4, Marker, InlineCode, Link, Url, ListMarker, Quote, Checkbox, Checked, FrontMatter, Rule,
     CodeText, CodeKeyword, CodeString, CodeComment, CodeNumber, CodeType, CodeProperty, CodeTag, CodeAttribute,
-    Bold, Italic, Strike // item 44: emphasis text colours (only where no heading/link/forced colour applies)
+    Bold, Italic, Strike, // item 44: emphasis text colours (only where no heading/link/forced colour applies)
+    OrderedMarker // item 62: ordered-list numbers ("1." / "1)"), coloured apart from bullets
 }
 
 [Flags] public enum SyntaxFont : byte { None = 0, Bold = 1, Italic = 2, Strike = 4 }
@@ -187,7 +188,7 @@ public sealed class MarkdownHighlighter
         if (ListItem.Match(body) is { Success: true } li)
         {
             var m = li.Groups[2];
-            o.Add(new(pos + m.Index, m.Length, SyntaxColor.ListMarker));
+            o.Add(new(pos + m.Index, m.Length, char.IsAsciiDigit(m.Value[0]) ? SyntaxColor.OrderedMarker : SyntaxColor.ListMarker));
             var after = pos + m.Index + m.Length;
             if (Task.Match(line, after) is { Success: true } task && task.Index == after)
             {

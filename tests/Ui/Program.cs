@@ -23,6 +23,7 @@ if (args.Contains("--editorfont-only")) { EditorFontsTests.Run(); return; }
 if (args.Contains("--foldertabs-only")) { FolderTabsTests.Run(); return; }
 if (args.Contains("--overwrite-only")) { OverwriteTests.Run(); return; }
 if (args.Contains("--titlelogo-only")) { TitleLogoTests.Run(); return; }
+if (args.Contains("--editorcolors-only")) { EditorColorsTests.Run(); return; }
 if (args.Contains("--gears-only")) { GearsTests.Run(); return; }
 if (args.Contains("--export-only")) { ExportTests.Run(); return; }
 if (args.Contains("--binary-only")) { BinaryFileTests.Run(); return; }

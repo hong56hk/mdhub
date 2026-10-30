@@ -1,5 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:components="using:Mdhub.Components" x:Class="Mdhub.Components.TextEditor">
-  <Grid Background="{DynamicResource EditorBackground}" MinWidth="180">
+  <Grid Background="{DynamicResource EditorTextBackground}" MinWidth="180">
     <Grid ColumnDefinitions="Auto,*">
       <components:LineNumberGutter x:Name="LineGutter" Cursor="Arrow" />
       <components:MarkdownBlockOverlay x:Name="MarkdownBlocks" Grid.Column="1" />

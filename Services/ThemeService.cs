@@ -34,6 +34,27 @@ public static class ThemeService
         return Colors.Transparent;
     }
 
+    // Item 62: the palette value from Styles/Theme.axaml itself, ignoring the editor gear's overrides.
+    public static Color ThemeDefault(string key, AppTheme theme)
+    {
+        if (Application.Current is { } app)
+            foreach (var dictionary in app.Resources.MergedDictionaries)
+                if (dictionary.TryGetResource(key, Variant(theme), out var value))
+                    return value switch { ISolidColorBrush s => s.Color, Color c => c, _ => Colors.Transparent };
+        return Colors.Transparent;
+    }
+
+    // Item 62: re-reads every tracked brush and repaints (after resource overrides change, without switching theme).
+    public static void Refresh()
+    {
+        foreach (var (key, brush) in Tracked) brush.Color = Lookup(key);
+        foreach (var weak in Roots.ToList())
+        {
+            if (!weak.TryGetTarget(out var root)) continue;
+            foreach (var visual in root.GetVisualDescendants().OfType<Layoutable>()) { visual.InvalidateMeasure(); visual.InvalidateVisual(); }
+        }
+    }
+
     // Windows whose custom-drawn visuals must repaint on a switch.
     public static void Register(TopLevel root)
     {

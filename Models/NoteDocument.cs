@@ -43,6 +43,9 @@ public sealed class NoteDocument : INotifyPropertyChanged
         Editor.Resources["TextControlBackgroundFocused"] = Brushes.Transparent;
         Editor.Resources["TextControlBackgroundPointerOver"] = Brushes.Transparent;
         Editor.Resources["TextControlBorderBrushFocused"] = Mdhub.Services.ThemeService.Brush("BorderSubtle");
+        // Item 62: text and selection colours are theme keys (the editor gear can override them per theme).
+        Editor.Foreground = Mdhub.Services.ThemeService.Brush("EditorForeground");
+        Editor.SelectionBrush = Mdhub.Services.ThemeService.Brush("EditorSelectionBackground");
         ScrollViewer.SetHorizontalScrollBarVisibility(Editor, ScrollBarVisibility.Auto);
         ScrollViewer.SetVerticalScrollBarVisibility(Editor, ScrollBarVisibility.Auto);
         // A horizontal scroll viewer gives the text unlimited width, so wrapping needs it disabled.

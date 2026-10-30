@@ -134,7 +134,7 @@ internal static class GearsTests
                 Click(button);
                 Check(flyout.IsOpen && flyout.Target == button && flyout.Placement == PlacementMode.BottomEdgeAlignedRight && !((Flyout)other.Flyout!).IsOpen, $"{button.Name}: a click opens its own flyout, below the button (right-aligned)");
                 var content = (Control)flyout.Content!;
-                Check(panelName != "" ? content.Name == panelName && content.GetLogicalDescendants().OfType<ComboBox>().Count() == 2
+                Check(panelName != "" ? content.GetLogicalDescendants().OfType<StackPanel>().SingleOrDefault(p => p.Name == panelName)?.GetLogicalDescendants().OfType<ComboBox>().Count() == 2
                     : new[] { "BodyFontBox", "BodySizeBox", "CodeFontBox", "CodeSizeBox", "LineHeightBox", "ParagraphSpacingBox", "ResetPreviewSettings" }.All(n => content.GetLogicalDescendants().OfType<Control>().Any(c => c.Name == n)),
                     $"{button.Name}: the flyout keeps its contents");
                 var popup = TopLevel.GetTopLevel(content);

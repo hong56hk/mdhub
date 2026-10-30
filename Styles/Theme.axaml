@@ -77,6 +77,11 @@
       <SolidColorBrush x:Key="SyntaxBold" Color="#FFFFFF" />
       <SolidColorBrush x:Key="SyntaxItalic" Color="#E0E0E0" />
       <SolidColorBrush x:Key="SyntaxStrike" Color="#C8C8C8" />
+      <!-- Item 62: editor-only keys for the editor gear's colours (values are the look before item 62). -->
+      <SolidColorBrush x:Key="SyntaxOrderedMarker" Color="#D7BA7D" />
+      <SolidColorBrush x:Key="EditorTextBackground" Color="#202329" />
+      <SolidColorBrush x:Key="EditorForeground" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="EditorSelectionBackground" Color="#0078D7" />
       <SolidColorBrush x:Key="PreviewHighlight" Color="#5C4F8FE8" />
       <SolidColorBrush x:Key="PreviewSelectionBackground" Color="#99306FB8" />
         <!-- Explorer rows, VS Code Dark Modern: focused selection, selection while focus is elsewhere, hover. -->
@@ -172,6 +177,11 @@
       <SolidColorBrush x:Key="SyntaxBold" Color="#1F2328" />
       <SolidColorBrush x:Key="SyntaxItalic" Color="#1F2328" />
       <SolidColorBrush x:Key="SyntaxStrike" Color="#1F2328" />
+      <!-- Item 62: editor-only keys for the editor gear's colours (values are the look before item 62). -->
+      <SolidColorBrush x:Key="SyntaxOrderedMarker" Color="#795E26" />
+      <SolidColorBrush x:Key="EditorTextBackground" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="EditorForeground" Color="#000000" />
+      <SolidColorBrush x:Key="EditorSelectionBackground" Color="#0078D7" />
       <SolidColorBrush x:Key="PreviewHighlight" Color="#404F8FE8" />
       <SolidColorBrush x:Key="PreviewSelectionBackground" Color="#99ADD6FF" />
         <!-- Explorer rows, VS Code Light Modern: focused selection, selection while focus is elsewhere, hover. -->

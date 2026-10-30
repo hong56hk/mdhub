@@ -33,10 +33,18 @@ public sealed record SessionData
     public PreviewSettingsData? Preview { get; init; }
     // Item 57: editor fonts (separate from the preview); null when both are the default.
     public EditorFontsData? EditorFonts { get; init; }
+    // Item 62: editor colour overrides per theme (colour id -> #AARRGGBB); null when none.
+    public EditorColorsData? EditorColors { get; init; }
 }
 
 // UI-free session file handling: atomic save, tolerant load and validation against the file system.
 // Item 57: the source editor's body and code font names (Consolas, the editor's font before item 57).
+// Item 62: per-theme editor colour overrides, keyed by EditorColors item id.
+public sealed record EditorColorsData
+{
+    public Dictionary<string, string>? Dark { get; init; }
+    public Dictionary<string, string>? Light { get; init; }
+}
 public sealed record EditorFontsData
 {
     public string Body { get; init; } = "Consolas";

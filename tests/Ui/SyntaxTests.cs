@@ -89,8 +89,8 @@ internal static class SyntaxTests
         // Lists, quotes, tasks.
         t = "- bullet\n* star\n+ plus\n1. one\n12) twelve\n  - nested\n> quoted **text**\n> > deeper\n- [ ] todo\n- [x] done item\n-not a list\n";
         r = MarkdownHighlighter.Highlight(t);
-        Check(new[] { "- bullet", "* star", "+ plus", "1.", "12)", "- nested" }.All(m => C(r, t, m) == SyntaxColor.ListMarker) && C(r, t, "12)", 2) == SyntaxColor.ListMarker
-            && C(r, t, "bullet") == SyntaxColor.Default && C(r, t, "-not") == SyntaxColor.Default, "Bullets and numbers use the list colour");
+        Check(new[] { "- bullet", "* star", "+ plus", "- nested" }.All(m => C(r, t, m) == SyntaxColor.ListMarker) && new[] { "1.", "12)" }.All(m => C(r, t, m) == SyntaxColor.OrderedMarker) && C(r, t, "12)", 2) == SyntaxColor.OrderedMarker
+            && C(r, t, "bullet") == SyntaxColor.Default && C(r, t, "-not") == SyntaxColor.Default, "Bullets use the list colour, numbers the ordered-list colour (item 62)");
         Check(C(r, t, "> quoted") == SyntaxColor.Marker && C(r, t, "quoted") == SyntaxColor.Quote && C(r, t, "text**") == SyntaxColor.Quote && F(r, t, "text**") == SyntaxFont.Bold
             && C(r, t, "> deeper", 0) == SyntaxColor.Marker && C(r, t, "deeper") == SyntaxColor.Quote, "Quote markers dimmed, quote text grey (inline styles kept)");
         Check(r.Blocks.Count(b => b.Kind == SyntaxBlockKind.Quote) == 1 && r.Blocks.First(b => b.Kind == SyntaxBlockKind.Quote) is var qb

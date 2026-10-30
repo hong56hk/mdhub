@@ -61,7 +61,7 @@ internal static class EditorFontsTests
             // ---- Flyout: exactly two dropdowns ----
             var flyout = (Flyout)gear.Flyout!;
             flyout.ShowAt(gear); Settle();
-            var panel = (StackPanel)flyout.Content!;
+            var panel = ((Control)flyout.Content!).GetLogicalDescendants().OfType<StackPanel>().Single(p => p.Name == "EditorFontsPanel"); // item 62: fonts, then colours
             var inputs = panel.GetLogicalDescendants().OfType<Control>().Where(c => c is ComboBox or NumericUpDown or Button or CheckBox or ToggleButton or TextBox or Slider).ToList();
             var bodyBox = inputs.OfType<ComboBox>().Single(c => c.Name == "EditorBodyFontBox");
             var codeBox = inputs.OfType<ComboBox>().Single(c => c.Name == "EditorCodeFontBox");
@@ -110,7 +110,7 @@ internal static class EditorFontsTests
             var doc3 = typeof(MainView).GetMethod("AddDocument", flags)!.Invoke(view, [null, "third", "third.md", null]); Settle();
             Check(tabs.Items.OfType<NoteDocument>().Single(d => d.Text == "third").Editor.FontFamily.Name == body, "Newly opened editors use the chosen body font");
             flyout.Hide(); flyout.ShowAt(gear); Settle();
-            panel = (StackPanel)flyout.Content!;
+            panel = ((Control)flyout.Content!).GetLogicalDescendants().OfType<StackPanel>().Single(p => p.Name == "EditorFontsPanel");
             Check((string)panel.GetLogicalDescendants().OfType<ComboBox>().First().SelectedItem! == body, "Reopening the flyout shows the current fonts");
             panel.GetLogicalDescendants().OfType<ComboBox>().ToList().ForEach(c => c.SelectedItem = "Consolas"); Settle();
             Check(EditorFonts.IsDefault && SessionStore.Load(sessionPath)!.EditorFonts is null && md.Editor.FontFamily.ToString().Contains("Consolas, Menlo, monospace"), "Choosing Consolas again stores no editor fonts in the session");
