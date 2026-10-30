@@ -28,8 +28,11 @@
       <Setter Property="HorizontalAlignment" Value="Right" />
     </Style>
   </UserControl.Styles>
-  <Grid ColumnDefinitions="Auto,*,Auto" Height="32" Background="{DynamicResource AppBackground}">
-  <Menu x:Name="MainMenu" Background="{DynamicResource AppBackground}" VerticalAlignment="Center">
+  <Grid ColumnDefinitions="Auto,Auto,*,Auto" Height="32" Background="{DynamicResource AppBackground}">
+  <!-- Item 69: the app logo left of File; part of the title bar drag area. Source set in code (AppIcon.Logo). -->
+  <Image x:Name="TitleLogo" Width="16" Height="16" Margin="12,0,6,0" VerticalAlignment="Center"
+         RenderOptions.BitmapInterpolationMode="HighQuality" WindowDecorationProperties.ElementRole="TitleBar" />
+  <Menu x:Name="MainMenu" Grid.Column="1" Background="{DynamicResource AppBackground}" VerticalAlignment="Center">
     <MenuItem Header="{DynamicResource MenuFile}">
       <MenuItem Header="{DynamicResource MenuNew}" Click="New_Click" c:ShortcutKeys.Id="file.new" />
       <MenuItem Header="{DynamicResource MenuOpenFile}" Click="Open_Click" c:ShortcutKeys.Id="file.open" />
@@ -85,9 +88,9 @@
       <MenuItem Header="{DynamicResource MenuAbout}" Click="About_Click" />
     </MenuItem>
   </Menu>
-  <Border x:Name="TitleBarDragRegion" Grid.Column="1" Background="Transparent"
+  <Border x:Name="TitleBarDragRegion" Grid.Column="2" Background="Transparent"
           WindowDecorationProperties.ElementRole="TitleBar" />
-  <StackPanel Grid.Column="2" Orientation="Horizontal">
+  <StackPanel Grid.Column="3" Orientation="Horizontal">
     <Button x:Name="MinimizeButton" Classes="caption" Click="Minimize_Click"
             ToolTip.Tip="{DynamicResource Minimize}" AutomationProperties.Name="{DynamicResource Minimize}">
       <Path Data="M 0,5 L 10,5" Width="10" Height="10" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1" />

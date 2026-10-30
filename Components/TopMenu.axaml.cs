@@ -21,6 +21,7 @@ public partial class TopMenu : UserControl
     public TopMenu()
     {
         InitializeComponent();
+        TitleLogo.Source = Services.AppIcon.Logo(); // item 69
         ShortcutKeys.ApplyGestures(MainMenu.Items.OfType<MenuItem>());
         UpdateThemeChecks(Services.ThemeService.Current);
         AttachedToVisualTree += (_, _) => { Services.ThemeService.Changed += UpdateThemeChecks; UpdateThemeChecks(Services.ThemeService.Current); };
