@@ -1,4 +1,4 @@
-﻿using Avalonia;
+using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -116,11 +116,7 @@ internal static class EditorFontsTests
             Check(EditorFonts.IsDefault && SessionStore.Load(sessionPath)!.EditorFonts is null && md.Editor.FontFamily.ToString().Contains("Consolas, Menlo, monospace"), "Choosing Consolas again stores no editor fonts in the session");
             flyout.Hide(); Settle();
 
-<<<<<<< HEAD
-            Check(Loc.Languages.All(l => new[] { "EditorFontSettings", "EditorBodyFont", "EditorCodeFont" }.All(k => Loc.Table(l.Code).TryGetValue(k, out var v) && !string.IsNullOrWhiteSpace(v))), "Every string exists in all 4 languages");
-=======
             Check(Loc.Languages.All(l => new[] { "EditorFontSettings", "EditorBodyFont", "EditorCodeFont" }.All(k => Loc.Table(l.Code).TryGetValue(k, out var v) && !string.IsNullOrWhiteSpace(v))), $"Every string exists in all {Loc.Languages.Count} languages");
->>>>>>> 70c9042be8797bf50a6f028fa23f8234d5e291b1
             Console.WriteLine($"Editor font tests: {passed} passed");
         }
         finally
