@@ -219,6 +219,14 @@ public partial class MainView
             if (undoId == "edit.undo") undoDoc.Editor.Undo(); else undoDoc.Editor.Redo();
             return;
         }
+        // Item 72: Alt+Up/Down and Ctrl+D act on the focused editor only; elsewhere (the explorer) Ctrl+D falls through to Duplicate.
+        if (!_busy && EditorFocused && _active is { IsViewOnly: false } && !_active.Editor.IsReadOnly && ShortcutKeys.Match(e, s => s.Id is "edit.moveLineUp" or "edit.moveLineDown" or "edit.duplicateLine") is { } lineId)
+        {
+            e.Handled = true;
+            ShortcutFired?.Invoke(lineId);
+            LineEdit(lineId);
+            return;
+        }
         // Built-in TextBox keys and zoom (MainWindow) are listed in the table but handled elsewhere.
         var id = ShortcutKeys.Match(e, s => !s.HandledByTextBox && s.Area != ShortcutArea.Zoom && s.Id is not ("find.next" or "find.previous" or "find.close"));
         Func<Task>? action = id switch
@@ -280,10 +288,28 @@ public partial class MainView
         "editor.quote" => Sync(() => TextEditor.Format("quote")),
         "editor.insertTime" => Sync(InsertTime),
         "editor.goToLine" => GoToLineAsync,
+        "edit.moveLineUp" or "edit.moveLineDown" or "edit.duplicateLine" => Sync(() => LineEdit(id)),
         "view.previewCaret" => Sync(() => { if (_active is { } d) MdEditor.CenterPreviewOnLine(d.Editor.CaretIndex); }),
         _ => null
     };
     private static Func<Task> Sync(Action a) => () => { a(); return Task.CompletedTask; };
+
+    // Item 72: one replacement (a single undo step), then the selection (anchor and caret) on the moved/copied lines.
+    private void LineEdit(string id)
+    {
+        if (_active is not { } document || document.Editor.IsReadOnly) return;
+        var editor = document.Editor;
+        var text = editor.Text ?? "";
+        int anchor = editor.SelectionStart, caret = editor.SelectionEnd;
+        var edit = id == "edit.duplicateLine" ? Mdhub.Text.LineEdits.Duplicate(text, anchor, caret) : Mdhub.Text.LineEdits.Move(text, anchor, caret, id == "edit.moveLineUp" ? -1 : 1);
+        if (edit is { } change)
+        {
+            editor.SelectionStart = change.Start; editor.SelectionEnd = change.Start + change.Length;
+            editor.SelectedText = change.Text;
+            editor.SelectionStart = change.Anchor; editor.SelectionEnd = change.Caret;
+        }
+        editor.Focus();
+    }
 
     // Replaces the selection with the local time as a single edit (one undo step).
     private void InsertTime()

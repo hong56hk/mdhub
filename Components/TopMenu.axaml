@@ -56,6 +56,9 @@
       <MenuItem Header="{DynamicResource MenuCopy}" Click="Edit_Click" Tag="copy" c:ShortcutKeys.Id="edit.copy" />
       <MenuItem Header="{DynamicResource MenuPaste}" Click="Edit_Click" Tag="paste" c:ShortcutKeys.Id="edit.paste" />
       <MenuItem Header="{DynamicResource MenuSelectAll}" Click="Edit_Click" Tag="select all" c:ShortcutKeys.Id="edit.selectAll" />
+      <MenuItem Header="{DynamicResource MenuMoveLineUp}" Click="Command_Click" c:ShortcutKeys.Id="edit.moveLineUp" />
+      <MenuItem Header="{DynamicResource MenuMoveLineDown}" Click="Command_Click" c:ShortcutKeys.Id="edit.moveLineDown" />
+      <MenuItem Header="{DynamicResource MenuDuplicateLine}" Click="Command_Click" c:ShortcutKeys.Id="edit.duplicateLine" />
       <Separator />
       <MenuItem Header="{DynamicResource MenuBold}" Click="Command_Click" c:ShortcutKeys.Id="editor.bold" />
       <MenuItem Header="{DynamicResource MenuItalic}" Click="Command_Click" c:ShortcutKeys.Id="editor.italic" />

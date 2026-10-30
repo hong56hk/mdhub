@@ -12,7 +12,7 @@ public readonly record struct ShortcutGesture(string Key, ShortcutMods Mods, str
     private static readonly Dictionary<string, string> KeyNames = new()
     {
         ["OemPlus"] = "=", ["OemMinus"] = "-", ["OemPipe"] = "\\", ["Add"] = "Num +", ["Subtract"] = "Num -", ["NumPad0"] = "Num 0",
-        ["D0"] = "0", ["OemQuotes"] = "'", ["OemSemicolon"] = ";", ["Escape"] = "Esc", ["Delete"] = "Del", ["Left"] = "Left", ["Right"] = "Right"
+        ["D0"] = "0", ["OemQuotes"] = "'", ["OemSemicolon"] = ";", ["Escape"] = "Esc", ["Delete"] = "Del", ["Left"] = "Left", ["Right"] = "Right", ["Up"] = "Up", ["Down"] = "Down"
     };
 
     public string Format(bool mac)
@@ -75,6 +75,10 @@ public static class Shortcuts
         T("edit.copy", ShortcutArea.Edit, "Copy", C("C")),
         S("edit.paste", ShortcutArea.Edit, "Paste (text or image)", C("V")),
         T("edit.selectAll", ShortcutArea.Edit, "Select all", C("A")),
+        // Item 72: line edits, editor focus only. Edit area, so Ctrl+D never conflicts with the explorer-only Duplicate.
+        S("edit.moveLineUp", ShortcutArea.Edit, "Move line up", new ShortcutGesture("Up", ShortcutMods.Alt)),
+        S("edit.moveLineDown", ShortcutArea.Edit, "Move line down", new ShortcutGesture("Down", ShortcutMods.Alt)),
+        S("edit.duplicateLine", ShortcutArea.Edit, "Duplicate line", C("D")),
         // Item 53: after the Edit entries so a plain match of Ctrl+C/X/V still finds the editor entry first.
         E("explorer.cut", "Cut selected explorer item (explorer focused)", C("X")),
         E("explorer.copy", "Copy selected explorer item (explorer focused)", C("C")),
