@@ -235,7 +235,6 @@ public static partial class Loc
         ["OpenNotesFolderTitle"] = "開啟筆記資料夾",
         ["OperationFailed"] = "作業失敗；已開啟的筆記仍可使用。",
         ["UnableToComplete"] = "無法完成作業",
-        ["AboutText"] = "mdhub · 你的筆記，留在本機。\n\n以 C#、Avalonia 與 Markdig 打造的離線文字與 Markdown 工作區。\n\n預覽支援常見的 Markdown。圖片會顯示為標籤；HTML、數學式與 Mermaid 不會執行或轉譯。",
         ["StringTextFlyoutCutText"] = "剪下",
         ["StringTextFlyoutCopyText"] = "複製",
         ["StringTextFlyoutPasteText"] = "貼上",
@@ -329,6 +328,12 @@ public static partial class Loc
         ["CopiedStatus"] = "已複製 · {0}",
         ["PastedStatus"] = "已貼上 · {0}",
         ["AboutTitle"] = "關於 mdhub",
+        ["AboutVersion"] = "版本 {0}",
+        ["AboutDescription"] = "快速、離線的桌面工作區，用來整理、搜尋與撰寫 Markdown 筆記。開啟資料夾、在檔案總管中瀏覽、搭配即時預覽編輯，並以快速開啟與全域搜尋找到任何內容。以 .NET 與 Avalonia 打造。",
+        ["AboutGitHub"] = "GitHub：",
+        ["AboutLicense"] = "授權條款：",
+        ["AboutMitLicense"] = "MIT 授權條款",
+        ["AboutCopyright"] = "Copyright © 2026 Hong",
         ["PathCopied"] = "\u5df2\u8907\u88fd\u8def\u5f91", ["CopyPathTip"] = "\u6309\u4e00\u4e0b\u4ee5\u8907\u88fd\u8def\u5f91",
     };
 }

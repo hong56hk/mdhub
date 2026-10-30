@@ -235,7 +235,6 @@ public static partial class Loc
         ["OpenNotesFolderTitle"] = "노트 폴더 열기",
         ["OperationFailed"] = "작업에 실패했습니다. 열려 있는 노트는 계속 사용할 수 있습니다.",
         ["UnableToComplete"] = "작업을 완료할 수 없음",
-        ["AboutText"] = "mdhub · 내 노트를 내 컴퓨터에.\n\nC#, Avalonia, Markdig로 만든 오프라인 텍스트 및 Markdown 작업 공간입니다.\n\n미리 보기는 일반적인 Markdown을 지원합니다. 이미지는 레이블로 표시되며 HTML, 수식, Mermaid는 실행하거나 렌더링하지 않습니다.",
         ["StringTextFlyoutCutText"] = "잘라내기",
         ["StringTextFlyoutCopyText"] = "복사",
         ["StringTextFlyoutPasteText"] = "붙여넣기",
@@ -329,6 +328,12 @@ public static partial class Loc
         ["CopiedStatus"] = "복사함 · {0}",
         ["PastedStatus"] = "붙여넣음 · {0}",
         ["AboutTitle"] = "mdhub 정보",
+        ["AboutVersion"] = "버전 {0}",
+        ["AboutDescription"] = "Markdown 노트를 정리하고 검색하고 작성하기 위한 빠른 오프라인 데스크톱 작업 공간입니다. 폴더를 열고 탐색기에서 둘러보고, 실시간 미리 보기로 편집하고, 빠른 열기와 전체 검색으로 무엇이든 찾을 수 있습니다. .NET과 Avalonia로 만들었습니다.",
+        ["AboutGitHub"] = "GitHub:",
+        ["AboutLicense"] = "라이선스:",
+        ["AboutMitLicense"] = "MIT 라이선스",
+        ["AboutCopyright"] = "Copyright © 2026 Hong",
         ["PathCopied"] = "\uACBD\uB85C\uB97C \uBCF5\uC0AC\uD588\uC2B5\uB2C8\uB2E4", ["CopyPathTip"] = "\uD074\uB9AD\uD558\uC5EC \uACBD\uB85C \uBCF5\uC0AC",
     };
 }

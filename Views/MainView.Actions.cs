@@ -321,6 +321,8 @@ public partial class MainView
     });
 
     private async void About_Click(object? sender, RoutedEventArgs e) => await RunAsync(async () =>
-        await DialogService.ShowAboutAsync(Host));
+    {
+        if (await DialogService.ShowAboutAsync(Host) == DialogService.LicenseChoice) OpenLicenseTab();
+    });
 
 }

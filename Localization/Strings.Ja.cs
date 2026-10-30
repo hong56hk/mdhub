@@ -235,7 +235,6 @@ public static partial class Loc
         ["OpenNotesFolderTitle"] = "ノートのフォルダーを開く",
         ["OperationFailed"] = "操作に失敗しました。開いているノートはそのまま使用できます。",
         ["UnableToComplete"] = "操作を完了できません",
-        ["AboutText"] = "mdhub · ノートをローカルに。\n\nC#、Avalonia、Markdig で作られたオフラインのテキスト / Markdown ワークスペースです。\n\nプレビューは一般的な Markdown に対応しています。画像はラベルとして表示され、HTML、数式、Mermaid は実行・描画されません。",
         ["StringTextFlyoutCutText"] = "切り取り",
         ["StringTextFlyoutCopyText"] = "コピー",
         ["StringTextFlyoutPasteText"] = "貼り付け",
@@ -329,6 +328,12 @@ public static partial class Loc
         ["CopiedStatus"] = "コピーしました · {0}",
         ["PastedStatus"] = "貼り付けました · {0}",
         ["AboutTitle"] = "mdhub について",
+        ["AboutVersion"] = "バージョン {0}",
+        ["AboutDescription"] = "Markdown ノートを整理・検索・執筆するための、高速でオフラインのデスクトップワークスペースです。フォルダーを開いてエクスプローラーで閲覧し、ライブプレビューで編集し、クイックオープンと全体検索で何でも見つけられます。.NET と Avalonia で構築されています。",
+        ["AboutGitHub"] = "GitHub：",
+        ["AboutLicense"] = "ライセンス：",
+        ["AboutMitLicense"] = "MIT ライセンス",
+        ["AboutCopyright"] = "Copyright © 2026 Hong",
         ["PathCopied"] = "\u30d1\u30b9\u3092\u30b3\u30d4\u30fc\u3057\u307e\u3057\u305f", ["CopyPathTip"] = "\u30af\u30ea\u30c3\u30af\u3057\u3066\u30d1\u30b9\u3092\u30b3\u30d4\u30fc",
     };
 }

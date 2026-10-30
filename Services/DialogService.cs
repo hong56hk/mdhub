@@ -95,9 +95,64 @@ public static class DialogService
     // Every shortcut, grouped by area; mdhub's own entries can be rebound (Components/ShortcutsDialog.cs).
     public static Task ShowShortcutsAsync(Window owner) => Mdhub.Components.ShortcutsDialog.ShowAsync(owner);
 
-    // Item 34: About shows the app logo beside the text.
-    public static Task<string?> ShowAboutAsync(Window owner) => ShowAsync(owner, Loc.T("AboutTitle"), Loc.T("AboutText"),
-        new Avalonia.Controls.Image { Name = "AboutLogo", Source = AppIcon.Logo(), Width = 64, Height = 64, VerticalAlignment = VerticalAlignment.Top }, "OK");
+    // Item 58: About mdhub. Logo beside the name, version (from the assembly), description, GitHub and licence links,
+    // copyright and OK. The GitHub link opens the browser; "MIT License" closes the dialog with LicenseChoice so the
+    // window opens the bundled LICENSE in a read-only tab.
+    public const string LicenseChoice = "License";
+    // Test seam: receives the URI instead of the system browser.
+    public static Func<Uri, Task>? LaunchOverride { get; set; }
+
+    public static async Task LaunchAsync(TopLevel top, Uri uri)
+    {
+        if (LaunchOverride is { } launch) { await launch(uri); return; }
+        await top.Launcher.LaunchUriAsync(uri);
+    }
+
+    private static HyperlinkButton AboutLink(string name, string text, Func<Task> click)
+    {
+        var link = ThemeService.Brush("LinkForeground");
+        var button = new HyperlinkButton
+        {
+            Name = name, Content = text, Padding = new Thickness(0), Foreground = link, Background = Brushes.Transparent,
+            Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand), VerticalAlignment = VerticalAlignment.Center
+        };
+        foreach (var state in new[] { "", "PointerOver", "Pressed" })
+        {
+            button.Resources["HyperlinkButtonForeground" + state] = link;
+            button.Resources["HyperlinkButtonBackground" + state] = Brushes.Transparent;
+        }
+        button.Click += async (_, _) => await click();
+        return button;
+    }
+
+    public static Task<string?> ShowAboutAsync(Window owner)
+    {
+        var dialog = new Window { Name = "AboutDialog", Title = Loc.T("AboutTitle"), Width = 540, SizeToContent = SizeToContent.Height, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+        var ok = new Button { Name = "AboutOk", Content = Loc.T("OK"), IsDefault = true, IsCancel = true, MinWidth = 80, MinHeight = 42, FontSize = 16, Classes = { "textAction" }, HorizontalContentAlignment = HorizontalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right };
+        ok.Click += (_, _) => dialog.Close("OK");
+        var github = AboutLink("AboutGitHubLink", AppInfo.GitHubDisplay, () => LaunchAsync(dialog, AppInfo.GitHubUri));
+        var license = AboutLink("AboutLicenseLink", Loc.T("AboutMitLicense"), () => { dialog.Close(LicenseChoice); return Task.CompletedTask; });
+        StackPanel Row(string name, string label, Control value) => new() { Name = name, Orientation = Orientation.Horizontal, Spacing = 6, Children = { new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center }, value } };
+        var text = new StackPanel
+        {
+            Spacing = 4, Margin = new Thickness(16, 0, 0, 0),
+            Children =
+            {
+                new TextBlock { Name = "AboutName", Text = "MDHub", FontSize = 20, FontWeight = FontWeight.SemiBold },
+                new TextBlock { Name = "AboutVersion", Text = Loc.F("AboutVersion", AppInfo.Version), Foreground = ThemeService.Brush("DialogHintForeground") },
+                new TextBlock { Name = "AboutDescription", Text = Loc.T("AboutDescription"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 12) },
+                Row("AboutGitHubRow", Loc.T("AboutGitHub"), github),
+                Row("AboutLicenseRow", Loc.T("AboutLicense"), license),
+                new TextBlock { Name = "AboutCopyright", Text = Loc.T("AboutCopyright"), Margin = new Thickness(0, 12, 0, 0) }
+            }
+        };
+        var logo = new Avalonia.Controls.Image { Name = "AboutLogo", Source = AppIcon.Logo(), Width = 64, Height = 64, VerticalAlignment = VerticalAlignment.Top };
+        dialog.Content = new StackPanel { Margin = new Thickness(20), Spacing = 20, Children = { new DockPanel { Children = { logo, text } }, ok } };
+        dialog.Opened += (_, _) => ok.Focus();
+        ApplyOwnerZoom(dialog, owner);
+        ThemeService.PrepareTitleBar(dialog);
+        return dialog.ShowDialog<string?>(owner);
+    }
 
     public static Task<string?> ShowAsync(Window owner, string title, string message, params string[] choices) => ShowAsync(owner, title, message, null, choices);
 

@@ -235,7 +235,6 @@ public static partial class Loc
         ["OpenNotesFolderTitle"] = "Open notes folder",
         ["OperationFailed"] = "Operation failed; your open notes are still available.",
         ["UnableToComplete"] = "Unable to complete operation",
-        ["AboutText"] = "mdhub · Your notes, locally.\n\nAn offline text and Markdown workspace built with C#, Avalonia, and Markdig.\n\nPreview supports common Markdown. Images are shown as labels; HTML, math, and Mermaid are not executed or rendered.",
         ["StringTextFlyoutCutText"] = "Cut",
         ["StringTextFlyoutCopyText"] = "Copy",
         ["StringTextFlyoutPasteText"] = "Paste",
@@ -329,6 +328,12 @@ public static partial class Loc
         ["CopiedStatus"] = "Copied · {0}",
         ["PastedStatus"] = "Pasted · {0}",
         ["AboutTitle"] = "About mdhub",
+        ["AboutVersion"] = "Version {0}",
+        ["AboutDescription"] = "A fast, offline desktop workspace for organizing, searching and writing Markdown notes. Open a folder, browse it in the explorer, edit with a live preview, and find anything with Quick Open and global search. Built with .NET and Avalonia.",
+        ["AboutGitHub"] = "GitHub:",
+        ["AboutLicense"] = "License:",
+        ["AboutMitLicense"] = "MIT License",
+        ["AboutCopyright"] = "Copyright © 2026 Hong",
         ["PathCopied"] = "Path copied", ["CopyPathTip"] = "Click to copy the path",
     };
 }
