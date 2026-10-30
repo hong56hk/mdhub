@@ -64,7 +64,13 @@ internal static class FormatIconTests
             var dots = w.GetVisualDescendants().OfType<Path>().Single(p => p.Name == "BulletDots").Data!;
             Check(On("BulletIcon", (10, 2.5), (10, 7), (10, 11.5)) && Off("BulletIcon", (4.5, 7), (10, 4.75), (2.4, 7)) && new[] { 2.5, 7, 11.5 }.All(y => dots.FillContains(new Point(2.4, y))) && !dots.FillContains(new Point(2.4, 4.75)) && dots.Bounds.Right < 5, "Bullet list: three lines with a dot left of each");
             Check(On("OrderedIcon", (10, 2.5), (10, 7), (10, 11.5)) && w.GetVisualDescendants().OfType<Path>().Single(p => p.Name == "OrderedDigits").Data!.Bounds is { Right: < 5, Height: > 11 }, "Ordered list: three lines with tiny 1, 2, 3 on their left");
-            Check(On("TableIcon", (8, 1.5), (8, 12.5), (1.5, 7), (14.5, 7), (8, 5), (6, 10), (10, 10)) && Off("TableIcon", (4, 7), (12, 11)), "Table: rounded rectangle with header and column grid lines");
+            // Bug 65: a 3x3 grid (two inner row lines, two inner column lines), same 16x14 box and stroke.
+            var grid = w.GetVisualDescendants().OfType<Path>().Single(p => p.Name == "TableIcon").Data!;
+            double[] rows = [1.5, 5.17, 8.83, 12.5], cols = [1.5, 5.83, 10.17, 14.5];
+            static bool Even(double[] e) => Enumerable.Range(0, 3).All(k => Math.Abs((e[k + 1] - e[k]) - (e[3] - e[0]) / 3) < 0.02);
+            Check(On("TableIcon", (8, 1.5), (8, 12.5), (1.5, 7), (14.5, 7), (3.5, rows[1]), (12, rows[2]), (cols[1], 3.5), (cols[2], 10.5))
+                && Off("TableIcon", (3.6, 7), (8, 7), (12.4, 7), (3.6, 3.3), (8, 10.7), (12.4, 10.7)) && Even(rows) && Even(cols)
+                && grid.Bounds is { X: >= 1, Y: >= 1, Right: <= 15, Bottom: <= 13 }, "Table: rounded rectangle split into an even 3x3 grid");
 
             // Colours follow the theme: the same foreground as the text buttons, also when disabled.
             foreach (var theme in new[] { AppTheme.Dark, AppTheme.Light })
@@ -76,6 +82,51 @@ internal static class FormatIconTests
                     var brushes = B(tag).GetVisualDescendants().OfType<Path>().Select(p => p.Stroke ?? p.Fill).ToList();
                     Check(brushes.All(b => b is ISolidColorBrush s && s.Color == text), $"{theme}: {tag} icon uses the format-bar text colour {text}");
                 }
+            }
+            // Bug 65: when the format bar is disabled (active tab not .md) the icons dim exactly like the text buttons, in both themes.
+            var txt = System.IO.Path.ChangeExtension(note, ".txt"); File.WriteAllText(txt, "plain");
+            try
+            {
+                Color Presenter(Button b) => ((ISolidColorBrush)b.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.ContentPresenter>().First().Foreground!).Color;
+                Color Res(string key, AppTheme theme) => bold.TryFindResource(key, theme == AppTheme.Dark ? Avalonia.Styling.ThemeVariant.Dark : Avalonia.Styling.ThemeVariant.Light, out var r) && r is ISolidColorBrush s ? s.Color : default;
+                void Icons(string state, AppTheme theme, Color expect)
+                {
+                    foreach (var (tag, _, _) in specs)
+                    {
+                        var brushes = B(tag).GetVisualDescendants().OfType<Path>().Select(p => p.Stroke ?? p.Fill).ToList();
+                        Check(brushes.Count > 0 && brushes.All(b => b is ISolidColorBrush s && s.Color == expect) && Presenter(B(tag)) == expect, $"{theme} {state}: {tag} icon strokes are {expect}, like the text buttons");
+                    }
+                }
+                // Bug 73: the export icons (HTML reads '<html>') dim with the bar too.
+                var exportHtml = bar.FindControl<Button>("ExportHtmlButton")!; var exportPdf = bar.FindControl<Button>("ExportPdfButton")!;
+                void Export(AppTheme theme, Color expect)
+                {
+                    foreach (var eb in new[] { exportHtml, exportPdf })
+                    {
+                        var ip = eb.GetVisualDescendants().OfType<Path>().Single();
+                        Check(ip.Stroke is ISolidColorBrush s && s.Color == expect && Presenter(eb) == expect && ip.StrokeThickness <= 1.25, $"{theme}: {eb.Name} icon stroke is {expect}");
+                    }
+                }
+                Check(exportHtml.Bounds.Height == exportPdf.Bounds.Height && exportHtml.Bounds.Width >= exportPdf.Bounds.Width && exportHtml.Bounds.Width <= 40 && exportHtml.GetVisualDescendants().OfType<Path>().Single().Bounds.Height == 14,
+                    $"<html> export button: same height as PDF, reasonable width ({exportHtml.Bounds.Size} vs {exportPdf.Bounds.Size})");
+                foreach (var theme in new[] { AppTheme.Dark, AppTheme.Light })
+                {
+                    ThemeService.Apply(theme, persist: false); Pump();
+                    Wait((Task)typeof(MainView).GetMethod("OpenPathAsync", Flags)!.Invoke(v, [txt])!);
+                    var disabled = Res("ButtonForegroundDisabled", theme);
+                    Check(!bold.IsEffectivelyEnabled && specs.All(s => !B(s.Tag).IsEffectivelyEnabled) && Presenter(bold) == disabled && disabled != default, $"{theme}: a .txt tab disables the format bar (text buttons {disabled})");
+                    Icons("disabled", theme, disabled); Export(theme, disabled);
+                    Wait((Task)typeof(MainView).GetMethod("OpenPathAsync", Flags)!.Invoke(v, [note])!);
+                    var normal = Presenter(bold);
+                    Check(bold.IsEffectivelyEnabled && normal != disabled && normal == ((ISolidColorBrush)bold.Foreground!).Color, $"{theme}: back on the .md tab the format bar is enabled (text buttons {normal})");
+                    Icons("enabled", theme, normal); Export(theme, normal);
+                }
+            }
+            finally
+            {
+                var txtDoc = w.GetVisualDescendants().OfType<ListBox>().Single(l => l.Name == "Tabs").Items.OfType<NoteDocument>().FirstOrDefault(d => d.Path == txt);
+                if (txtDoc is not null) Wait((Task)typeof(MainView).GetMethod("CloseDocumentAsync", Flags)!.Invoke(v, [txtDoc])!);
+                Pump(); File.Delete(txt);
             }
             ThemeService.Apply(AppTheme.Dark, persist: false); Pump();
 
