@@ -40,8 +40,13 @@ internal static class ThemeTests
             ("TextPrimary", "EditorBackground", 7), ("TextPrimary", "AppBackground", 7), ("TextStrong", "AppBackground", 7), ("FolderNameForeground", "AppBackground", 4.5),
             ("TextSecondary", "AppBackground", 4.5), ("TextMuted", "AppBackground", 4.5), ("SidebarTabForeground", "AppBackground", 4.5), ("SectionForeground", "AppBackground", 4.5),
             ("IconForeground", "AppBackground", 4.5), ("IconForeground", "FloatingBackground", 4.5), ("IconForeground", "HoverBackground", 3), ("AcceleratorForeground", "AppBackground", 3),
-            ("Accent", "AppBackground", 3), ("Accent", "TabStripBackground", 3), ("GutterForeground", "EditorBackground", 3), ("SyntaxHeading", "EditorBackground", 3),
-            ("SyntaxOrderedList", "EditorBackground", 3), ("SyntaxUnorderedList", "EditorBackground", 3), ("LinkForeground", "PreviewBackground", 4.5),
+            ("Accent", "AppBackground", 3), ("Accent", "TabStripBackground", 3), ("GutterForeground", "EditorBackground", 3), ("SyntaxH1", "EditorBackground", 4.5), ("SyntaxH2", "EditorBackground", 4.5),
+            ("SyntaxH3", "EditorBackground", 4.5), ("SyntaxH4", "EditorBackground", 4.5), ("SyntaxLink", "EditorBackground", 4.5), ("SyntaxListMarker", "EditorBackground", 4.5),
+            ("SyntaxQuote", "EditorBackground", 4.5), ("SyntaxCheckbox", "EditorBackground", 4.5), ("SyntaxInlineCode", "SyntaxInlineCodeBackground", 4.5),
+            ("SyntaxMarker", "EditorBackground", 2.5), ("SyntaxUrl", "EditorBackground", 3), ("SyntaxChecked", "EditorBackground", 3),
+            ("SyntaxCodeText", "SyntaxCodeBlockBackground", 7), ("SyntaxCodeKeyword", "SyntaxCodeBlockBackground", 4.5), ("SyntaxCodeString", "SyntaxCodeBlockBackground", 4.5),
+            ("SyntaxCodeComment", "SyntaxCodeBlockBackground", 4.5), ("SyntaxCodeNumber", "SyntaxCodeBlockBackground", 4.5), ("SyntaxCodeType", "SyntaxCodeBlockBackground", 4.5),
+            ("SyntaxCodeProperty", "SyntaxCodeBlockBackground", 4.5), ("SyntaxCodeTag", "SyntaxCodeBlockBackground", 4.5), ("SyntaxCodeAttribute", "SyntaxCodeBlockBackground", 4.5), ("LinkForeground", "PreviewBackground", 4.5),
             ("InlineCodeForeground", "InlineCodeBackground", 4.5), ("ErrorForeground", "FloatingBackground", 3), ("DialogErrorForeground", "AppBackground", 3),
             ("SearchMatchForeground", "SearchMatchBackground", 4.5), ("ShortcutKeyForeground", "AppBackground", 4.5), ("DialogHintForeground", "AppBackground", 4.5),
             ("PreviewPlaceholderForeground", "PreviewBackground", 3) };
@@ -100,7 +105,7 @@ internal static class ThemeTests
                 ["gutter"] = C(Brush<LineNumberGutter>("NumberBrush")) == L("GutterForeground"),
                 ["currentLine"] = C(CurrentLineOverlay.LineBrush) == L("CurrentLineBackground"),
                 ["findHighlights"] = C(Brush<FindHighlightOverlay>("MatchBrush")) == L("FindMatchBackground") && C(Brush<FindHighlightOverlay>("CurrentBrush")) == L("FindCurrentBackground"),
-                ["syntax"] = C(MarkdownTextPresenter.HeadingBrush) == L("SyntaxHeading"),
+                ["syntax"] = C(MarkdownTextPresenter.BrushFor(Mdhub.Text.SyntaxColor.H1)!) == L("SyntaxH1") && C(MarkdownBlockOverlay.CodeBrush) == L("SyntaxCodeBlockBackground"),
             };
             var bad = checks.Where(c => !c.Value).Select(c => c.Key).ToList();
             if (bad.Count > 0) Console.WriteLine($"  {theme} mismatches: {string.Join(", ", bad)}");

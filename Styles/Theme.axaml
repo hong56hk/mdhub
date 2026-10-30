@@ -45,9 +45,32 @@
       <SolidColorBrush x:Key="FindCurrentBackground" Color="#99E8A33D" />
       <SolidColorBrush x:Key="FindCurrentBorder" Color="#F0B45A" />
       <SolidColorBrush x:Key="GutterForeground" Color="#6B7280" />
-      <SolidColorBrush x:Key="SyntaxHeading" Color="#C792EA" />
-      <SolidColorBrush x:Key="SyntaxOrderedList" Color="#82AAFF" />
-      <SolidColorBrush x:Key="SyntaxUnorderedList" Color="#8FD6A0" />
+      <SolidColorBrush x:Key="SyntaxH1" Color="#569CD6" />
+      <SolidColorBrush x:Key="SyntaxH2" Color="#4EC9B0" />
+      <SolidColorBrush x:Key="SyntaxH3" Color="#C586C0" />
+      <SolidColorBrush x:Key="SyntaxH4" Color="#9CDCFE" />
+      <SolidColorBrush x:Key="SyntaxMarker" Color="#6A6A6A" />
+      <SolidColorBrush x:Key="SyntaxInlineCode" Color="#CE9178" />
+      <SolidColorBrush x:Key="SyntaxInlineCodeBackground" Color="#2D2D2D" />
+      <SolidColorBrush x:Key="SyntaxCodeBlockBackground" Color="#1E1E1E" />
+      <SolidColorBrush x:Key="SyntaxLink" Color="#3794FF" />
+      <SolidColorBrush x:Key="SyntaxUrl" Color="#808080" />
+      <SolidColorBrush x:Key="SyntaxListMarker" Color="#D7BA7D" />
+      <SolidColorBrush x:Key="SyntaxQuote" Color="#9E9E9E" />
+      <SolidColorBrush x:Key="SyntaxQuoteBar" Color="#4F5560" />
+      <SolidColorBrush x:Key="SyntaxCheckbox" Color="#D7BA7D" />
+      <SolidColorBrush x:Key="SyntaxChecked" Color="#7A7A7A" />
+      <SolidColorBrush x:Key="SyntaxFrontMatter" Color="#6A6A6A" />
+      <SolidColorBrush x:Key="SyntaxRule" Color="#4A4A4A" />
+      <SolidColorBrush x:Key="SyntaxCodeText" Color="#D4D4D4" />
+      <SolidColorBrush x:Key="SyntaxCodeKeyword" Color="#569CD6" />
+      <SolidColorBrush x:Key="SyntaxCodeString" Color="#CE9178" />
+      <SolidColorBrush x:Key="SyntaxCodeComment" Color="#6A9955" />
+      <SolidColorBrush x:Key="SyntaxCodeNumber" Color="#B5CEA8" />
+      <SolidColorBrush x:Key="SyntaxCodeType" Color="#4EC9B0" />
+      <SolidColorBrush x:Key="SyntaxCodeProperty" Color="#9CDCFE" />
+      <SolidColorBrush x:Key="SyntaxCodeTag" Color="#569CD6" />
+      <SolidColorBrush x:Key="SyntaxCodeAttribute" Color="#9CDCFE" />
       <SolidColorBrush x:Key="PreviewHighlight" Color="#5C4F8FE8" />
       <SolidColorBrush x:Key="PreviewSelectionBackground" Color="#99306FB8" />
         <!-- Explorer rows, VS Code Dark Modern: focused selection, selection while focus is elsewhere, hover. -->
@@ -111,9 +134,32 @@
       <SolidColorBrush x:Key="FindCurrentBackground" Color="#99F0A02A" />
       <SolidColorBrush x:Key="FindCurrentBorder" Color="#B87400" />
       <SolidColorBrush x:Key="GutterForeground" Color="#8A929E" />
-      <SolidColorBrush x:Key="SyntaxHeading" Color="#8E3FB5" />
-      <SolidColorBrush x:Key="SyntaxOrderedList" Color="#2563C9" />
-      <SolidColorBrush x:Key="SyntaxUnorderedList" Color="#23804A" />
+      <SolidColorBrush x:Key="SyntaxH1" Color="#0451A5" />
+      <SolidColorBrush x:Key="SyntaxH2" Color="#267F99" />
+      <SolidColorBrush x:Key="SyntaxH3" Color="#AF00DB" />
+      <SolidColorBrush x:Key="SyntaxH4" Color="#001080" />
+      <SolidColorBrush x:Key="SyntaxMarker" Color="#8A8A8A" />
+      <SolidColorBrush x:Key="SyntaxInlineCode" Color="#A31515" />
+      <SolidColorBrush x:Key="SyntaxInlineCodeBackground" Color="#EFEFEF" />
+      <SolidColorBrush x:Key="SyntaxCodeBlockBackground" Color="#F3F3F3" />
+      <SolidColorBrush x:Key="SyntaxLink" Color="#006AB1" />
+      <SolidColorBrush x:Key="SyntaxUrl" Color="#767676" />
+      <SolidColorBrush x:Key="SyntaxListMarker" Color="#795E26" />
+      <SolidColorBrush x:Key="SyntaxQuote" Color="#616161" />
+      <SolidColorBrush x:Key="SyntaxQuoteBar" Color="#C8CCD2" />
+      <SolidColorBrush x:Key="SyntaxCheckbox" Color="#795E26" />
+      <SolidColorBrush x:Key="SyntaxChecked" Color="#8A8A8A" />
+      <SolidColorBrush x:Key="SyntaxFrontMatter" Color="#8A8A8A" />
+      <SolidColorBrush x:Key="SyntaxRule" Color="#B8B8B8" />
+      <SolidColorBrush x:Key="SyntaxCodeText" Color="#1F2328" />
+      <SolidColorBrush x:Key="SyntaxCodeKeyword" Color="#0000FF" />
+      <SolidColorBrush x:Key="SyntaxCodeString" Color="#A31515" />
+      <SolidColorBrush x:Key="SyntaxCodeComment" Color="#008000" />
+      <SolidColorBrush x:Key="SyntaxCodeNumber" Color="#07704A" />
+      <SolidColorBrush x:Key="SyntaxCodeType" Color="#1F6E85" />
+      <SolidColorBrush x:Key="SyntaxCodeProperty" Color="#0451A5" />
+      <SolidColorBrush x:Key="SyntaxCodeTag" Color="#800000" />
+      <SolidColorBrush x:Key="SyntaxCodeAttribute" Color="#C80000" />
       <SolidColorBrush x:Key="PreviewHighlight" Color="#404F8FE8" />
       <SolidColorBrush x:Key="PreviewSelectionBackground" Color="#99ADD6FF" />
         <!-- Explorer rows, VS Code Light Modern: focused selection, selection while focus is elsewhere, hover. -->

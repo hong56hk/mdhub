@@ -2,6 +2,7 @@
   <Grid Background="{DynamicResource EditorBackground}" MinWidth="180">
     <Grid ColumnDefinitions="Auto,*">
       <components:LineNumberGutter x:Name="LineGutter" Cursor="Arrow" />
+      <components:MarkdownBlockOverlay x:Name="MarkdownBlocks" Grid.Column="1" />
       <components:CurrentLineOverlay x:Name="CurrentLine" Grid.Column="1" />
       <ContentControl x:Name="EditorHost" Grid.Column="1" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       <components:FindHighlightOverlay x:Name="FindHighlights" Grid.Column="1" />

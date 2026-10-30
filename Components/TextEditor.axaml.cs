@@ -24,6 +24,7 @@ public partial class TextEditor : UserControl
         _document = document;
         EditorHost.Content = document.Editor;
         LineGutter.Attach(document.Editor);
+        MarkdownBlocks.Attach(document.Editor);
         CurrentLine.Attach(document.Editor);
         FindBar.Attach(document.Editor, () => document.SavedSelection);
         LineGutter.InvalidateMeasure();
