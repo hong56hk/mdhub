@@ -19,6 +19,7 @@ if (args.Contains("--searchindent-only")) { SearchIndentTests.Run(); return; }
 if (args.Contains("--tabcycle-only")) { TabCycleTests.Run(); return; }
 if (args.Contains("--formaticons-only")) { FormatIconTests.Run(); return; }
 if (args.Contains("--previewsettings-only")) { PreviewSettingsTests.Run(); return; }
+if (args.Contains("--editorfont-only")) { EditorFontsTests.Run(); return; }
 if (args.Contains("--export-only")) { ExportTests.Run(); return; }
 if (args.Contains("--binary-only")) { BinaryFileTests.Run(); return; }
 if (args.Contains("--strike-only")) { StrikeIconTests.Run(); return; }
@@ -36,6 +37,7 @@ if (args.Contains("--syntax-only")) { SyntaxTests.Run(); return; }
 if (args.Contains("--explorerkeys-only")) { ExplorerShortcutTests.Run(); return; }
 if (args.Contains("--explorerrefresh-only")) { ExplorerRefreshTests.Run(); return; }
 if (args.Contains("--menupadding-only")) { MenuPaddingTests.Run(); return; }
+if (args.Contains("--about-only")) { AboutTests.Run(); return; }
 if (args.Contains("--imagezoom-only")) { ImageZoomTests.Run(); return; }
 if (args.Contains("--search-bench")) { SearchBench.Run(args); return; }
 if (args.Contains("--search-only")) { SearchSpeedTests.Run(); WorkspaceSearchTests.Run(); SearchClickTests.Run(); return; }
