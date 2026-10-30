@@ -96,37 +96,45 @@ public partial class GlobalSearch : UserControl
         UpdateButtons();
         try
         {
-            var result = await WorkspaceSearch.SearchAsync(_root, query, options, OpenBuffers?.Invoke() ?? new Dictionary<string, string>(), cancellation.Token);
+            // Item 46: files stream in from worker threads; batch them onto the UI thread and insert each group in path order.
+            var arrived = new System.Collections.Concurrent.ConcurrentQueue<SearchFile>();
+            var streamed = new List<SearchFile>();
+            var flushPosted = 0;
+            var root = _root;
+            void Flush()
+            {
+                Interlocked.Exchange(ref flushPosted, 0);
+                if (cancellation.IsCancellationRequested || _search != cancellation) return;
+                var added = false;
+                while (arrived.TryDequeue(out var file))
+                {
+                    var index = streamed.BinarySearch(file, Comparer<SearchFile>.Create((x, y) => StringComparer.OrdinalIgnoreCase.Compare(x.Path, y.Path)));
+                    if (index < 0) index = ~index;
+                    streamed.Insert(index, file);
+                    GlobalResults.Items.Insert(index, BuildGroup(root, file));
+                    added = true;
+                }
+                if (!added) return;
+                Result = new(streamed.ToArray());
+                var count = Result.Count;
+                var fileCount = streamed.Count;
+                SetSummary(() => Loc.T("Searching") + "\n" + Loc.F("GlobalResults", count, fileCount));
+            }
+            var result = await WorkspaceSearch.SearchAsync(root, query, options, OpenBuffers?.Invoke() ?? new Dictionary<string, string>(), cancellation.Token, file =>
+            {
+                arrived.Enqueue(file);
+                if (Interlocked.Exchange(ref flushPosted, 1) == 0) Dispatcher.UIThread.Post(Flush, DispatcherPriority.Background);
+            });
             if (cancellation.IsCancellationRequested || result.Cancelled) return;
-            Result = result;
+            Flush();
             _resultQuery = query;
             _resultOptions = options;
-            foreach (var file in result.Files)
+            if (result.Error is not null || streamed.Count != result.Files.Count)
             {
-                var relative = System.IO.Path.GetRelativePath(_root, file.Path);
-                var group = new TreeViewItem { Header = $"{relative}  ({file.Hits.Count})", Tag = file, IsExpanded = true };
-                ToolTip.SetTip(group, System.IO.Path.GetRelativePath(_root, file.Path));
-                foreach (var hit in file.Hits)
-                {
-                    var label = new TextBlock { FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis };
-                    label.Inlines!.Add(new Run($"{hit.Line}: ") { Foreground = Mdhub.Services.ThemeService.Brush("SearchLineNumberForeground") });
-                    var offset = Math.Clamp(hit.Start - hit.PreviewStart, 0, hit.Preview.Length);
-                    var length = Math.Min(hit.Length, hit.Preview.Length - offset);
-                    label.Inlines.Add(new Run(hit.Preview[..offset]));
-                    label.Inlines.Add(new Run(hit.Preview.Substring(offset, length)) { Foreground = Mdhub.Services.ThemeService.Brush("SearchMatchForeground"), Background = Mdhub.Services.ThemeService.Brush("SearchMatchBackground") });
-                    label.Inlines.Add(new Run(hit.Preview[(offset + length)..]));
-                    var row = new TreeViewItem { Header = label, Tag = hit };
-                    // Item 43: match rows sit directly under the file name. The template indents each level by
-                    // the tree indent; give the row its file group's indent instead (a local value beats the template's).
-                    row.TemplateApplied += (_, e) =>
-                    {
-                        if (e.NameScope.Find<Control>("PART_Header") is { } header) header.Margin = new Avalonia.Thickness(0);
-                    };
-                    ToolTip.SetTip(row, hit.Preview);
-                    group.Items.Add(row);
-                }
-                GlobalResults.Items.Add(group);
+                GlobalResults.Items.Clear();
+                foreach (var file in result.Files) GlobalResults.Items.Add(BuildGroup(root, file));
             }
+            Result = result;
             SetSummary(() => result.Error ?? Loc.F("GlobalResults", result.Count, result.Files.Count) +
                 (result.Limited ? Loc.F("GlobalLimited", WorkspaceSearch.MaxResults) : "") +
                 (result.Skipped > 0 ? Loc.F("GlobalSkipped", result.Skipped) : "") +
@@ -137,10 +145,36 @@ public partial class GlobalSearch : UserControl
         catch (Exception ex) { if (!cancellation.IsCancellationRequested) SetSummary(() => ex.Message); }
         finally { if (_search == cancellation) _search = null; UpdateButtons(); }
     }
+    private static TreeViewItem BuildGroup(string root, SearchFile file)
+    {
+        var relative = System.IO.Path.GetRelativePath(root, file.Path);
+        var group = new TreeViewItem { Header = $"{relative}  ({file.Hits.Count})", Tag = file, IsExpanded = true };
+        ToolTip.SetTip(group, relative);
+        foreach (var hit in file.Hits)
+        {
+            var label = new TextBlock { FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis };
+            label.Inlines!.Add(new Run($"{hit.Line}: ") { Foreground = Mdhub.Services.ThemeService.Brush("SearchLineNumberForeground") });
+            var offset = Math.Clamp(hit.Start - hit.PreviewStart, 0, hit.Preview.Length);
+            var length = Math.Min(hit.Length, hit.Preview.Length - offset);
+            label.Inlines.Add(new Run(hit.Preview[..offset]));
+            label.Inlines.Add(new Run(hit.Preview.Substring(offset, length)) { Foreground = Mdhub.Services.ThemeService.Brush("SearchMatchForeground"), Background = Mdhub.Services.ThemeService.Brush("SearchMatchBackground") });
+            label.Inlines.Add(new Run(hit.Preview[(offset + length)..]));
+            var row = new TreeViewItem { Header = label, Tag = hit };
+            // Item 43: match rows sit directly under the file name. The template indents each level by
+            // the tree indent; give the row its file group's indent instead (a local value beats the template's).
+            row.TemplateApplied += (_, e) =>
+            {
+                if (e.NameScope.Find<Control>("PART_Header") is { } header) header.Margin = new Avalonia.Thickness(0);
+            };
+            ToolTip.SetTip(row, hit.Preview);
+            group.Items.Add(row);
+        }
+        return group;
+    }
     private void UpdateButtons()
     {
-        GlobalReplaceAll.IsEnabled = !_replacing && Result.Count > 0 && !Result.Limited && Result.Error is null;
-        GlobalReplaceSelected.IsEnabled = !_replacing && Result.Count > 0 && GlobalResults.SelectedItem is TreeViewItem { Tag: SearchFile or SearchHit };
+        GlobalReplaceAll.IsEnabled = !_replacing && _search is null && Result.Count > 0 && !Result.Limited && Result.Error is null;
+        GlobalReplaceSelected.IsEnabled = !_replacing && _search is null && Result.Count > 0 && GlobalResults.SelectedItem is TreeViewItem { Tag: SearchFile or SearchHit };
     }
     private async Task ReplaceAsync(bool all)
     {

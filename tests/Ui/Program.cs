@@ -32,7 +32,8 @@ if (args.Contains("--l10n-only")) { LocalizationTests.Run(); return; }
 if (args.Contains("--selection-only")) { SelectionTests.Run(); return; }
 if (args.Contains("--quickopen-only")) { QuickOpenTests.Run(); return; }
 if (args.Contains("--syntax-only")) { SyntaxTests.Run(); return; }
-if (args.Contains("--search-only")) { WorkspaceSearchTests.Run(); return; }
+if (args.Contains("--search-bench")) { SearchBench.Run(args); return; }
+if (args.Contains("--search-only")) { SearchSpeedTests.Run(); WorkspaceSearchTests.Run(); return; }
 if (args.Contains("--shortcuts-only")) { ShortcutTests.Run(); return; }
 AppBuilder.Configure<App>().UseSkia().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).SetupWithoutStarting();
 var window = new MainWindow();
