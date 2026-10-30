@@ -93,6 +93,7 @@ public static partial class Loc
         ["CollapseAll"] = "모두 축소",
         ["CollapseAllFolders"] = "모든 폴더 축소",
         ["Reveal"] = "파일 탐색기에서 표시",
+        ["RevealInSidebar"] = "\uC0AC\uC774\uB4DC\uBC14\uC5D0 \uD45C\uC2DC", ["Sc.file.revealInSidebar"] = "\uD604\uC7AC \uD30C\uC77C\uC744 \uC0AC\uC774\uB4DC\uBC14\uC5D0 \uD45C\uC2DC", ["RevealNoPath"] = "\uC81C\uBAA9 \uC5C6\uB294 \uB178\uD2B8\uB294 \uC0AC\uC774\uB4DC\uBC14\uC5D0 \uC5C6\uC2B5\uB2C8\uB2E4. \uBA3C\uC800 \uC800\uC7A5\uD558\uC138\uC694.", ["RevealOutsideFolder"] = "\uC774 \uD30C\uC77C\uC740 \uC5F4\uB9B0 \uD3F4\uB354 \uBC16\uC5D0 \uC788\uC2B5\uB2C8\uB2E4.",
         ["Duplicate"] = "복제",
         ["Rename"] = "이름 바꾸기",
         ["Delete"] = "삭제",
@@ -282,5 +283,6 @@ public static partial class Loc
         ["CopiedStatus"] = "복사함 · {0}",
         ["PastedStatus"] = "붙여넣음 · {0}",
         ["AboutTitle"] = "mdhub 정보",
+        ["PathCopied"] = "\uACBD\uB85C\uB97C \uBCF5\uC0AC\uD588\uC2B5\uB2C8\uB2E4", ["CopyPathTip"] = "\uD074\uB9AD\uD558\uC5EC \uACBD\uB85C \uBCF5\uC0AC",
     };
 }

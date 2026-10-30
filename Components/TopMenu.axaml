@@ -63,6 +63,7 @@
       <MenuItem Header="{DynamicResource MenuTogglePreview}" Click="TogglePreview_Click" c:ShortcutKeys.Id="view.togglePreview" />
       <MenuItem Header="{DynamicResource MenuToggleWordWrap}" Click="WordWrap_Click" c:ShortcutKeys.Id="view.wordWrap" />
       <MenuItem Header="{DynamicResource MenuScrollPreview}" Click="Command_Click" c:ShortcutKeys.Id="view.previewCaret" />
+      <MenuItem x:Name="RevealInSidebarMenuItem" Header="{DynamicResource RevealInSidebar}" Click="Command_Click" c:ShortcutKeys.Id="file.revealInSidebar" />
       <MenuItem Header="{DynamicResource MenuRefreshFolder}" Click="RefreshFolder_Click" />
     </MenuItem>
     <MenuItem Header="{DynamicResource MenuSettings}">

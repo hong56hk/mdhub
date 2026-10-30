@@ -11,6 +11,7 @@ using Mdhub.Views;
 using Mdhub.Components;
 
 if (args.Contains("--newfile-only")) { NewFileDialogTests.Run(); return; }
+if (args.Contains("--reveal-only")) { RevealTests.Run(); return; }
 if (args.Contains("--strike-only")) { StrikeIconTests.Run(); return; }
 if (args.Contains("--drag-only")) { ExplorerDragTests.Run(); return; }
 if (args.Contains("--file-views")) { FileViewTests.Run(); return; }

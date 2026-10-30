@@ -159,9 +159,18 @@ public partial class MainView
             OpenQuickOpen();
             return true;
         }
+        if (ShortcutKeys.Match(e, s => s.Id == "file.revealInSidebar") is not null)
+        {
+            e.Handled = true;
+            ShortcutFired?.Invoke("file.revealInSidebar");
+            _ = RevealInSidebarAsync();
+            return true;
+        }
         if (ShortcutKeys.Match(e, s => s.Id is "sidebar.explorer" or "sidebar.search" or "sidebar.replace") is not { } sidebar) return false;
         e.Handled = true;
         ShowSidebar(sidebar != "sidebar.explorer", sidebar == "sidebar.replace");
+        // Item 41: Ctrl+Shift+E also selects the active file (expanding its folders) when it is in the open folder.
+        if (sidebar == "sidebar.explorer" && CanRevealInSidebar) _ = RevealInSidebarAsync(quietWhenUnavailable: true);
         return true;
     }
 
@@ -229,6 +238,7 @@ public partial class MainView
     private async void RunMenuCommand(string id)
     {
         if (id == "file.quickOpen") { if (!_busy) OpenQuickOpen(); return; }
+        if (id == "file.revealInSidebar") { await RevealInSidebarAsync(); return; }
         if (_busy || _active is null || _active.IsImage || EditorCommand(id) is not { } action) return;
         if (id == "editor.goToLine") await RunAsync(action); else await action();
     }

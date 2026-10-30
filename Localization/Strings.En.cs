@@ -93,6 +93,7 @@ public static partial class Loc
         ["CollapseAll"] = "Collapse all",
         ["CollapseAllFolders"] = "Collapse all folders",
         ["Reveal"] = "Reveal in file explorer",
+        ["RevealInSidebar"] = "Reveal in Side Bar", ["Sc.file.revealInSidebar"] = "Reveal active file in side bar", ["RevealNoPath"] = "Untitled notes are not in the side bar. Save the note first.", ["RevealOutsideFolder"] = "This file is not inside the open folder.",
         ["Duplicate"] = "Duplicate",
         ["Rename"] = "Rename",
         ["Delete"] = "Delete",
@@ -282,5 +283,6 @@ public static partial class Loc
         ["CopiedStatus"] = "Copied · {0}",
         ["PastedStatus"] = "Pasted · {0}",
         ["AboutTitle"] = "About mdhub",
+        ["PathCopied"] = "Path copied", ["CopyPathTip"] = "Click to copy the path",
     };
 }

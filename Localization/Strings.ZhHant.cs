@@ -93,6 +93,7 @@ public static partial class Loc
         ["CollapseAll"] = "全部摺疊",
         ["CollapseAllFolders"] = "摺疊所有資料夾",
         ["Reveal"] = "在檔案總管中顯示",
+        ["RevealInSidebar"] = "\u5728\u5074\u908a\u6b04\u4e2d\u986f\u793a", ["Sc.file.revealInSidebar"] = "\u5728\u5074\u908a\u6b04\u4e2d\u986f\u793a\u76ee\u524d\u6a94\u6848", ["RevealNoPath"] = "\u672a\u547d\u540d\u7684\u7b46\u8a18\u4e0d\u5728\u5074\u908a\u6b04\u4e2d\u3002\u8acb\u5148\u5132\u5b58\u3002", ["RevealOutsideFolder"] = "\u6b64\u6a94\u6848\u4e0d\u5728\u958b\u555f\u7684\u8cc7\u6599\u593e\u4e2d\u3002",
         ["Duplicate"] = "建立複本",
         ["Rename"] = "重新命名",
         ["Delete"] = "刪除",
@@ -282,5 +283,6 @@ public static partial class Loc
         ["CopiedStatus"] = "已複製 · {0}",
         ["PastedStatus"] = "已貼上 · {0}",
         ["AboutTitle"] = "關於 mdhub",
+        ["PathCopied"] = "\u5df2\u8907\u88fd\u8def\u5f91", ["CopyPathTip"] = "\u6309\u4e00\u4e0b\u4ee5\u8907\u88fd\u8def\u5f91",
     };
 }

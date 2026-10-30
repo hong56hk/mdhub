@@ -28,6 +28,7 @@ public partial class MainView : UserControl
     public MainView()
     {
         InitializeComponent();
+        MdEditor.ContextMenu = CreateEditorMenu(null); // item 41: Reveal in Side Bar from the preview
         FileTabs.SetDocuments(_documents);
         // Code-set status texts follow a language switch (XAML texts use DynamicResource).
         AttachedToVisualTree += (_, _) => Loc.Changed += OnLanguageChanged;

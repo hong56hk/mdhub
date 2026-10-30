@@ -308,21 +308,39 @@ public partial class FolderExplorer : UserControl
     public async Task RevealCreatedAsync(string path)
     {
         await RefreshAsync();
-        if (_folder is null) return;
-        var relative = Path.GetRelativePath(_folder, path);
-        if (Path.IsPathRooted(relative) || relative == ".." || relative.StartsWith(".." + Path.DirectorySeparatorChar)) return;
+        await RevealAsync(path);
+    }
+
+    // Item 41 (Reveal in Side Bar): selects the path, expanding (and loading) its parent folders, and scrolls it into
+    // view. quiet: selecting does not raise FileRequested (the file is already open). Returns false outside the folder.
+    public async Task<bool> RevealAsync(string path, bool quiet = false, bool focus = false)
+    {
+        if (_folder is null) return false;
+        var relative = Path.GetRelativePath(_folder, Path.GetFullPath(path));
+        if (relative == "." || Path.IsPathRooted(relative) || relative == ".." || relative.StartsWith(".." + Path.DirectorySeparatorChar)) return false;
         var parts = relative.Split(Path.DirectorySeparatorChar);
         var items = FolderTree.Items.OfType<TreeViewItem>();
         for (var index = 0; index < parts.Length; index++)
         {
             var item = items.FirstOrDefault(i => i.Tag is FolderEntry entry && string.Equals(Path.GetFileName(entry.Path), parts[index],
                 OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal));
-            if (item is null) return;
-            if (index == parts.Length - 1) { FolderTree.SelectedItem = item; item.BringIntoView(); return; }
+            if (item is null) return false;
+            if (index == parts.Length - 1)
+            {
+                _marking = quiet;
+                try { FolderTree.SelectedItem = item; }
+                finally { _marking = false; }
+                item.BringIntoView();
+                // Freshly expanded rows are laid out on the next pass: scroll again once they have bounds.
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => { item.BringIntoView(); if (focus) item.Focus(); }, Avalonia.Threading.DispatcherPriority.Loaded);
+                if (focus) item.Focus();
+                return true;
+            }
             if (_loadChildren.TryGetValue(item, out var load)) await load();
             item.IsExpanded = true;
             items = item.Items.OfType<TreeViewItem>();
         }
+        return false;
     }
 
     // Like VS Code, the selected row follows the active tab (only among rows already loaded; folders are not expanded).

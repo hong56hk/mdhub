@@ -20,6 +20,8 @@ public partial class MainView
         };
         document.Editor.Text = text;
         document.Editor.TextWrapping = _wrap ? TextWrapping.Wrap : TextWrapping.NoWrap;
+        document.Editor.ContextFlyout = null; // item 41: our menu adds Reveal in Side Bar to Cut/Copy/Paste/Select All
+        document.Editor.ContextMenu = CreateEditorMenu(document);
         document.Editor.TextChanged += (_, _) =>
         {
             document.Refresh();

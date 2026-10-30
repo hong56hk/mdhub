@@ -1,3 +1,4 @@
+using Avalonia.Input.Platform;
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
@@ -128,6 +129,45 @@ internal static class FileViewTests
                 Check(ReferenceEquals(tabs.SelectedItem, imageDocument) && window.OwnedWindows.Count == 0, "unsupported selection does not open a tab or error dialog");
             }
             Check(Mdhub.Services.FileSupport.Detect(utf16) == Mdhub.Services.SupportedFileKind.Text, "BOM-encoded Unicode text remains supported");
+
+            // Item 40: clicking the status-bar path copies it and briefly confirms; untitled notes do nothing.
+            void Wait(Task task)
+            {
+                var deadline = DateTime.UtcNow.AddSeconds(10);
+                while (!task.IsCompleted && DateTime.UtcNow < deadline) { using var t = new CancellationTokenSource(20); Dispatcher.UIThread.MainLoop(t.Token); }
+                Check(task.IsCompleted, "clipboard operation completes");
+            }
+            var statusBar = window.GetVisualDescendants().OfType<BottomStatusBar>().Single();
+            var statusText = statusBar.FindControl<TextBlock>("Status")!;
+            var clipboard = TopLevel.GetTopLevel(window)!.Clipboard!;
+            BottomStatusBar.ConfirmationDuration = TimeSpan.FromMilliseconds(150);
+            Invoke("OpenPathAsync", markdown);
+            mdDocument.Editor.Text += " edited"; Dispatcher.UIThread.RunJobs();
+            Check(statusBar.CopyablePath == markdown && statusText.Text!.EndsWith(markdown), "the status bar shows the full path of a saved note");
+            Check(statusText.Classes.Contains("pathLink") && statusText.Cursor?.ToString() == new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand).ToString()
+                && ToolTip.GetTip(statusText) is string { Length: > 0 }, "the path has a hand cursor and a tooltip");
+            Check(statusBar.Styles.OfType<Avalonia.Styling.Style>().Any(s => s.Setters.OfType<Avalonia.Styling.Setter>().Any(x => x.Property == TextBlock.TextDecorationsProperty)),
+                "hovering the path underlines it");
+            Wait(clipboard.SetTextAsync("old"));
+            var shown = statusText.Text;
+            statusText.RaiseEvent(new Avalonia.Input.PointerReleasedEventArgs(statusText, new Avalonia.Input.Pointer(1, Avalonia.Input.PointerType.Mouse, true), window, new Point(2, 2), 0,
+                new Avalonia.Input.PointerPointProperties(Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PointerUpdateKind.LeftButtonReleased), Avalonia.Input.KeyModifiers.None, Avalonia.Input.MouseButton.Left));
+            for (var i = 0; i < 5; i++) { using var t = new CancellationTokenSource(20); Dispatcher.UIThread.MainLoop(t.Token); }
+            var copied = clipboard.TryGetTextAsync(); Wait(copied);
+            Check(copied.Result == markdown, "clicking the path copies the full path (without the unsaved prefix)");
+            Check(statusText.Text == Mdhub.Localization.Loc.T("PathCopied") && statusText.Text == "Path copied", "a brief Path copied confirmation replaces the path");
+            var restoreBy = DateTime.UtcNow.AddSeconds(3);
+            while (statusText.Text != shown && DateTime.UtcNow < restoreBy) { using var t = new CancellationTokenSource(20); Dispatcher.UIThread.MainLoop(t.Token); }
+            Check(statusText.Text == shown, "the path comes back after the confirmation");
+            foreach (var code in new[] { "zh-Hant", "ja", "ko" })
+                Check(Mdhub.Localization.Loc.Table(code) is { } table && table["PathCopied"] is { Length: > 0 } c && c != "Path copied" && table["CopyPathTip"] is { Length: > 0 }, $"Path copied is localized ({code})");
+            var untitled = (NoteDocument)typeof(MainView).GetMethod("AddDocument", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(view, [null, "scratch", null, null])!;
+            Dispatcher.UIThread.RunJobs();
+            Check(ReferenceEquals(tabs.SelectedItem, untitled) && statusBar.CopyablePath is null && !statusText.Classes.Contains("pathLink") && ToolTip.GetTip(statusText) is null, "an untitled note has no clickable path");
+            Wait(clipboard.SetTextAsync("old")); var before = statusText.Text;
+            var noop = statusBar.CopyPathAsync(); Wait(noop);
+            var after = clipboard.TryGetTextAsync(); Wait(after);
+            Check(!noop.Result && after.Result == "old" && statusText.Text == before, "clicking an untitled note path does nothing");
         }
         finally { window.Close(); Directory.Delete(root, recursive: true); }
     }

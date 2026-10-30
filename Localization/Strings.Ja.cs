@@ -93,6 +93,7 @@ public static partial class Loc
         ["CollapseAll"] = "すべて折りたたむ",
         ["CollapseAllFolders"] = "すべてのフォルダーを折りたたむ",
         ["Reveal"] = "エクスプローラーで表示",
+        ["RevealInSidebar"] = "\u30b5\u30a4\u30c9 \u30d0\u30fc\u306b\u8868\u793a", ["Sc.file.revealInSidebar"] = "\u73fe\u5728\u306e\u30d5\u30a1\u30a4\u30eb\u3092\u30b5\u30a4\u30c9 \u30d0\u30fc\u306b\u8868\u793a", ["RevealNoPath"] = "\u7121\u984c\u306e\u30e1\u30e2\u306f\u30b5\u30a4\u30c9 \u30d0\u30fc\u306b\u3042\u308a\u307e\u305b\u3093\u3002\u5148\u306b\u4fdd\u5b58\u3057\u3066\u304f\u3060\u3055\u3044\u3002", ["RevealOutsideFolder"] = "\u3053\u306e\u30d5\u30a1\u30a4\u30eb\u306f\u958b\u3044\u3066\u3044\u308b\u30d5\u30a9\u30eb\u30c0\u30fc\u306e\u5916\u306b\u3042\u308a\u307e\u3059\u3002",
         ["Duplicate"] = "複製を作成",
         ["Rename"] = "名前の変更",
         ["Delete"] = "削除",
@@ -282,5 +283,6 @@ public static partial class Loc
         ["CopiedStatus"] = "コピーしました · {0}",
         ["PastedStatus"] = "貼り付けました · {0}",
         ["AboutTitle"] = "mdhub について",
+        ["PathCopied"] = "\u30d1\u30b9\u3092\u30b3\u30d4\u30fc\u3057\u307e\u3057\u305f", ["CopyPathTip"] = "\u30af\u30ea\u30c3\u30af\u3057\u3066\u30d1\u30b9\u3092\u30b3\u30d4\u30fc",
     };
 }
