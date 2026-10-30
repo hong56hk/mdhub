@@ -140,7 +140,8 @@ internal static class FileViewTests
             var statusBar = window.GetVisualDescendants().OfType<BottomStatusBar>().Single();
             var statusText = statusBar.FindControl<TextBlock>("Status")!;
             var clipboard = TopLevel.GetTopLevel(window)!.Clipboard!;
-            BottomStatusBar.ConfirmationDuration = TimeSpan.FromMilliseconds(150);
+            // Long enough to observe reliably (a 150 ms timer could expire while the test pumped the loop and read the clipboard).
+            BottomStatusBar.ConfirmationDuration = TimeSpan.FromMilliseconds(1500);
             Invoke("OpenPathAsync", markdown);
             mdDocument.Editor.Text += " edited"; Dispatcher.UIThread.RunJobs();
             Check(statusBar.CopyablePath == markdown && statusText.Text!.EndsWith(markdown), "the status bar shows the full path of a saved note");
@@ -152,13 +153,18 @@ internal static class FileViewTests
             var shown = statusText.Text;
             statusText.RaiseEvent(new Avalonia.Input.PointerReleasedEventArgs(statusText, new Avalonia.Input.Pointer(1, Avalonia.Input.PointerType.Mouse, true), window, new Point(2, 2), 0,
                 new Avalonia.Input.PointerPointProperties(Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PointerUpdateKind.LeftButtonReleased), Avalonia.Input.KeyModifiers.None, Avalonia.Input.MouseButton.Left));
-            for (var i = 0; i < 5; i++) { using var t = new CancellationTokenSource(20); Dispatcher.UIThread.MainLoop(t.Token); }
+            var confirmBy = DateTime.UtcNow.AddSeconds(1);
+            while (statusText.Text == shown && DateTime.UtcNow < confirmBy) { using var t = new CancellationTokenSource(20); Dispatcher.UIThread.MainLoop(t.Token); }
+            var confirmation = statusText.Text;
             var copied = clipboard.TryGetTextAsync(); Wait(copied);
             Check(copied.Result == markdown, "clicking the path copies the full path (without the unsaved prefix)");
-            Check(statusText.Text == Mdhub.Localization.Loc.T("PathCopied") && statusText.Text == "Path copied", "a brief Path copied confirmation replaces the path");
+            Check(confirmation == Mdhub.Localization.Loc.T("PathCopied") && confirmation == "Path copied", "a brief Path copied confirmation replaces the path");
             var restoreBy = DateTime.UtcNow.AddSeconds(3);
             while (statusText.Text != shown && DateTime.UtcNow < restoreBy) { using var t = new CancellationTokenSource(20); Dispatcher.UIThread.MainLoop(t.Token); }
             Check(statusText.Text == shown, "the path comes back after the confirmation");
+            var explorer = window.GetVisualDescendants().OfType<FolderExplorer>().Single();
+            var refresh = explorer.RefreshAsync(); Wait(refresh); Dispatcher.UIThread.RunJobs();
+            Check(statusText.Text == shown, "a folder refresh does not replace the status bar with Opened folder");
             foreach (var code in new[] { "zh-Hant", "ja", "ko" })
                 Check(Mdhub.Localization.Loc.Table(code) is { } table && table["PathCopied"] is { Length: > 0 } c && c != "Path copied" && table["CopyPathTip"] is { Length: > 0 }, $"Path copied is localized ({code})");
             var untitled = (NoteDocument)typeof(MainView).GetMethod("AddDocument", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(view, [null, "scratch", null, null])!;

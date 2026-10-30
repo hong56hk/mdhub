@@ -239,7 +239,9 @@ public partial class FolderExplorer : UserControl
         ToolTip.SetTip(FolderNameButton, Loc.F("FolderTip", path));
         FolderTree.Items.Clear();
         foreach (var entry in entries) FolderTree.Items.Add(CreateTreeItem(entry));
-        MessageChanged?.Invoke(Loc.F("OpenedFolder", path));
+        // Only announce an actual open: a refresh (manual or after an external change) must not overwrite
+        // the status bar with "Opened folder" (it replaced the note path and the "Path copied" confirmation).
+        if (restartWatcher) MessageChanged?.Invoke(Loc.F("OpenedFolder", path));
     }
     private TreeViewItem CreateTreeItem(FolderEntry entry)
     {
