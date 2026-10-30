@@ -25,6 +25,9 @@ public partial class TextFormatter : UserControl
         FormatBar.IsEnabled = enabled;
         TogglePreviewButton.IsEnabled = enabled;
     }
+    // Item 48: on = the preview pane is showing.
+    public bool PreviewOn => TogglePreviewButton.Classes.Contains("on");
+    public void SetPreviewOn(bool on) => TogglePreviewButton.Classes.Set("on", on);
     private void TogglePreview_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.TogglePreview);
     private void Edit_Click(object? sender, RoutedEventArgs e)
     {

@@ -8,6 +8,9 @@
       <SolidColorBrush x:Key="EditorBackground" Color="#202329" />
       <SolidColorBrush x:Key="PreviewBackground" Color="#101318" />
       <SolidColorBrush x:Key="ToolbarBackground" Color="#20242A" />
+      <SolidColorBrush x:Key="PreviewToggleOn" Color="#E0E0E0" />
+      <SolidColorBrush x:Key="PreviewToggleOff" Color="#6A6A6A" />
+      <SolidColorBrush x:Key="PreviewToggleOnBackground" Color="#2B313A" />
       <SolidColorBrush x:Key="FloatingBackground" Color="#252A32" />
       <SolidColorBrush x:Key="InputBackground" Color="#1B1E23" />
       <SolidColorBrush x:Key="ButtonBackground" Color="#2B313A" />
@@ -97,6 +100,9 @@
       <SolidColorBrush x:Key="EditorBackground" Color="#FFFFFF" />
       <SolidColorBrush x:Key="PreviewBackground" Color="#FAFAFA" />
       <SolidColorBrush x:Key="ToolbarBackground" Color="#F5F5F5" />
+      <SolidColorBrush x:Key="PreviewToggleOn" Color="#1F1F1F" />
+      <SolidColorBrush x:Key="PreviewToggleOff" Color="#A0A0A0" />
+      <SolidColorBrush x:Key="PreviewToggleOnBackground" Color="#E3E3E3" />
       <SolidColorBrush x:Key="FloatingBackground" Color="#FFFFFF" />
       <SolidColorBrush x:Key="InputBackground" Color="#FFFFFF" />
       <SolidColorBrush x:Key="ButtonBackground" Color="#E4E7EB" />
