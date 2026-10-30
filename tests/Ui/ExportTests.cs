@@ -76,11 +76,13 @@ internal static class ExportTests
             foreach (var b in new[] { htmlButton, pdfButton })
             {
                 var paths = b.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().ToList();
-                Check(paths.Count == 1 && paths[0].StrokeThickness <= 1.25 && paths[0].Bounds.Width <= 16 && paths[0].Bounds.Height <= 14 && !b.GetVisualDescendants().OfType<TextBlock>().Any(tb => !string.IsNullOrEmpty(tb.Text)), $"{b.Name}: thin-stroke icon, no text");
+                Check(paths.Count == 1 && paths[0].StrokeThickness <= 1.25 && paths[0].Bounds.Width <= (b == htmlButton ? 22 : 16) && paths[0].Bounds.Height <= 14 && !b.GetVisualDescendants().OfType<TextBlock>().Any(tb => !string.IsNullOrEmpty(tb.Text)), $"{b.Name}: thin-stroke icon, no text");
             }
             var pen = new Pen(Brushes.Black, 1.25);
             var g = ((Avalonia.Controls.Shapes.Path)htmlButton.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().Single()).Data!;
-            Check(g.StrokeContains(pen, new Point(1.5, 7)) && g.StrokeContains(pen, new Point(14.5, 7)) && g.StrokeContains(pen, new Point(8, 7)), "HTML icon is '</>'");
+            // Bug 73: '<html>': angle brackets at both ends, h/l ascenders, the m's three stems.
+            Check(g.StrokeContains(pen, new Point(1, 7)) && g.StrokeContains(pen, new Point(20.9, 7)) && g.StrokeContains(pen, new Point(4.3, 3.5)) && g.StrokeContains(pen, new Point(17.4, 3.5))
+                && new[] { 11.2, 13.6, 16 }.All(x => g.StrokeContains(pen, new Point(x, 9))) && !g.StrokeContains(pen, new Point(17.4, 12)) && g.Bounds.Height <= 7.5, "HTML icon reads '<html>'");
             g = pdfButton.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().Single().Data!;
             Check(g.StrokeContains(pen, new Point(9.5, 3)) && g.StrokeContains(pen, new Point(11, 4.5)) && g.StrokeContains(pen, new Point(3.5, 12)), "PDF icon is a page with a folded corner");
             foreach (var code in Loc.Languages.Select(l => l.Code))
