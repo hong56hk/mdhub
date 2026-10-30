@@ -86,15 +86,16 @@ internal static class LongTextLayoutTests
                     CheckMenu($"{code}: {label} context menu", context.Items.OfType<MenuItem>().ToList());
                     context.Close(); Pump();
                 }
-                // Preview-settings flyout (item 63). The editor-settings flyout waits on item 62.
+                // Preview- and editor-settings flyouts (item 63; the editor one includes item 62's colours).
+                foreach (var (gearName, label) in new[] { ("PreviewSettingsButton", "preview settings"), ("EditorSettingsButton", "editor settings") })
                 {
-                    var gear = w.GetVisualDescendants().OfType<Button>().First(b => b.Name == "PreviewSettingsButton");
+                    var gear = w.GetVisualDescendants().OfType<Button>().First(b => b.Name == gearName);
                     var flyout = (Flyout)gear.Flyout!;
                     flyout.ShowAt(gear); Pump(); Pump(); Pump();
                     var content = (Control)flyout.Content!;
-                    Check(flyout.IsOpen && content.IsEffectivelyVisible, $"{code}: preview settings flyout opens");
+                    Check(flyout.IsOpen && content.IsEffectivelyVisible, $"{code}: {label} flyout opens");
                     var clipped = ClippedIn(content);
-                    Check(clipped.Count == 0, $"{code}: preview settings flyout fits ({string.Join(" | ", clipped)})");
+                    Check(clipped.Count == 0, $"{code}: {label} flyout fits ({string.Join(" | ", clipped)})");
                     flyout.Hide(); Pump();
                 }
                 // Dialogs.
