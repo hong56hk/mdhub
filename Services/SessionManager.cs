@@ -61,7 +61,8 @@ public static class SessionManager
     {
         try { SessionStore.Save(SessionPath, new SessionData { Windows = windows.Where(w => !w.IsEmpty).ToList(), Theme = ThemeService.Current.ToString(), Language = Mdhub.Localization.Loc.Chosen,
                 RecentFiles = [.. RecentService.Files], RecentFolders = [.. RecentService.Folders], CustomShortcuts = Shortcuts.AnyCustomized ? Shortcuts.Export() : null,
-                Preview = PreviewSettings.IsDefault ? null : PreviewSettings.Current }); }
+                Preview = PreviewSettings.IsDefault ? null : PreviewSettings.Current,
+                EditorFonts = EditorFonts.IsDefault ? null : EditorFonts.Current }); }
         catch (Exception) { /* A session that cannot be written must not block closing. */ }
     }
 

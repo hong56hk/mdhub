@@ -25,7 +25,7 @@ public sealed class NoteDocument : INotifyPropertyChanged
     {
         Classes = { "noteEditor" },
         AcceptsReturn = true, AcceptsTab = true,
-        FontFamily = new FontFamily("Consolas, Menlo, monospace"), FontSize = 15,
+        FontFamily = Mdhub.Services.EditorFonts.BodyFamily, FontSize = 15, // item 57: the editor gear's body font
         Padding = new Thickness(18), BorderThickness = new Thickness(0),
         Background = Brushes.Transparent, TextWrapping = TextWrapping.NoWrap,
         HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,

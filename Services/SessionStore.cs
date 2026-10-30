@@ -31,9 +31,18 @@ public sealed record SessionData
     public Dictionary<string, List<string>>? CustomShortcuts { get; init; }
     // Item 35: preview fonts and spacing; missing in old files (or all defaults): null.
     public PreviewSettingsData? Preview { get; init; }
+    // Item 57: editor fonts (separate from the preview); null when both are the default.
+    public EditorFontsData? EditorFonts { get; init; }
 }
 
 // UI-free session file handling: atomic save, tolerant load and validation against the file system.
+// Item 57: the source editor's body and code font names (Consolas, the editor's font before item 57).
+public sealed record EditorFontsData
+{
+    public string Body { get; init; } = "Consolas";
+    public string Code { get; init; } = "Consolas";
+}
+
 // Item 35: preview typography; null family = the app's UI font. Defaults match PreviewSettings.Default*.
 public sealed record PreviewSettingsData
 {

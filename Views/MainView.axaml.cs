@@ -25,6 +25,10 @@ public partial class MainView : UserControl
     public event Action<WindowAction>? WindowActionRequested;
     public string DocumentTitle => $"{_active?.Title ?? "mdhub"} — mdhub";
 
+    private void ApplyEditorFonts()
+    {
+        foreach (var document in _documents) document.Editor.FontFamily = Services.EditorFonts.BodyFamily;
+    }
     public MainView()
     {
         InitializeComponent();
@@ -57,6 +61,9 @@ public partial class MainView : UserControl
             .ToDictionary(d => d.Path!, d => d.Text, OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
         GlobalSearch.HitRequested += async (file, hit) => await RunAsync(() => OpenSearchHitAsync(file, hit));
         GlobalSearch.ReplaceRequested = ReplaceSearchResultsAsync;
+        // Item 57: the editor gear's fonts apply live to every open editor (the presenters re-lay out code spans).
+        AttachedToVisualTree += (_, _) => Services.EditorFonts.Changed += ApplyEditorFonts;
+        DetachedFromVisualTree += (_, _) => Services.EditorFonts.Changed -= ApplyEditorFonts;
         FolderExplorer.ExternalChangeRefreshed += () => { if (GlobalSearch.IsVisible) GlobalSearch.Schedule(); };
         FolderExplorer.CanPaste = () => ExplorerClipboard is not null;
         FolderExplorer.OpenFolderRequested += () => RequestAction(WorkspaceAction.OpenFolder);

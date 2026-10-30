@@ -30,6 +30,53 @@ public sealed class MarkdownTextPresenter : TextPresenter
     public SyntaxResult Syntax => HighlightMarkdown ? _syntax : new([], []);
     public event EventHandler? SyntaxChanged;
 
+    // Item 57: code spans and fenced code use the editor gear's code font (only when it differs from the body font).
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e) { base.OnAttachedToVisualTree(e); Mdhub.Services.EditorFonts.Changed += OnEditorFontsChanged; }
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) { base.OnDetachedFromVisualTree(e); Mdhub.Services.EditorFonts.Changed -= OnEditorFontsChanged; }
+    private void OnEditorFontsChanged() { _codeProperties.Clear(); InvalidateTextLayout(); }
+    private readonly Dictionary<TextRunProperties, TextRunProperties> _codeProperties = new(ReferenceEqualityComparer.Instance);
+    private FontFamily? _codeKey;
+    private TextRunProperties CodeProps(TextRunProperties? p)
+    {
+        var family = Mdhub.Services.EditorFonts.CodeFamily;
+        if (_codeKey != family) { _codeProperties.Clear(); _codeKey = family; }
+        p ??= new GenericTextRunProperties(new Typeface(FontFamily, FontStyle, FontWeight, FontStretch), FontSize, foregroundBrush: Foreground, fontFeatures: FontFeatures);
+        if (_codeProperties.TryGetValue(p, out var code)) return code;
+        return _codeProperties[p] = new GenericTextRunProperties(new Typeface(family, p.Typeface.Style, p.Typeface.Weight, p.Typeface.Stretch), p.FontRenderingEmSize,
+            p.TextDecorations, p.ForegroundBrush, p.BackgroundBrush, fontFeatures: FontFeatures);
+    }
+    private TextRunProperties? _plainCode; // gaps inside fenced code (no syntax span)
+    // Splits the sorted, non-overlapping overrides at code boundaries; code parts (and unstyled gaps in code) get the code font.
+    private ValueSpan<TextRunProperties>[] WithCodeFont(List<ValueSpan<TextRunProperties>> styles, int length)
+    {
+        if (!Mdhub.Services.EditorFonts.SeparateCodeFont) return styles.ToArray();
+        var code = new List<(int Start, int End)>();
+        foreach (var block in _syntax.Blocks) if (block.Kind == SyntaxBlockKind.Code) code.Add((block.Start, Math.Min(block.End, length)));
+        foreach (var span in _syntax.Spans) if (span.CodeBackground) code.Add((span.Start, Math.Min(span.End, length)));
+        if (code.Count == 0) return styles.ToArray();
+        code.Sort((a, b) => a.Start.CompareTo(b.Start));
+        var cuts = new SortedSet<int>();
+        foreach (var s in styles) { cuts.Add(s.Start); cuts.Add(s.Start + s.Length); }
+        foreach (var (a, b) in code) { cuts.Add(Math.Max(0, a)); cuts.Add(Math.Max(0, b)); }
+        _plainCode = null;
+        var result = new List<ValueSpan<TextRunProperties>>();
+        int si = 0, ci = 0, prev = -1;
+        foreach (var cut in cuts)
+        {
+            if (prev >= 0 && cut > prev)
+            {
+                while (si < styles.Count && styles[si].Start + styles[si].Length <= prev) si++;
+                while (ci < code.Count && code[ci].End <= prev) ci++;
+                var style = si < styles.Count && styles[si].Start <= prev ? styles[si].Value : null;
+                var inCode = ci < code.Count && code[ci].Start <= prev;
+                if (inCode) result.Add(new(prev, cut - prev, style is null ? (_plainCode ??= CodeProps(null)) : CodeProps(style)));
+                else if (style is not null) result.Add(new(prev, cut - prev, style));
+            }
+            prev = cut;
+        }
+        return result.ToArray();
+    }
+
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
@@ -57,7 +104,7 @@ public sealed class MarkdownTextPresenter : TextPresenter
         if (!HighlightMarkdown || !string.IsNullOrEmpty(PreeditText)) return original;
         var text = Text ?? "";
         if (_cachedText != text) { _cachedText = text; _syntax = _highlighter.Run(text); SyntaxChanged?.Invoke(this, EventArgs.Empty); }
-        if (_syntax.Spans.Count == 0) return original;
+        if (_syntax.Spans.Count == 0 && (_syntax.Blocks.Count == 0 || !Mdhub.Services.EditorFonts.SeparateCodeFont)) return original;
         var typeface = new Typeface(FontFamily, FontStyle, FontWeight, FontStretch);
         var styles = new List<ValueSpan<TextRunProperties>>(_syntax.Spans.Count + 2);
         var selStart = Math.Min(SelectionStart, SelectionEnd);
@@ -88,7 +135,7 @@ public sealed class MarkdownTextPresenter : TextPresenter
             return new TextLayout(text, typeface, FontSize, Foreground, TextAlignment, TextWrapping,
                 flowDirection: FlowDirection, maxWidth: original.MaxWidth, maxHeight: original.MaxHeight,
                 lineHeight: LineHeight, letterSpacing: LetterSpacing, fontFeatures: FontFeatures,
-                textStyleOverrides: styles.ToArray());
+                textStyleOverrides: WithCodeFont(styles, text.Length));
         }
         finally { original.Dispose(); }
     }
