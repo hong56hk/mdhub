@@ -86,6 +86,17 @@ internal static class LongTextLayoutTests
                     CheckMenu($"{code}: {label} context menu", context.Items.OfType<MenuItem>().ToList());
                     context.Close(); Pump();
                 }
+                // Preview-settings flyout (item 63). The editor-settings flyout waits on item 62.
+                {
+                    var gear = w.GetVisualDescendants().OfType<Button>().First(b => b.Name == "PreviewSettingsButton");
+                    var flyout = (Flyout)gear.Flyout!;
+                    flyout.ShowAt(gear); Pump(); Pump(); Pump();
+                    var content = (Control)flyout.Content!;
+                    Check(flyout.IsOpen && content.IsEffectivelyVisible, $"{code}: preview settings flyout opens");
+                    var clipped = ClippedIn(content);
+                    Check(clipped.Count == 0, $"{code}: preview settings flyout fits ({string.Join(" | ", clipped)})");
+                    flyout.Hide(); Pump();
+                }
                 // Dialogs.
                 void Dialog(string label, Func<Task> show)
                 {
@@ -162,6 +173,30 @@ internal static class LongTextLayoutTests
         {
             var right = button.TranslatePoint(new Point(button.Bounds.Width, 0), top);
             if (right is { } r && r.X > width + 1 && button.FindAncestorOfType<ScrollViewer>() is null) result.Add($"button {button.Name ?? button.Content?.ToString()} ends at {r.X:0} of {width:0}");
+        }
+        return result;
+    }
+
+    // Text clipped inside a flyout or other panel: a single-line text wider than its box, or any text or
+    // control running past the panel's right edge.
+    static List<string> ClippedIn(Control root)
+    {
+        var result = new List<string>();
+        var width = root.Bounds.Width;
+        foreach (var tb in root.GetVisualDescendants().OfType<TextBlock>())
+        {
+            if (!tb.IsEffectivelyVisible || string.IsNullOrEmpty(tb.Text) || tb.Bounds.Width <= 0 || tb.TextTrimming != TextTrimming.None) continue;
+            if (tb.FindAncestorOfType<TextBox>() is not null) continue;
+            var needed = tb.TextWrapping == TextWrapping.NoWrap ? tb.TextLayout.WidthIncludingTrailingWhitespace : tb.TextLayout.Width;
+            var trailing = tb.Text!.EndsWith(' ') ? tb.TextLayout.WidthIncludingTrailingWhitespace - tb.TextLayout.Width : 0;
+            if (needed - trailing > tb.Bounds.Width + 1) { result.Add($"{tb.Text} ({needed:0}>{tb.Bounds.Width:0})"); continue; }
+            var right = tb.TranslatePoint(new Point(Math.Min(tb.Bounds.Width, needed - trailing), 0), root);
+            if (right is { } r && r.X > width + 1) result.Add($"{tb.Text} (ends at {r.X:0} of {width:0})");
+        }
+        foreach (var c in root.GetVisualDescendants().OfType<Control>().Where(c => c is Button or ComboBox or NumericUpDown or TextBox && c.IsEffectivelyVisible && c.Bounds.Width > 0))
+        {
+            var right = c.TranslatePoint(new Point(c.Bounds.Width, 0), root);
+            if (right is { } r && r.X > width + 1) result.Add($"{c.GetType().Name} {c.Name} ends at {r.X:0} of {width:0}");
         }
         return result;
     }
