@@ -7,6 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../Services/TextFileStore.cs" Link="TextFileStore.cs" />
+    <Compile Include="../Services/FileSupport.cs" Link="FileSupport.cs" />
     <Compile Include="../Text/TextStatistics.cs" Link="TextStatistics.cs" />
     <Compile Include="../Text/FuzzyMatch.cs" Link="FuzzyMatch.cs" />
     <Compile Include="../Services/QuickOpenIndex.cs" Link="QuickOpenIndex.cs" />

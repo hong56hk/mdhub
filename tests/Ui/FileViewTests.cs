@@ -90,8 +90,35 @@ internal static class FileViewTests
             File.WriteAllBytes(invalid, [0x92, 0x81, 0xff]);
             var utf16 = Path.Combine(root, "unicode.txt");
             File.WriteAllText(utf16, "Unicode text", System.Text.Encoding.Unicode);
+            // Bug 39: legacy and BOM-less notes are never dimmed, open with their encoding and save back unchanged.
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+            Mdhub.Services.TextFileStore.AnsiCodePageOverride = 950;
+            var legacyText = "20170426 \u8003\u8eca\r\n\u4eca\u5929\u5f88\u4e0d\u958b\u5fc3\r\n";
+            var notes = new (string Name, byte[] Bytes, string Text)[]
+            {
+                ("20170226_unhappy.txt", System.Text.Encoding.GetEncoding(950).GetBytes(legacyText), legacyText),
+                ("20170426_\u8003\u8eca.txt", new System.Text.UnicodeEncoding(false, false).GetBytes(legacyText), legacyText),
+                ("bom.md", [0xEF, 0xBB, 0xBF, .. System.Text.Encoding.UTF8.GetBytes(legacyText)], legacyText),
+                ("control.txt", System.Text.Encoding.UTF8.GetBytes("a\0b\u0001c"), "a\0b\u0001c"),
+            };
+            foreach (var note in notes) File.WriteAllBytes(Path.Combine(root, note.Name), note.Bytes);
+            var video = Path.Combine(root, "clip.mp4"); File.WriteAllBytes(video, [0, 0, 0, 0x18]);
             Invoke("LoadRootAsync", root);
             var tree = Find<TreeView>("FolderTree");
+            foreach (var note in notes)
+            {
+                var path = Path.Combine(root, note.Name);
+                var item = tree.Items.OfType<TreeViewItem>().Single(i => i.Tag is Mdhub.Services.FolderEntry e && e.Path == path);
+                Check(item.Opacity == 1, $"{note.Name} is not dimmed in the explorer");
+                Invoke("OpenPathAsync", path);
+                var opened = (NoteDocument)tabs.SelectedItem!;
+                Check(opened.Path == path && opened.Editor.Text == note.Text, $"{note.Name} opens with its text ({opened.Encoding.WebName})");
+                Invoke("SaveAsync", opened, false);
+                Check(File.ReadAllBytes(path).SequenceEqual(note.Bytes), $"{note.Name} saves back in its own encoding");
+            }
+            Mdhub.Services.TextFileStore.AnsiCodePageOverride = null;
+            Check(tree.Items.OfType<TreeViewItem>().Single(i => i.Tag is Mdhub.Services.FolderEntry e && e.Path == video).Opacity < 1, ".mp4 stays dimmed");
+            tabs.SelectedItem = imageDocument; Dispatcher.UIThread.RunJobs();
             foreach (var path in new[] { binary, invalid })
             {
                 var item = tree.Items.OfType<TreeViewItem>().Single(i => i.Tag is Mdhub.Services.FolderEntry e && e.Path == path);

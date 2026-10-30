@@ -75,7 +75,7 @@ public partial class MainView
         (string Text, System.Text.Encoding Encoding) loaded;
         try { loaded = await TextFileStore.ReadAsync(path); }
         catch (System.Text.DecoderFallbackException) { UpdateStatus(Loc.F("UnsupportedEncoding", path)); return; }
-        if (!FileSupport.IsText(loaded.Text)) { UpdateStatus(Loc.F("UnsupportedBinary", path)); return; }
+        if (!FileSupport.IsTextByExtension(path) && !FileSupport.IsText(loaded.Text)) { UpdateStatus(Loc.F("UnsupportedBinary", path)); return; }
         AddDocument(path, loaded.Text, encoding: loaded.Encoding);
         if (recent) RecentService.AddFile(path);
     }

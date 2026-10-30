@@ -13,32 +13,23 @@ public static class FileSupport
         or ".pdf" or ".doc" or ".docx" or ".xls" or ".xlsx" or ".ppt" or ".pptx"
         or ".sqlite" or ".db" or ".mp3" or ".mp4" or ".wav" or ".woff" or ".woff2" or ".ttf";
 
+    // Bug 39: notes are text by extension, whatever their encoding or stray control bytes; never dimmed, always openable.
+    public static bool IsTextByExtension(string path) => Path.GetExtension(path).ToLowerInvariant() is ".txt" or ".md" or ".markdown";
+
     // Inspect a bounded sample on the folder-loading worker, including extensionless text files.
     public static SupportedFileKind Detect(string path)
     {
         if (IsImage(path)) return SupportedFileKind.Image;
+        if (IsTextByExtension(path)) return SupportedFileKind.Text;
         if (IsKnownBinary(path)) return SupportedFileKind.Unsupported;
         try
         {
             using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-            // Decode the sample without exceptions: invalid UTF-8 (e.g. cp1252 text) stays Unsupported for opening,
-            // but no longer raises a DecoderFallbackException per file while a folder loads.
             var bytes = new byte[8192];
             var length = stream.ReadAtLeast(bytes, bytes.Length, throwOnEndOfStream: false);
-            var sample = bytes.AsSpan(0, length);
-            var final = length < bytes.Length;
-            if (sample is [0xEF, 0xBB, 0xBF, ..] || sample is not ([0xFF, 0xFE, ..] or [0xFE, 0xFF, ..] or [0x00, 0x00, 0xFE, 0xFF, ..]))
-            {
-                var utf8 = sample is [0xEF, 0xBB, 0xBF, ..] ? sample[3..] : sample;
-                var chars = new char[utf8.Length];
-                var status = System.Text.Unicode.Utf8.ToUtf16(utf8, chars, out _, out var written, replaceInvalidSequences: false, isFinalBlock: final);
-                if (status == System.Buffers.OperationStatus.InvalidData) return SupportedFileKind.Unsupported;
-                return IsText(chars.AsSpan(0, written)) ? SupportedFileKind.Text : SupportedFileKind.Unsupported;
-            }
-            var decoded = TextFileStore.DecodeLenient(sample);
-            var text = decoded.Text.AsSpan();
-            if (!final && text.Length > 0 && text[^1] == '\uFFFD') text = text[..^1]; // a code unit split by the sample boundary
-            return !text.Contains('\uFFFD') && IsText(text) ? SupportedFileKind.Text : SupportedFileKind.Unsupported;
+            // Same detection as opening (BOM, UTF-16, UTF-8, then the ANSI code page); binary data fails IsText.
+            var text = TextFileStore.Decode(bytes.AsSpan(0, length), final: length < bytes.Length).Text;
+            return IsText(text) ? SupportedFileKind.Text : SupportedFileKind.Unsupported;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or DecoderFallbackException)
         {

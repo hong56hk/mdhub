@@ -186,6 +186,50 @@ try
         await TextFileStore.WriteAsync(path, "", loaded.Encoding);
         Require((await TextFileStore.ReadAsync(path)).Text == "", "Saving empty text removes old content");
     }
+    // Bug 39: legacy-encoded and BOM-less notes open, save back in their own encoding, and are never dimmed.
+    TextFileStore.AnsiCodePageOverride = 950;
+    try
+    {
+        var big5 = Encoding.GetEncoding(950);
+        var legacyText = "20170426 \u8003\u8eca\r\n\u4eca\u5929\u5f88\u4e0d\u958b\u5fc3 (unhappy)\r\n";
+        async Task RoundTrip(string name, byte[] bytes, string expectedText, Func<Encoding, bool> encodingCheck, Func<string, byte[]> encode, string label)
+        {
+            var path = Path.Combine(root, name);
+            await File.WriteAllBytesAsync(path, bytes);
+            Require(FileSupport.Detect(path) == SupportedFileKind.Text, $"{label}: the file is supported (not dimmed)");
+            var loaded = await TextFileStore.ReadAsync(path);
+            Require(loaded.Text == expectedText && encodingCheck(loaded.Encoding), $"{label}: opens with the right text and encoding ({loaded.Encoding.WebName})");
+            await TextFileStore.WriteAsync(path, loaded.Text, loaded.Encoding);
+            Require((await File.ReadAllBytesAsync(path)).SequenceEqual(bytes), $"{label}: an unedited save is byte-identical");
+            await TextFileStore.WriteAsync(path, loaded.Text + "edited", loaded.Encoding);
+            Require((await File.ReadAllBytesAsync(path)).SequenceEqual(encode(loaded.Text + "edited")), $"{label}: an edited save keeps the encoding");
+        }
+        await RoundTrip("20170426_big5.txt", big5.GetBytes(legacyText), legacyText, e => e.CodePage == 950, big5.GetBytes, "Big5 (cp950) .txt");
+        var ansiNote = Path.Combine(root, "README-big5"); await File.WriteAllBytesAsync(ansiNote, big5.GetBytes(legacyText));
+        Require(FileSupport.Detect(ansiNote) == SupportedFileKind.Text, "An extensionless Big5 text file is supported through the ANSI code page");
+        var le = new UnicodeEncoding(false, false); var be = new UnicodeEncoding(true, false);
+        await RoundTrip("utf16le-nobom.txt", le.GetBytes(legacyText), legacyText, e => e is UnicodeEncoding && e.GetPreamble().Length == 0 && e.CodePage == 1200, le.GetBytes, "UTF-16 LE without BOM");
+        await RoundTrip("utf16be-nobom.txt", be.GetBytes(legacyText), legacyText, e => e is UnicodeEncoding && e.GetPreamble().Length == 0 && e.CodePage == 1201, be.GetBytes, "UTF-16 BE without BOM");
+        await RoundTrip("utf16le-bom.txt", [.. Encoding.Unicode.GetPreamble(), .. Encoding.Unicode.GetBytes(legacyText)], legacyText, e => e.GetPreamble().SequenceEqual(Encoding.Unicode.GetPreamble()), s => [.. Encoding.Unicode.GetPreamble(), .. Encoding.Unicode.GetBytes(s)], "UTF-16 LE with BOM");
+        var bom8 = new UTF8Encoding(true);
+        await RoundTrip("utf8-bom.md", [.. bom8.GetPreamble(), .. bom8.GetBytes(legacyText)], legacyText, e => e.GetPreamble().Length == 3, s => [.. bom8.GetPreamble(), .. bom8.GetBytes(s)], "UTF-8 with BOM");
+        await RoundTrip("utf8.txt", Encoding.UTF8.GetBytes(legacyText), legacyText, e => e is UTF8Encoding && e.GetPreamble().Length == 0, Encoding.UTF8.GetBytes, "UTF-8 without BOM");
+        var control = "log\0line\u0001\u001b[0m end\r\n";
+        await RoundTrip("control.txt", Encoding.UTF8.GetBytes(control), control, e => e is UTF8Encoding, Encoding.UTF8.GetBytes, "A .txt with NUL and control bytes");
+        byte[] broken = [(byte)'a', 0x92, 0x81, 0xFF, (byte)'b'];
+        await RoundTrip("broken.txt", broken, "a\u0092\u0081\u00FFb", e => e.CodePage == 28591, s => Encoding.Latin1.GetBytes(s), "Bytes invalid as UTF-8 and Big5 (Latin-1 fallback)");
+        var video = Path.Combine(root, "clip.mp4"); await File.WriteAllBytesAsync(video, big5.GetBytes(legacyText));
+        var binary = Path.Combine(root, "data.bin"); await File.WriteAllBytesAsync(binary, [0, 1, 2, 3, 0x92, 0x81, 0xFF]);
+        var odd = Path.Combine(root, "odd.dat"); await File.WriteAllBytesAsync(odd, [0x92, 0x81, 0xFF]);
+        Require(FileSupport.Detect(video) == SupportedFileKind.Unsupported && FileSupport.Detect(binary) == SupportedFileKind.Unsupported && FileSupport.Detect(odd) == SupportedFileKind.Unsupported,
+            "Known binary types and binary content stay unsupported");
+        TextFileStore.AnsiCodePageOverride = 1252;
+        var cp1252 = Path.Combine(root, "smart.txt"); byte[] smart = [.. Encoding.ASCII.GetBytes("it"), 0x92, .. Encoding.ASCII.GetBytes("s")];
+        await File.WriteAllBytesAsync(cp1252, smart);
+        var smartLoaded = await TextFileStore.ReadAsync(cp1252);
+        Require(smartLoaded.Text == "it\u2019s" && smartLoaded.Encoding.CodePage == 1252, "On a cp1252 system a smart quote opens as cp1252");
+    }
+    finally { TextFileStore.AnsiCodePageOverride = null; }
 {
 {
     // Status-bar caret position: 1-based, CRLF/LF/CR each one line break, selection counts a CRLF as 1.
@@ -236,10 +280,9 @@ try
 
     var invalidPath = Path.Combine(root, "legacy.txt");
     await File.WriteAllBytesAsync(invalidPath, [0xff, 0x61]);
-    var rejected = false;
-    try { await TextFileStore.ReadAsync(invalidPath); }
-    catch (DecoderFallbackException) { rejected = true; }
-    Require(rejected, "Unsupported encoding fails instead of silently corrupting text");
+    var legacyLoaded = await TextFileStore.ReadAsync(invalidPath); // bug 39: legacy bytes open (ANSI or Latin-1) instead of failing
+    await TextFileStore.WriteAsync(invalidPath, legacyLoaded.Text, legacyLoaded.Encoding);
+    Require((await File.ReadAllBytesAsync(invalidPath)).SequenceEqual(new byte[] { 0xff, 0x61 }), $"Non-UTF-8 text opens ({legacyLoaded.Encoding.WebName}) and saves back without corrupting it");
     var stamp = new DateTime(2026, 10, 29, 13, 5, 9);
     var notePath = Path.Combine(root, "My note.md");
     Require(ImageAssets.FileName(notePath, ".png", stamp, _ => false) == "My note-20261029130509.png", "Pasted bitmap is named <note>-<yyyyMMddHHmmss>.png");
