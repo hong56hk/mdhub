@@ -1,5 +1,13 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.FolderExplorer">
+  <UserControl.Resources>
+    <!-- VS Code-like indent per level; the chevron slot stays reserved for files so same-level names align. -->
+    <x:Double x:Key="TreeViewItemIndent">10</x:Double>
+  </UserControl.Resources>
   <UserControl.Styles>
+    <!-- Files keep an empty chevron-sized slot so their names start at the same x as folders on that level. -->
+    <Style Selector="TreeViewItem /template/ Panel#PART_ExpandCollapseChevronContainer">
+      <Setter Property="MinWidth" Value="12" />
+    </Style>
     <Style Selector="TreeViewItem.dropTarget">
       <Setter Property="Background" Value="#394553" />
     </Style>

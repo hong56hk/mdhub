@@ -26,7 +26,9 @@ public partial class FolderExplorer
         if (item?.Tag is not FolderEntry entry) return;
         CancelRename();
         var name = Path.GetFileName(entry.Path);
-        var box = new TextBox { Name = "ExplorerRenameBox", Text = name, MinWidth = 100, Padding = new Thickness(3, 0), FontSize = 13 };
+        var box = new TextBox { Name = "ExplorerRenameBox", Text = name, MinWidth = 100, Padding = new Thickness(3, 0), BorderThickness = new Thickness(1), FontSize = 13 };
+        // Pull the box left by its border and padding so the edited text starts where the row's name starts.
+        box.Margin = new Thickness(-(box.Padding.Left + box.BorderThickness.Left), 0, 0, 0);
         _renameItem = item;
         _renameHeader = item.Header;
         _renameBox = box;
