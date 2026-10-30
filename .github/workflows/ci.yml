@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    name: Build and test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: 1
+      DOTNET_NOLOGO: 1
+      # Same folder setup-dotnet caches (it reads `dotnet nuget locals`).
+      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          # Mdhub.csproj, tests/Mdhub.FileTests.csproj, and tests/Ui/Mdhub.UiTests.csproj target net10.0.
+          dotnet-version: 10.0.x
+          cache: true
+          cache-dependency-path: "**/*.csproj"
+
+      - name: Install Linux native dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libfontconfig1 libfreetype6 fonts-dejavu-core
+
+      - name: Restore
+        run: |
+          dotnet restore Mdhub.csproj -p:DisableImplicitNuGetFallbackFolder=true
+          dotnet restore tests/Mdhub.FileTests.csproj -p:DisableImplicitNuGetFallbackFolder=true
+          dotnet restore tests/Ui/Mdhub.UiTests.csproj -p:DisableImplicitNuGetFallbackFolder=true
+
+      - name: Build
+        run: |
+          dotnet build Mdhub.csproj -c Release --no-restore
+          dotnet build tests/Mdhub.FileTests.csproj -c Release --no-restore
+          dotnet build tests/Ui/Mdhub.UiTests.csproj -c Release --no-restore
+
+      - name: File tests
+        run: dotnet run --project tests/Mdhub.FileTests.csproj -c Release --no-build
+
+      - name: UI tests
+        run: dotnet run --project tests/Ui/Mdhub.UiTests.csproj -c Release --no-build
