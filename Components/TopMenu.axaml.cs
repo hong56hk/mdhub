@@ -108,6 +108,8 @@ public partial class TopMenu : UserControl
     private void OpenFolder_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.OpenFolder);
     private void Save_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.Save);
     private void SaveAs_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.SaveAs);
+    private void ExportHtml_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.ExportHtml);
+    private void ExportPdf_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.ExportPdf);
     private void CloseTab_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.CloseTab);
     private void Exit_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.Exit);
     private void ToggleFolders_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.ToggleFolders);

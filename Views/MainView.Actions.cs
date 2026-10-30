@@ -26,6 +26,8 @@ public partial class MainView
             case WorkspaceAction.Guide: Guide_Click(null, new RoutedEventArgs()); return;
             case WorkspaceAction.About: About_Click(null, new RoutedEventArgs()); return;
             case WorkspaceAction.Shortcuts: await RunAsync(() => DialogService.ShowShortcutsAsync(Host)); return;
+            case WorkspaceAction.ExportHtml: await ExportAsync(pdf: false); return;
+            case WorkspaceAction.ExportPdf: await ExportAsync(pdf: true); return;
         }
         await RunAsync(async () =>
         {

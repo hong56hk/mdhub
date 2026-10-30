@@ -39,6 +39,10 @@
       <MenuItem Header="{DynamicResource MenuQuickOpen}" Click="Command_Click" c:ShortcutKeys.Id="file.quickOpen" />
       <MenuItem Header="{DynamicResource MenuSave}" Click="Save_Click" c:ShortcutKeys.Id="file.save" />
       <MenuItem Header="{DynamicResource MenuSaveAs}" Click="SaveAs_Click" c:ShortcutKeys.Id="file.saveAs" />
+      <MenuItem x:Name="ExportMenu" Header="{DynamicResource MenuExport}">
+        <MenuItem x:Name="ExportHtmlMenuItem" Header="{DynamicResource MenuExportHtml}" Click="ExportHtml_Click" />
+        <MenuItem x:Name="ExportPdfMenuItem" Header="{DynamicResource MenuExportPdf}" Click="ExportPdf_Click" />
+      </MenuItem>
       <MenuItem Header="{DynamicResource MenuCloseTab}" Click="CloseTab_Click" c:ShortcutKeys.Id="file.closeTab" />
       <MenuItem Header="{DynamicResource MenuExit}" Click="Exit_Click" />
     </MenuItem>

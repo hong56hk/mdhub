@@ -26,11 +26,15 @@ public partial class TextFormatter : UserControl
     {
         FormatBar.IsEnabled = enabled;
         TogglePreviewButton.IsEnabled = enabled;
+        ExportHtmlButton.IsEnabled = enabled;
+        ExportPdfButton.IsEnabled = enabled;
     }
     // Item 48: on = the preview pane is showing.
     public bool PreviewOn => TogglePreviewButton.Classes.Contains("on");
     public void SetPreviewOn(bool on) => TogglePreviewButton.Classes.Set("on", on);
     private void TogglePreview_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.TogglePreview);
+    private void ExportHtml_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.ExportHtml);
+    private void ExportPdf_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.ExportPdf);
     private void Edit_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is Control { Tag: string action }) EditRequested?.Invoke(action);

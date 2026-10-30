@@ -50,13 +50,26 @@ public partial class BottomStatusBar : UserControl
 
     public void UpdateDocument(NoteDocument document, string? message = null)
     {
+        SetAction(null, null);
         SetPath(message is null ? document.Path : null);
         Status.Text = message ?? (document.IsDirty ? Loc.T("UnsavedPrefix") : "") + (document.Path ?? Loc.T("NewNote"));
         FileKindLabel.Text = Loc.T(document.IsImage ? "KindImage" : document.IsMarkdown ? "KindMarkdown" : "KindPlain");
         EncodingLabel.Text = document.IsImage ? "" : document.Encoding.WebName.ToUpperInvariant();
         if (document.Image is { } image) SetCounts(() => Loc.F("ImagePixels", image.PixelSize.Width, image.PixelSize.Height));
     }
-    public void SetMessage(string message) { SetPath(null); Status.Text = message; }
+    public void SetMessage(string message) { SetPath(null); Status.Text = message; SetAction(null, null); }
+
+    // Item 51: a clickable action shown after the current message; any later status update clears it.
+    private Action? _action;
+    public string? ActionLabel => StatusAction.IsVisible ? StatusAction.Text : null;
+    public void SetAction(string? label, Action? action)
+    {
+        _action = action;
+        StatusAction.Text = label ?? "";
+        StatusAction.IsVisible = label is not null && action is not null;
+    }
+    public void InvokeAction() => _action?.Invoke();
+    private void StatusAction_PointerReleased(object? sender, PointerReleasedEventArgs e) { if (e.InitialPressMouseButton == MouseButton.Left) InvokeAction(); }
     // null hides the caret position (preview focused, image or no editor).
     public void SetCaret(string? position)
     {
