@@ -14,8 +14,8 @@ public static class DialogService
         var dialog = new Window { Title = title, Width = 480, SizeToContent = SizeToContent.Height, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
         var input = new TextBox { Name = "ItemName", Text = initialName, PlaceholderText = Loc.T("DialogName") };
         var error = new TextBlock { Foreground = ThemeService.Brush("DialogErrorForeground"), TextWrapping = TextWrapping.Wrap, IsVisible = false };
-        var create = new Button { Content = Loc.T("Create"), IsDefault = true, MinWidth = 80, Classes = { "textAction" } };
-        var cancel = new Button { Content = Loc.T("Cancel"), IsCancel = true, MinWidth = 80, Classes = { "textAction" } };
+        var create = new Button { Content = Loc.T("Create"), IsDefault = true, MinWidth = 80, MinHeight = 42, FontSize = 16, Classes = { "textAction" }, HorizontalContentAlignment = HorizontalAlignment.Center };
+        var cancel = new Button { Content = Loc.T("Cancel"), IsCancel = true, MinWidth = 80, MinHeight = 42, FontSize = 16, Classes = { "textAction" }, HorizontalContentAlignment = HorizontalAlignment.Center };
         create.Click += (_, _) =>
         {
             var name = input.Text ?? "";
@@ -107,7 +107,7 @@ public static class DialogService
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right };
         foreach (var choice in choices)
         {
-            var button = new Button { Content = Loc.T(choice), MinWidth = 80, Classes = { "textAction" } };
+            var button = new Button { Content = Loc.T(choice), MinWidth = 80, Classes = { "textAction" }, HorizontalContentAlignment = HorizontalAlignment.Center, MinHeight = 42, FontSize = 16 };
             button.Click += (_, _) => dialog.Close(choice);
             buttons.Children.Add(button);
         }

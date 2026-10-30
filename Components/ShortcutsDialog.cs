@@ -48,7 +48,7 @@ internal static class ShortcutsDialog
         var list = new StackPanel { Name = "ShortcutList", Spacing = 2, Margin = new Thickness(20, 8, 20, 16) };
         var rows = new List<Row>();
         string? recording = null;
-        var resetAll = new Button { Name = "ResetAllShortcuts", Content = Loc.T("ShortcutResetAll"), Classes = { "textAction" }, HorizontalAlignment = HorizontalAlignment.Left };
+        var resetAll = new Button { Name = "ResetAllShortcuts", Content = Loc.T("ShortcutResetAll"), Classes = { "textAction" }, HorizontalAlignment = HorizontalAlignment.Left, HorizontalContentAlignment = HorizontalAlignment.Left, VerticalContentAlignment = VerticalAlignment.Center, FontSize = 16, MinHeight = 42, MinWidth = 80 };
         ShortcutGesture? pending = null;
 
         var conflictText = new TextBlock { Name = "ShortcutConflictText", TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
@@ -156,7 +156,19 @@ internal static class ShortcutsDialog
             if (ShortcutKeys.FromKey(e.Key, e.KeyModifiers) is { } gesture) Record(gesture);
         }, RoutingStrategies.Tunnel);
 
-        var close = new Button { Name = "ShortcutsClose", Content = Loc.T("Close"), IsDefault = true, IsCancel = true, MinWidth = 80, Classes = { "textAction" }, HorizontalAlignment = HorizontalAlignment.Right };
+        var close = new Button {
+            Name = "ShortcutsClose",
+            Content = Loc.T("Close"),
+            IsDefault = true,
+            IsCancel = true,
+            FontSize = 16,
+            MinWidth = 115,
+            MinHeight = 42,
+            Classes = { "textAction" },
+            HorizontalAlignment = HorizontalAlignment.Center,
+            HorizontalContentAlignment = HorizontalAlignment.Center,
+            VerticalContentAlignment = VerticalAlignment.Center
+        };
         close.Click += (_, _) => dialog.Close();
         resetAll.Click += async (_, _) =>
         {
