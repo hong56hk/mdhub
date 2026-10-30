@@ -13,7 +13,7 @@
     </Style>
   </UserControl.Styles>
   <Border BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="0,1,0,0" Padding="12,7">
-    <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+    <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto">
       <TextBlock x:Name="Counts" FontSize="11" Foreground="{DynamicResource TextSecondary}" />
       <Grid Grid.Column="1" ColumnDefinitions="*,Auto">
         <TextBlock x:Name="Status" Margin="20,0" FontSize="11" Foreground="{DynamicResource TextMuted}" TextTrimming="CharacterEllipsis" Background="Transparent" PointerReleased="Status_PointerReleased" />
@@ -21,8 +21,10 @@
         <TextBlock x:Name="StatusAction" Grid.Column="1" Margin="0,0,20,0" FontSize="11" Foreground="{DynamicResource LinkForeground}" Cursor="Hand" IsVisible="False" Background="Transparent" PointerReleased="StatusAction_PointerReleased" />
       </Grid>
       <TextBlock x:Name="CaretLabel" Grid.Column="2" Margin="0,0,16,0" FontSize="11" Foreground="{DynamicResource TextSecondary}" IsVisible="False" />
-      <TextBlock x:Name="FileKindLabel" Grid.Column="3" Margin="0,0,16,0" FontSize="11" Foreground="{DynamicResource TextMuted}" Text="Markdown" />
-      <TextBlock x:Name="EncodingLabel" Grid.Column="4" FontSize="11" Foreground="{DynamicResource Accent}" Text="UTF-8" />
+      <!-- Item 66: INS/OVR; a click toggles insert/overwrite. -->
+      <TextBlock x:Name="ModeLabel" Grid.Column="3" Margin="0,0,16,0" FontSize="11" Foreground="{DynamicResource TextSecondary}" Cursor="Hand" Background="Transparent" IsVisible="False" PointerReleased="ModeLabel_Toggle" />
+      <TextBlock x:Name="FileKindLabel" Grid.Column="4" Margin="0,0,16,0" FontSize="11" Foreground="{DynamicResource TextMuted}" Text="Markdown" />
+      <TextBlock x:Name="EncodingLabel" Grid.Column="5" FontSize="11" Foreground="{DynamicResource Accent}" Text="UTF-8" />
     </Grid>
   </Border>
 </UserControl>

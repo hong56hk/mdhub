@@ -107,6 +107,7 @@ public static class Shortcuts
         T("editor.docStart", ShortcutArea.Editor, "Go to start of document", C("Home")),
         T("editor.docEnd", ShortcutArea.Editor, "Go to end of document", C("End")),
         T("editor.tab", ShortcutArea.Editor, "Insert tab", P("Tab")),
+        S("editor.toggleOverwrite", ShortcutArea.Editor, "Toggle insert/overwrite", P("Insert")), // item 66
     ];
 
     // ---- Custom bindings (item 32). A custom entry replaces all of an entry's default gestures; an empty list
