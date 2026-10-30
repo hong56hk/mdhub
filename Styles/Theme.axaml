@@ -81,7 +81,7 @@
       <SolidColorBrush x:Key="SyntaxOrderedMarker" Color="#D7BA7D" />
       <SolidColorBrush x:Key="EditorTextBackground" Color="#202329" />
       <SolidColorBrush x:Key="EditorForeground" Color="#FFFFFF" />
-      <SolidColorBrush x:Key="EditorSelectionBackground" Color="#0078D7" />
+      <SolidColorBrush x:Key="EditorSelectionBackground" Color="#C1CBCD" />
       <SolidColorBrush x:Key="PreviewHighlight" Color="#5C4F8FE8" />
       <SolidColorBrush x:Key="PreviewSelectionBackground" Color="#99306FB8" />
         <!-- Explorer rows, VS Code Dark Modern: focused selection, selection while focus is elsewhere, hover. -->
@@ -181,7 +181,7 @@
       <SolidColorBrush x:Key="SyntaxOrderedMarker" Color="#795E26" />
       <SolidColorBrush x:Key="EditorTextBackground" Color="#FFFFFF" />
       <SolidColorBrush x:Key="EditorForeground" Color="#000000" />
-      <SolidColorBrush x:Key="EditorSelectionBackground" Color="#0078D7" />
+      <SolidColorBrush x:Key="EditorSelectionBackground" Color="#C1CBCD" />
       <SolidColorBrush x:Key="PreviewHighlight" Color="#404F8FE8" />
       <SolidColorBrush x:Key="PreviewSelectionBackground" Color="#99ADD6FF" />
         <!-- Explorer rows, VS Code Light Modern: focused selection, selection while focus is elsewhere, hover. -->
