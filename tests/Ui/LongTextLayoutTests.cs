@@ -97,6 +97,9 @@ internal static class LongTextLayoutTests
                     if (gearName == "EditorSettingsButton")
                         Check(content.GetVisualDescendants().OfType<CheckBox>().Any(c => c.Name == "EditorInsertSpacesBox" && c.IsEffectivelyVisible)
                             && content.GetVisualDescendants().OfType<NumericUpDown>().Any(c => c.Name == "EditorTabSizeBox" && c.IsEffectivelyVisible), $"{code}: editor settings show the tab settings (item 70)");
+                    if (gearName == "EditorSettingsButton")
+                        Check(new[] { "EditorAutoListsBox", "EditorAutoTablesBox", "EditorAlignTablesBox" }.All(n => content.GetVisualDescendants().OfType<CheckBox>().Any(c => c.Name == n && c.IsEffectivelyVisible)),
+                            $"{code}: editor settings show the auto-complete switches (item 71)");
                     var clipped = ClippedIn(content);
                     Check(clipped.Count == 0, $"{code}: {label} flyout fits ({string.Join(" | ", clipped)})");
                     flyout.Hide(); Pump();

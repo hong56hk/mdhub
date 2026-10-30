@@ -48,6 +48,10 @@ public sealed record EditorBehaviorData
 {
     public bool InsertSpaces { get; init; } = true;
     public int TabSize { get; init; } = 4;
+    // Item 71: Markdown list / table auto-complete and table column alignment (all on by default).
+    public bool AutoLists { get; init; } = true;
+    public bool AutoTables { get; init; } = true;
+    public bool AlignTables { get; init; } = true;
 }
 
 // UI-free session file handling: atomic save, tolerant load and validation against the file system.

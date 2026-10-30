@@ -27,6 +27,7 @@ if (args.Contains("--overwrite-only")) { OverwriteTests.Run(); return; }
 if (args.Contains("--titlelogo-only")) { TitleLogoTests.Run(); return; }
 if (args.Contains("--lineedit-only")) { LineEditTests.Run(); return; }
 if (args.Contains("--editorcolors-only")) { EditorColorsTests.Run(); return; }
+if (args.Contains("--autocomplete-only")) { AutoCompleteTests.Run(); return; }
 if (args.Contains("--tabs-only")) { TabSettingsTests.Run(); return; }
 if (args.Contains("--gears-only")) { GearsTests.Run(); return; }
 if (args.Contains("--export-only")) { ExportTests.Run(); return; }

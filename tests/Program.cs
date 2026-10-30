@@ -624,6 +624,15 @@ try
         Require(SessionStore.Load(tabSession)?.EditorBehavior is { InsertSpaces: false, TabSize: 3 }, "Tab settings round-trip through the session file");
         Require(new EditorBehaviorData() is { InsertSpaces: true, TabSize: 4 }, "Tab settings default to spaces, size 4");
     }
+    // Item 71: list and table auto-complete rules.
+    {
+        var ac = new Mdhub.Services.MarkdownAutoComplete.Options();
+        string Ap(string t, Mdhub.Text.CaretEdit? e) => e is { } x ? t[..x.Start] + x.Replacement + t[x.End..] : "<none>";
+        Require(Ap("- a", Mdhub.Services.MarkdownAutoComplete.Enter("- a", 3, ac, "\n")) == "- a\n- " && Ap("1) x\n2) y", Mdhub.Services.MarkdownAutoComplete.Enter("1) x\n2) y", 4, ac, "\n")) == "1) x\n2) \n3) y", "Lists continue and renumber");
+        Require(Mdhub.Services.MarkdownAutoComplete.Enter("```\n- a", 7, ac) is null, "No auto-complete in fenced code");
+        Require(Mdhub.Services.MarkdownAutoComplete.AlignRows(["|a|\u6f22|", "|-|-|"]) == "| a   | \u6f22  |\n| --- | --- |", "Table alignment is CJK-width aware");
+        Require(new EditorBehaviorData() is { AutoLists: true, AutoTables: true, AlignTables: true }, "Auto-complete defaults on");
+    }
     Console.WriteLine("All file tests passed.");
 }
 finally

@@ -31,7 +31,7 @@ public static class EditorFontsFlyout
     public static ScrollViewer Build() => new()
     {
         Name = "EditorSettingsScroll", MaxHeight = 560, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-        Content = new StackPanel { Spacing = 6, Children = { BuildFonts(), BuildTabs(), BuildEncoding(), BuildColors() } },
+        Content = new StackPanel { Spacing = 6, Children = { BuildFonts(), BuildTabs(), BuildAutoComplete(), BuildEncoding(), BuildColors() } },
     };
 
     private static TextBlock Label(string key) => new() { Text = Loc.T(key), Foreground = ThemeService.Brush("TextSecondary"), Margin = new Thickness(0, 4, 0, 0) };
@@ -106,6 +106,25 @@ public static class EditorFontsFlyout
         eolBox.SelectedIndex = Array.IndexOf(endings, LineEndingSettings.DefaultLineEndingId);
         eolBox.SelectionChanged += (_, _) => { if (eolBox.SelectedIndex >= 0) LineEndingSettings.SetDefault(endings[eolBox.SelectedIndex]); };
         panel.Children.Add(eolBox);
+        return panel;
+    }
+
+    // Item 71: Markdown auto-complete switches (all on by default).
+    public static StackPanel BuildAutoComplete()
+    {
+        var s = EditorBehavior.Current;
+        var panel = new StackPanel { Name = "EditorAutoCompletePanel", Spacing = 4, Width = 280, Margin = new Thickness(0, 8, 0, 0) };
+        panel.Children.Add(new TextBlock { Text = Loc.T("EditorAutoComplete"), FontWeight = FontWeight.SemiBold });
+        void Box(string name, string key, bool value, Func<EditorBehaviorData, bool, EditorBehaviorData> set)
+        {
+            var box = new CheckBox { Name = name, Content = new TextBlock { Text = Loc.T(key), TextWrapping = TextWrapping.Wrap }, IsChecked = value };
+            AutomationProperties.SetName(box, Loc.T(key));
+            box.IsCheckedChanged += (_, _) => EditorBehavior.Update(d => set(d, box.IsChecked == true));
+            panel.Children.Add(box);
+        }
+        Box("EditorAutoListsBox", "EditorAutoLists", s.AutoLists, (d, v) => d with { AutoLists = v });
+        Box("EditorAutoTablesBox", "EditorAutoTables", s.AutoTables, (d, v) => d with { AutoTables = v });
+        Box("EditorAlignTablesBox", "EditorAlignTables", s.AlignTables, (d, v) => d with { AlignTables = v });
         return panel;
     }
 
