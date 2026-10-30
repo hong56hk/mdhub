@@ -143,6 +143,7 @@ public static partial class Loc
         ["KindMarkdown"] = "Markdown",
         ["KindPlain"] = "純文字",
         ["ImagePixels"] = "{0:N0} × {1:N0} 像素",
+        ["ImageZoomPercent"] = "縮放 {0}%",
         ["Statistics"] = "{0:N0} 個字    {1:N0} 個字元    {2:N0} 行",
         ["CaretPos"] = "第 {0} 行，第 {1} 欄",
         ["CaretSelected"] = " (已選取 {0})",

@@ -64,6 +64,7 @@ public partial class MainView : UserControl
         FolderExplorer.MessageChanged += BottomStatusBar.SetMessage;
         MdEditor.StatisticsChanged += BottomStatusBar.UpdateStatistics;
         MdEditor.MessageChanged += BottomStatusBar.SetMessage;
+        ImageViewer.ZoomChanged += percent => { if (ImageViewer.IsVisible) BottomStatusBar.SetImageZoom(percent); };
         AddHandler(KeyDownEvent, OnShortcut, RoutingStrategies.Tunnel);
         // Focus moving into or out of the preview shows or hides the caret position.
         AddHandler(GotFocusEvent, (_, _) => UpdateCaretStatus(), RoutingStrategies.Bubble, handledEventsToo: true);

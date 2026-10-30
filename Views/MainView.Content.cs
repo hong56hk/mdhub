@@ -24,5 +24,14 @@ public partial class MainView
         ImageViewer.IsVisible = image;
         ImageViewer.ShowImage(_active?.Image);
         if (image || binary) TextEditor.CloseFind();
+        BottomStatusBar.SetImageZoom(image ? ImageViewer.ZoomPercent : null);
     }
+
+    // Item 37: image zoom (Ctrl+wheel over the image, Reset zoom shows 100%).
+    internal bool ZoomImage(Avalonia.Input.PointerWheelEventArgs e)
+    {
+        if (!ImageViewer.IsVisible || !ImageViewer.IsPointerOver) return false;
+        return ImageViewer.ZoomAt(e.Delta.Y, e.GetPosition(ImageViewer));
+    }
+    internal bool ResetImageZoom() => ImageViewer.IsVisible && ImageViewer.ResetZoom();
 }

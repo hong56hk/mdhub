@@ -55,8 +55,18 @@ public partial class BottomStatusBar : UserControl
         Status.Text = message ?? (document.IsDirty ? Loc.T("UnsavedPrefix") : "") + (document.Path ?? Loc.T("NewNote"));
         FileKindLabel.Text = Loc.T(document.IsImage ? "KindImage" : document.IsBinary ? "KindBinary" : document.IsMarkdown ? "KindMarkdown" : "KindPlain");
         EncodingLabel.Text = document.IsViewOnly ? "" : document.Encoding.WebName.ToUpperInvariant() + (document.IsReadOnlyText ? " \u00b7 " + Loc.T("ReadOnly") : "");
-        if (document.Image is { } image) SetCounts(() => Loc.F("ImagePixels", image.PixelSize.Width, image.PixelSize.Height));
+        if (document.Image is { } image) SetCounts(() => Loc.F("ImagePixels", image.PixelSize.Width, image.PixelSize.Height) + ImageZoomSuffix());
     }
+    // Item 37: the image zoom shown after the pixel size (null when no image is shown).
+    private int? _imageZoom;
+    public int? ImageZoom => _imageZoom;
+    public void SetImageZoom(int? percent)
+    {
+        if (_imageZoom == percent) return;
+        _imageZoom = percent;
+        if (_counts is not null) Counts.Text = _counts();
+    }
+    private string ImageZoomSuffix() => _imageZoom is { } percent ? "  \u00b7  " + Loc.F("ImageZoomPercent", percent) : "";
     public void SetMessage(string message) { SetPath(null); Status.Text = message; SetAction(null, null); }
 
     // Item 51: a clickable action shown after the current message; any later status update clears it.
