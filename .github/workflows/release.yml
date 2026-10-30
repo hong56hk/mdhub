@@ -13,11 +13,6 @@ on:
   push:
     tags:
       - "v*"
-    # Temporary, so this branch can produce the publish artifacts before the
-    # workflow file exists on the default branch (workflow_dispatch will not
-    # start until then). Remove this branches filter after that run.
-    branches:
-      - cursor/add-release-workflow-4d40
   workflow_dispatch:
 
 permissions:
