@@ -132,7 +132,7 @@ public partial class MainView
     {
         if (FolderExplorer.IsRenaming) return;
         if (HandleSidebarShortcut(e)) return;
-        if (!_busy && ShortcutKeys.Match(e, s => s.Id == "explorer.rename") is not null)
+        if (!_busy && FolderExplorer.IsKeyboardFocusWithin && ShortcutKeys.Match(e, s => s.Id == "explorer.rename") is not null)
         {
             e.Handled = true;
             FolderExplorer.BeginRename();

@@ -53,7 +53,7 @@ public static class Shortcuts
         S("file.save", ShortcutArea.File, "Save", C("S")),
         S("file.saveAs", ShortcutArea.File, "Save as", CS("S")),
         S("file.closeTab", ShortcutArea.File, "Close tab", C("W")),
-        S("explorer.rename", ShortcutArea.File, "Rename selected explorer item", P("F2")),
+        S("explorer.rename", ShortcutArea.File, "Rename selected explorer item (explorer focused)", P("F2")),
         S("sidebar.explorer", ShortcutArea.View, "Show explorer", CS("E")),
         S("sidebar.search", ShortcutArea.Find, "Search in folder", CS("F")),
         S("sidebar.replace", ShortcutArea.Find, "Replace in folder", CS("H")),

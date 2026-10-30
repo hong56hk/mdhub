@@ -11,6 +11,7 @@ public partial class MainView
         if (FolderExplorer.OpenedFolder is not { } root || !ExplorerFileOperations.Contains(root, path)) return "The item is outside the opened folder.";
         var parent = Path.GetDirectoryName(path)!;
         var target = Path.Combine(parent, name);
+        if (Components.FolderExplorer.DuplicateError(path, name) is { } duplicate) return duplicate;
         if (_documents.Any(d => d.Path is { } p && SamePath(p, target) && !SamePath(p, path))) return "That name is already open in another tab.";
         SetBusy(true);
         try
