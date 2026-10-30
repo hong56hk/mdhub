@@ -14,6 +14,7 @@ if (args.Contains("--newfile-only")) { NewFileDialogTests.Run(); return; }
 if (args.Contains("--reveal-only")) { RevealTests.Run(); return; }
 if (args.Contains("--menu-only")) { MenuTests.Run(); return; }
 if (args.Contains("--previewtoggle-only")) { PreviewToggleTests.Run(); return; }
+if (args.Contains("--createtarget-only")) { CreateTargetTests.Run(); return; }
 if (args.Contains("--strike-only")) { StrikeIconTests.Run(); return; }
 if (args.Contains("--drag-only")) { ExplorerDragTests.Run(); return; }
 if (args.Contains("--file-views")) { FileViewTests.Run(); return; }
@@ -158,12 +159,15 @@ EnterName("Sibling folder");
 Require(Directory.Exists(Path.Combine(creationFixture, "Sibling folder")), "New folder is created beside the selected file");
 Find<Button>("NewFolderButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 EnterName("Another folder");
-Require(Directory.Exists(Path.Combine(creationFixture, "Another folder")), "A selected folder creates a sibling at the same level");
+// Item 42: the new folder is revealed and selected, so the next New folder goes inside it.
+Require(Directory.Exists(Path.Combine(creationFixture, "Sibling folder", "Another folder")), "A selected folder creates the new item inside it");
 
-tree.SelectedItem = null;
+// Item 42: with nothing selected the target is the open folder's root (checked below and in --createtarget-only),
+// so select the seed file again to keep creating in this fixture.
+Await(explorer.RevealCreatedAsync(seed)); Pump();
 Find<Button>("NewFileButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 EnterName("fallback.txt");
-Require(File.Exists(Path.Combine(creationFixture, "fallback.txt")), "No explorer selection falls back to the active file's directory");
+Require(File.Exists(Path.Combine(creationFixture, "fallback.txt")), "A selected file creates the new file in its folder");
 // The explorer reloads asynchronously after a create; wait for the reveal instead of relying on a fixed pump.
 for (var wait = 0; wait < 40 && TreeNodes(tree.Items.OfType<TreeViewItem>()).Count(item => item.IsExpanded) < 2; wait++) Pump();
 var allNodes = TreeNodes(tree.Items.OfType<TreeViewItem>()).ToArray();
@@ -184,7 +188,7 @@ ClickDialog("Cancel");
 
 tabs.SelectedItem = second; // Untitled document and no explorer selection means opened root.
 tree.SelectedItem = null;
-Require(explorer.GetCreationDirectory(second.Path) == fixture, "An untitled active document falls back to the opened folder");
+Require(explorer.GetCreationDirectory() == fixture, "An untitled active document falls back to the opened folder");
 Find<Button>("NewFileButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 ClickDialog("Cancel");
 Require(!File.Exists(Path.Combine(fixture, "Untitled.md")), "Cancelling creation does not create a file");

@@ -121,12 +121,27 @@ public partial class FolderExplorer : UserControl
         FolderTree.IsEnabled = !busy;
         FolderActions.IsEnabled = !busy && _folder is not null;
     }
-    public string GetCreationDirectory(string? activeFilePath)
+    // Item 42: New file / New folder follow the explorer selection: a selected folder gets the item inside it, a
+    // selected file gets it beside it (in its folder), and with nothing selected it goes in the open folder's root.
+    // The background menu's New file / New folder always use the root.
+    public string GetCreationDirectory()
     {
-        if (_createInRoot) { _createInRoot = false; return _folder ?? throw new InvalidOperationException(Loc.T("OpenFolderFirst")); }
-        return FolderService.CreationDirectory(
-        (FolderTree.SelectedItem as TreeViewItem)?.Tag is FolderEntry entry ? entry.Path : null,
-        activeFilePath, _folder ?? throw new InvalidOperationException(Loc.T("OpenFolderFirst")));
+        var root = _folder ?? throw new InvalidOperationException(Loc.T("OpenFolderFirst"));
+        if (_createInRoot) { _createInRoot = false; return root; }
+        if ((FolderTree.SelectedItem as TreeViewItem)?.Tag is not FolderEntry entry) return root;
+        var directory = entry.IsDirectory ? entry.Path : Path.GetDirectoryName(entry.Path);
+        return directory is not null && (directory == root || Contains(directory)) ? directory : root;
+    }
+
+    // The "Create in:" text: the open folder's name, then the path below it (e.g. "notes\2026\october").
+    public string DisplayDirectory(string directory)
+    {
+        if (_folder is null) return directory;
+        var name = Path.GetFileName(Path.TrimEndingDirectorySeparator(_folder));
+        if (string.IsNullOrEmpty(name)) return directory;
+        var relative = Path.GetRelativePath(_folder, directory);
+        if (relative == ".") return name;
+        return Path.IsPathRooted(relative) || relative.StartsWith("..") ? directory : Path.Combine(name, relative);
     }
     private FileSystemWatcher? _watcher;
     private Avalonia.Threading.DispatcherTimer? _watchTimer;

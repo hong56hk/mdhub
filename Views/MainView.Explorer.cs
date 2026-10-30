@@ -9,9 +9,9 @@ public partial class MainView
 {
     private async Task CreateExplorerItemAsync(bool isFolder)
     {
-        var directory = FolderExplorer.GetCreationDirectory(_active?.Path);
+        var directory = FolderExplorer.GetCreationDirectory();
         var name = await DialogService.PromptNameAsync(Host, Loc.T(isFolder ? "NewFolder" : "NewFile"), directory,
-            isFolder ? "New folder" : "Untitled.md");
+            isFolder ? "New folder" : "Untitled.md", FolderExplorer.DisplayDirectory(directory));
         if (name is null) return;
         var path = await FolderService.CreateAsync(directory, name, isFolder);
         await FolderExplorer.RevealCreatedAsync(path);

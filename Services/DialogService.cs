@@ -8,7 +8,8 @@ namespace Mdhub.Services;
 
 public static class DialogService
 {
-    public static Task<string?> PromptNameAsync(Window owner, string title, string directory, string initialName)
+    // displayDirectory: how "Create in:" names the target (item 42: relative to the open folder); the tooltip has the full path.
+    public static Task<string?> PromptNameAsync(Window owner, string title, string directory, string initialName, string? displayDirectory = null)
     {
         var dialog = new Window { Title = title, Width = 480, SizeToContent = SizeToContent.Height, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
         var input = new TextBox { Name = "ItemName", Text = initialName, PlaceholderText = Loc.T("DialogName") };
@@ -38,13 +39,20 @@ public static class DialogService
             Margin = new Thickness(20), Spacing = 12,
             Children =
             {
-                new TextBlock { Text = Loc.F("CreateIn", directory), TextWrapping = TextWrapping.Wrap }, input, error,
+                CreateInText(directory, displayDirectory), input, error,
                 new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, Children = { create, cancel } }
             }
         };
         ApplyOwnerZoom(dialog, owner);
         ThemeService.PrepareTitleBar(dialog);
         return dialog.ShowDialog<string?>(owner);
+    }
+
+    private static TextBlock CreateInText(string directory, string? displayDirectory)
+    {
+        var text = new TextBlock { Name = "CreateInText", Text = Loc.F("CreateIn", displayDirectory ?? directory), TextWrapping = TextWrapping.Wrap };
+        ToolTip.SetTip(text, directory);
+        return text;
     }
 
     // Dialogs are separate windows, so the owner's zoom transform does not reach them: scale content and width here.
