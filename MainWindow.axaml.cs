@@ -33,6 +33,7 @@ public partial class MainWindow : Window
         AddHandler(KeyDownEvent, (_, e) => MainView.HandleSidebarShortcut(e), RoutingStrategies.Tunnel);
         AddHandler(PointerWheelChangedEvent, OnZoomWheel, RoutingStrategies.Tunnel, handledEventsToo: true);
         SetZoom(ZoomLevel.Default, announce: false);
+        Mdhub.Services.ThemeService.PrepareTitleBar(this); // themed caption from the first frame (item 38)
         SessionManager.Track(this); // after Closing above, so it sees the unsaved prompt's decision
     }
 

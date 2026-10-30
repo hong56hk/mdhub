@@ -25,7 +25,14 @@ public static class DialogService
             dialog.Close(name);
         };
         cancel.Click += (_, _) => dialog.Close(null);
-        dialog.Opened += (_, _) => { input.Focus(); input.SelectAll(); };
+        // As in rename: a file name pre-selects only its stem ("Untitled" of "Untitled.md"); a folder name is selected whole.
+        dialog.Opened += (_, _) =>
+        {
+            input.Focus();
+            var stem = Path.GetFileNameWithoutExtension(initialName);
+            if (Path.HasExtension(initialName) && stem.Length > 0) { input.SelectionStart = 0; input.SelectionEnd = stem.Length; }
+            else input.SelectAll();
+        };
         dialog.Content = new StackPanel
         {
             Margin = new Thickness(20), Spacing = 12,
@@ -36,6 +43,7 @@ public static class DialogService
             }
         };
         ApplyOwnerZoom(dialog, owner);
+        ThemeService.PrepareTitleBar(dialog);
         return dialog.ShowDialog<string?>(owner);
     }
 
@@ -72,6 +80,7 @@ public static class DialogService
             }
         };
         ApplyOwnerZoom(dialog, owner);
+        ThemeService.PrepareTitleBar(dialog);
         return dialog.ShowDialog<int?>(owner);
     }
 
@@ -91,6 +100,7 @@ public static class DialogService
         dialog.Content = new StackPanel { Margin = new Thickness(20), Spacing = 20,
             Children = { new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap }, buttons } };
         ApplyOwnerZoom(dialog, owner);
+        ThemeService.PrepareTitleBar(dialog);
         return dialog.ShowDialog<string?>(owner);
     }
 }

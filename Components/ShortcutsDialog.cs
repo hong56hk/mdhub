@@ -180,6 +180,7 @@ internal static class ShortcutsDialog
         Shortcuts.Changed += Refresh;
         dialog.Closed += (_, _) => Shortcuts.Changed -= Refresh;
         DialogService.ApplyOwnerZoom(dialog, owner);
+        ThemeService.PrepareTitleBar(dialog);
         return dialog.ShowDialog(owner);
     }
 }

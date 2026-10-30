@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.TextFormatter">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:c="using:Mdhub.Components" x:Class="Mdhub.Components.TextFormatter">
   <Border BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="0,1" Padding="8,5" Background="{DynamicResource ToolbarBackground}">
     <Grid ColumnDefinitions="*,Auto">
       <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
@@ -7,7 +7,7 @@
           <Button Content="↷" Tag="redo" Classes="tool" Click="Edit_Click" ToolTip.Tip="{DynamicResource Redo}" />
           <Button Content="B" Tag="bold" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Bold}" />
           <Button Content="I" Tag="italic" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Italic}" />
-          <Button Content="S̶" Tag="strike" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Strikethrough}" />
+          <Button Tag="strike" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Strikethrough}"><c:StrikeGlyph /></Button>
           <Button Content="&lt;/&gt;" Tag="code" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource InlineCode}" />
           <Button Content="H1" Tag="h1" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Heading1}" />
           <Button Content="H2" Tag="h2" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Heading2}" />
