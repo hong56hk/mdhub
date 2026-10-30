@@ -23,7 +23,7 @@
   </UserControl.Styles>
   <Border Background="{DynamicResource FloatingBackground}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" CornerRadius="0,0,6,6" Padding="6" BoxShadow="0 2 8 0 #66000000">
     <DockPanel>
-      <TextBox x:Name="QuickOpenInput" DockPanel.Dock="Top" Classes="findField" Watermark="{DynamicResource QuickOpenWatermark}" AutomationProperties.Name="{DynamicResource QuickOpenName}" />
+      <TextBox x:Name="QuickOpenInput" DockPanel.Dock="Top"  Width="NaN" Classes="findField" Watermark="{DynamicResource QuickOpenWatermark}" AutomationProperties.Name="{DynamicResource QuickOpenName}" />
       <TextBlock x:Name="QuickOpenHeader" DockPanel.Dock="Top" Margin="8,6,8,2" FontSize="11" Foreground="{DynamicResource TextMuted}" IsVisible="False" />
       <TextBlock x:Name="QuickOpenMessage" DockPanel.Dock="Top" Margin="8,6" FontSize="12" Foreground="{DynamicResource TextMuted}" TextWrapping="Wrap" IsVisible="False" />
       <ListBox x:Name="QuickOpenList" Margin="0,4,0,0" MaxHeight="360" SelectionMode="Single" Focusable="False" AutomationProperties.Name="{DynamicResource QuickOpenResults}" />
