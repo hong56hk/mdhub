@@ -82,4 +82,4 @@ tests/         File and headless UI tests
 
 ## License
 
-TBD
+MDHub is released under the [MIT License](LICENSE).
