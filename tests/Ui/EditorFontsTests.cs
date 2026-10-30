@@ -49,19 +49,14 @@ internal static class EditorFontsTests
             Check(md.Editor.FontFamily.ToString().Contains("Consolas, Menlo, monospace") && other.Editor.FontFamily == md.Editor.FontFamily, "Editors use the default font with its monospace fallback");
 
             // ---- Gear ----
-            var gear = editor.FindControl<Button>("EditorFontsButton")!;
-            var icon = editor.FindControl<Avalonia.Controls.Shapes.Path>("EditorFontsIcon")!;
-            var previewGear = w.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "PreviewSettingsButton");
+            // Item 60 moved the gear from the editor corner into the toolbar (tests/Ui/GearsTests.cs covers placement and visibility).
+            var formatter = w.GetVisualDescendants().OfType<Mdhub.Components.TextFormatter>().First();
+            var gear = formatter.FindControl<Button>("EditorSettingsButton")!;
+            var icon = formatter.FindControl<Avalonia.Controls.Shapes.Path>("EditorSettingsIcon")!;
             Check(gear.IsVisible && gear.Flyout is Flyout && gear.Content == icon && gear.Classes.Contains("tool") && icon.StrokeThickness == 1.25 && icon.Fill is null
-                && ((Avalonia.Controls.Shapes.Path)previewGear.Content!).Data!.ToString() == icon.Data!.ToString(), "Gear: the preview's thin-stroke gear icon, opening a flyout");
-            var gb = gear.TranslatePoint(new Point(gear.Bounds.Width, 0), editor)!.Value;
-            Check(Math.Abs(editor.Bounds.Width - gb.X - 16) < 1 && Math.Abs(gb.Y - 6) < 1, $"Gear sits at the editor's top-right ({gb})");
-            Check(ToolTip.GetTip(gear) as string == Loc.T("EditorFontSettings") && AutomationProperties.GetName(gear) == Loc.T("EditorFontSettings"), "Gear has a localized tooltip and name");
+                && editor.FindControl<Button>("EditorFontsButton") is null, "Gear: a thin-stroke toolbar icon opening a flyout (no corner gear left)");
+            Check(ToolTip.GetTip(gear) as string == Loc.T("EditorSettings") && AutomationProperties.GetName(gear) == Loc.T("EditorSettings"), "Gear has a localized tooltip and name");
             Check(icon.Stroke is ISolidColorBrush s && gear.Foreground is ISolidColorBrush f && s.Color == f.Color, "Gear icon follows the theme's button foreground");
-            editor.OpenFind(false); Settle();
-            Check(!gear.IsVisible, "Gear makes way for the find bar");
-            editor.CloseFind(); Settle();
-            Check(gear.IsVisible, "Gear returns when the find bar closes");
 
             // ---- Flyout: exactly two dropdowns ----
             var flyout = (Flyout)gear.Flyout!;

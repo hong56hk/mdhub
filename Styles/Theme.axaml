@@ -193,4 +193,8 @@
       <SolidColorBrush x:Key="LinkForeground" Color="#2563C9" />
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
+  <!-- Item 60: toolbar settings icons (thin-stroke outlines, 16x14 like the other toolbar icons). Shared by Light and Dark (shapes, not
+       colours, so StaticResource); their colour is the themed toolbar button foreground. Editor: gear + 'T' badge. Preview: gear + eye badge. -->
+  <StreamGeometry x:Key="EditorSettingsIconGeometry">M 9.5,6.5 A 3.5,3.5 0 1 1 2.5,6.5 A 3.5,3.5 0 1 1 9.5,6.5 Z M 7.25,6.5 A 1.25,1.25 0 1 1 4.75,6.5 A 1.25,1.25 0 1 1 7.25,6.5 Z M 6,1.5 V 3 M 6,10 V 11.5 M 1,6.5 H 2.5 M 9.5,6.5 H 11 M 2.46,2.96 L 3.53,4.03 M 9.54,2.96 L 8.47,4.03 M 2.46,10.04 L 3.53,8.97 M 10,8.75 H 15 M 12.5,8.75 V 13.5</StreamGeometry>
+  <StreamGeometry x:Key="PreviewSettingsIconGeometry">M 9.5,6.5 A 3.5,3.5 0 1 1 2.5,6.5 A 3.5,3.5 0 1 1 9.5,6.5 Z M 7.25,6.5 A 1.25,1.25 0 1 1 4.75,6.5 A 1.25,1.25 0 1 1 7.25,6.5 Z M 6,1.5 V 3 M 6,10 V 11.5 M 1,6.5 H 2.5 M 9.5,6.5 H 11 M 2.46,2.96 L 3.53,4.03 M 9.54,2.96 L 8.47,4.03 M 2.46,10.04 L 3.53,8.97 M 9.5,11.25 Q 12.25,8.25 15,11.25 Q 12.25,14.25 9.5,11.25 Z M 13,11.25 A 0.75,0.75 0 1 1 11.5,11.25 A 0.75,0.75 0 1 1 13,11.25 Z</StreamGeometry>
 </ResourceDictionary>

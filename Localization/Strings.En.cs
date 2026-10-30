@@ -301,6 +301,7 @@ public static partial class Loc
         ["PreviewBulletSpacing"] = "Bullet list item spacing",
         ["PreviewOrderedSpacing"] = "Ordered list item spacing",
         ["EditorFontSettings"] = "Editor fonts",
+        ["EditorSettings"] = "Editor settings",
         ["EditorBodyFont"] = "Body font",
         ["EditorCodeFont"] = "Code font",
         ["PreviewResetDefaults"] = "Reset to defaults",

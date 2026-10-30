@@ -301,6 +301,7 @@ public static partial class Loc
         ["PreviewBulletSpacing"] = "\u7b87\u6761\u66f8\u304d\u306e\u9805\u76ee\u9593\u9694",
         ["PreviewOrderedSpacing"] = "\u756a\u53f7\u4ed8\u304d\u30ea\u30b9\u30c8\u306e\u9805\u76ee\u9593\u9694",
         ["EditorFontSettings"] = "\u30a8\u30c7\u30a3\u30bf\u30fc\u306e\u30d5\u30a9\u30f3\u30c8",
+        ["EditorSettings"] = "\u30a8\u30c7\u30a3\u30bf\u30fc\u8a2d\u5b9a",
         ["EditorBodyFont"] = "\u672c\u6587\u30d5\u30a9\u30f3\u30c8",
         ["EditorCodeFont"] = "\u30b3\u30fc\u30c9\u30d5\u30a9\u30f3\u30c8",
         ["PreviewResetDefaults"] = "\u65e2\u5b9a\u5024\u306b\u623b\u3059",

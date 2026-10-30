@@ -54,11 +54,12 @@ internal static class PreviewSettingsTests
                 "Default preview renders as before (15/24 body, 14 px spacing, Consolas 13 code)");
 
             // ---- Gear button ----
-            var gear = md.FindControl<Button>("PreviewSettingsButton")!;
-            var icon = md.FindControl<Avalonia.Controls.Shapes.Path>("PreviewSettingsIcon")!;
+            // Item 60 moved the gear from the preview corner into the toolbar (tests/Ui/GearsTests.cs covers placement and visibility).
+            var formatter = w.GetVisualDescendants().OfType<TextFormatter>().First();
+            var gear = formatter.FindControl<Button>("PreviewSettingsButton")!;
+            var icon = formatter.FindControl<Avalonia.Controls.Shapes.Path>("PreviewSettingsIcon")!;
             Check(gear.IsVisible && gear.Flyout is Flyout && gear.Content == icon && icon.StrokeThickness <= 1.5 && icon.Fill is null, "Gear: a thin-stroke icon button that opens a flyout");
-            var gearAt = gear.TranslatePoint(new Point(gear.Bounds.Width, 0), md)!.Value;
-            Check(gearAt.X > md.Bounds.Width - 40 && gearAt.Y < 20, "Gear sits at the top-right of the preview");
+            Check(md.FindControl<Button>("PreviewSettingsButton") is null, "No gear is left in the preview corner");
             Check(ToolTip.GetTip(gear) as string == Loc.T("PreviewSettings") && AutomationProperties.GetName(gear) == Loc.T("PreviewSettings"), "Gear has a localized tooltip and name");
             Check(icon.Stroke is ISolidColorBrush stroke && gear.Foreground is ISolidColorBrush fg && stroke.Color == fg.Color, "Gear icon follows the theme's button foreground");
             ThemeService.Apply(AppTheme.Light, persist: false); Settle();
