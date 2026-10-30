@@ -74,17 +74,31 @@ public static class LocResources
     // Item 45: the padding every context menu gets, set as a local value so it applies from the very first measure
     // (a style can land after the popup first lays out, which left the first open without padding).
     public static readonly Thickness MenuPadding = new(10);
+    // Bug 55: the item padding. It used to come only from the Fluent MenuItem theme, which resolves when the item
+    // joins the popup's tree; on a menu's first open the items could be laid out before that, so the text touched
+    // the left edge until the second open. A local value is there before the first measure.
+    public static readonly Thickness MenuItemPadding = new(10, 2, 8, 2);
+    public static void ApplyItemPadding(ItemsControl menu)
+    {
+        foreach (var item in menu.Items.OfType<MenuItem>())
+        {
+            item.Padding = MenuItemPadding;
+            ApplyItemPadding(item);
+        }
+    }
 
     public static ContextMenu Localized(this ContextMenu menu)
     {
         menu.Padding = MenuPadding;
+        ApplyItemPadding(menu);
         // Fluent's template puts a 4px margin above and below the items; drop it so the padding is 10px on every side.
         // TemplateApplied runs before the popup's first measure, so the first open matches later ones.
         menu.TemplateApplied += (_, e) =>
         {
             if (e.NameScope.Find<Avalonia.Controls.Presenters.ItemsPresenter>("PART_ItemsPresenter") is { } items) items.Margin = default;
         };
-        menu.Opening += (_, _) => Refresh(menu);
+        // Items added after creation get the padding before the popup lays them out.
+        menu.Opening += (_, _) => { ApplyItemPadding(menu); Refresh(menu); };
         return menu;
     }
 }
