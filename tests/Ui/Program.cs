@@ -18,6 +18,7 @@ if (args.Contains("--createtarget-only")) { CreateTargetTests.Run(); return; }
 if (args.Contains("--searchindent-only")) { SearchIndentTests.Run(); return; }
 if (args.Contains("--tabcycle-only")) { TabCycleTests.Run(); return; }
 if (args.Contains("--formaticons-only")) { FormatIconTests.Run(); return; }
+if (args.Contains("--previewsettings-only")) { PreviewSettingsTests.Run(); return; }
 if (args.Contains("--export-only")) { ExportTests.Run(); return; }
 if (args.Contains("--binary-only")) { BinaryFileTests.Run(); return; }
 if (args.Contains("--strike-only")) { StrikeIconTests.Run(); return; }

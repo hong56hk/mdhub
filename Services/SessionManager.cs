@@ -60,7 +60,8 @@ public static class SessionManager
     private static void Write(List<WindowSession> windows)
     {
         try { SessionStore.Save(SessionPath, new SessionData { Windows = windows.Where(w => !w.IsEmpty).ToList(), Theme = ThemeService.Current.ToString(), Language = Mdhub.Localization.Loc.Chosen,
-                RecentFiles = [.. RecentService.Files], RecentFolders = [.. RecentService.Folders], CustomShortcuts = Shortcuts.AnyCustomized ? Shortcuts.Export() : null }); }
+                RecentFiles = [.. RecentService.Files], RecentFolders = [.. RecentService.Folders], CustomShortcuts = Shortcuts.AnyCustomized ? Shortcuts.Export() : null,
+                Preview = PreviewSettings.IsDefault ? null : PreviewSettings.Current }); }
         catch (Exception) { /* A session that cannot be written must not block closing. */ }
     }
 

@@ -7,6 +7,8 @@ using Markdig;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using Markdig.Extensions.Tables;
+using Avalonia.Media.TextFormatting;
+using Settings = Mdhub.Services.PreviewSettings;
 
 namespace Mdhub.Rendering;
 
@@ -85,7 +87,8 @@ public static class MarkdownPreview
             {
                 case HeadingBlock heading:
                     var title = InlineText(heading.Inline, heading);
-                    title.FontSize = heading.Level switch { 1 => 28, 2 => 23, 3 => 19, _ => 16 };
+                    // Item 35: headings keep their proportions to the body size (15 px -> 28/23/19/16).
+                    title.FontSize = Math.Round(Settings.Current.BodySize * heading.Level switch { 1 => 28, 2 => 23, 3 => 19, _ => 16 } / Settings.DefaultBodySize, 1);
                     title.LineHeight = HasInlineImage(title.Inlines!) ? double.NaN : title.FontSize * 1.5;
                     title.FontWeight = FontWeight.SemiBold;
                     title.Margin = new Thickness(0, 10, 0, 4);
@@ -99,7 +102,7 @@ public static class MarkdownPreview
                     yield return PreviewTags.Tag(InlineText(paragraph.Inline, paragraph), "p");
                     break;
                 case CodeBlock code:
-                    var codeText = Mapped(PreviewTags.Tag(new TextBlock { FontFamily = new FontFamily("Consolas, Menlo, monospace"), FontSize = 13, TextWrapping = TextWrapping.Wrap }, "pre"), code);
+                    var codeText = Mapped(PreviewTags.Tag(new TextBlock { FontFamily = new FontFamily(Settings.CodeFamilyList), FontSize = Settings.Current.CodeSize, TextWrapping = TextWrapping.Wrap }, "pre"), code);
                     var codeBlockId = _result is { } codeResult ? codeResult.Map.Blocks.Count - 1 : -1;
                     var lines = code.Lines.Lines ?? [];
                     for (var i = 0; i < code.Lines.Count; i++)
@@ -124,12 +127,12 @@ public static class MarkdownPreview
                     }, "blockquote");
                     break;
                 case ListBlock list:
-                    var items = PreviewTags.Tag(new StackPanel { Spacing = 8 }, list.IsOrdered ? "ol" : "ul", list.IsOrdered ? list.OrderedStart ?? "1" : null);
+                    var items = PreviewTags.Tag(new StackPanel { Spacing = Settings.NestedSpacing }, list.IsOrdered ? "ol" : "ul", list.IsOrdered ? list.OrderedStart ?? "1" : null);
                     var number = int.TryParse(list.OrderedStart, out var start) ? start : 1;
                     foreach (var item in list.OfType<ListItemBlock>())
                     {
                         var row = PreviewTags.Tag(new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") }, "li");
-                        row.Children.Add(PreviewTags.Tag(new TextBlock { Text = list.IsOrdered ? $"{number++}." : "•", Margin = new Thickness(0, 0, 10, 0) }, "marker"));
+                        row.Children.Add(PreviewTags.Tag(ListMarker(list.IsOrdered ? $"{number++}." : "\u2022", list.IsOrdered), "marker"));
                         var content = Stack(Render(item));
                         Grid.SetColumn(content, 1);
                         row.Children.Add(content);
@@ -179,7 +182,7 @@ public static class MarkdownPreview
 
     private static StackPanel Stack(IEnumerable<Control> controls)
     {
-        var panel = new StackPanel { Spacing = 8 };
+        var panel = new StackPanel { Spacing = Settings.NestedSpacing };
         foreach (var control in controls) panel.Children.Add(control);
         return panel;
     }
@@ -234,7 +237,8 @@ public static class MarkdownPreview
 
     private static TextBlock InlineText(ContainerInline? inline, LeafBlock owner)
     {
-        var text = Mapped(new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 15, LineHeight = 24 }, owner);
+        var text = Mapped(new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = Settings.Current.BodySize, LineHeight = Settings.BodyLineHeight }, owner);
+        if (BodyFamily() is { } family) text.FontFamily = family;
         var saved = _block;
         _block = _result is { } result ? result.Map.Blocks.Count - 1 : -1;
         try { if (inline is not null) AddInlines(text.Inlines!, inline); }
@@ -242,6 +246,49 @@ public static class MarkdownPreview
         // A fixed text line height clips embedded controls, notably images after list labels.
         if (HasInlineImage(text.Inlines!)) text.LineHeight = double.NaN;
         return text;
+    }
+
+    // Item 35: the chosen body family (with the UI font as fallback), or null to inherit the UI font.
+    private static FontFamily? BodyFamily() => Settings.Current.BodyFamily is { } name ? new FontFamily(name + ", " + UiFontName()) : null;
+    private static string UiFontName() =>
+        Avalonia.Application.Current?.TryFindResource("ContentControlThemeFontFamily", out var f) == true && f is FontFamily ui ? ui.Name : FontFamily.Default.Name;
+    // The UI font object itself (an embedded font only resolves through its resource URI, not by name).
+    internal static FontFamily EffectiveBodyFamily => BodyFamily() ??
+        (Avalonia.Application.Current?.TryFindResource("ContentControlThemeFontFamily", out var f) == true && f is FontFamily ui ? ui : FontFamily.Default);
+
+    // Item 35: list markers. Numbers are 10% bigger than the body and sit on the first text line's baseline;
+    // bullets are 15% bigger and their ink is centred on the first line's x-height. Offsets come from the same
+    // text layout the paragraph uses (body font, size and line height), so they hold for any font.
+    internal static TextBlock ListMarker(string text, bool ordered)
+    {
+        var size = Settings.Current.BodySize * (ordered ? Settings.NumberScale : Settings.BulletScale);
+        // No layout rounding: the sub-pixel offset below is what lines the marker up.
+        var marker = new TextBlock { Text = text, FontSize = size, Margin = new Thickness(0, 0, 10, 0), UseLayoutRounding = false };
+        if (BodyFamily() is { } family) marker.FontFamily = family;
+        marker.Margin = new Thickness(0, MarkerOffset(text, ordered, size), 10, 0);
+        return marker;
+    }
+
+    // Only the glyph outlines are measured; any brush works (a null brush builds no geometry).
+    private static IBrush InkBrush => Mdhub.Services.ThemeService.Brush("TextPrimary");
+    internal static double MarkerOffset(string text, bool ordered, double markerSize)
+    {
+        var typeface = new Typeface(EffectiveBodyFamily);
+        var body = Settings.Current.BodySize;
+        using var line = new TextLayout("x", typeface, body, null, lineHeight: Settings.BodyLineHeight);
+        var lineBaseline = line.TextLines[0].Baseline;
+        using var mark = new TextLayout(text, typeface, markerSize, InkBrush);
+        var markBaseline = mark.TextLines[0].Baseline;
+        if (ordered) return Math.Round(lineBaseline - markBaseline, 2);
+        // Ink centre of "x" above the baseline, and of the bullet below its own top.
+        var culture = System.Globalization.CultureInfo.InvariantCulture;
+        var x = new FormattedText("x", culture, FlowDirection.LeftToRight, typeface, body, InkBrush);
+        var xInk = x.BuildGeometry(default)?.Bounds ?? default;
+        var xCentreAboveBaseline = xInk.Height > 0 ? x.Baseline - xInk.Center.Y : body * 0.26;
+        var b = new FormattedText(text, culture, FlowDirection.LeftToRight, typeface, markerSize, InkBrush);
+        var bInk = b.BuildGeometry(default)?.Bounds ?? default;
+        var bulletCentre = bInk.Height > 0 ? bInk.Center.Y - b.Baseline + markBaseline : markBaseline - markerSize * 0.3;
+        return Math.Round(lineBaseline - xCentreAboveBaseline - bulletCentre, 2);
     }
 
     private static bool HasInlineImage(InlineCollection inlines) => inlines.Any(inline =>
@@ -259,7 +306,7 @@ public static class MarkdownPreview
                     MapRun(target, literalRun, LocateIn(literal.Span, literalRun.Text));
                     break;
                 case CodeInline code:
-                    var codeRun = new Run(code.Content) { FontFamily = new FontFamily("Consolas, Menlo, monospace"), Background = Mdhub.Services.ThemeService.Brush("InlineCodeBackground"), Foreground = Mdhub.Services.ThemeService.Brush("InlineCodeForeground") };
+                    var codeRun = new Run(code.Content) { FontFamily = new FontFamily(Settings.CodeFamilyList), FontSize = Settings.Current.CodeSize, Background = Mdhub.Services.ThemeService.Brush("InlineCodeBackground"), Foreground = Mdhub.Services.ThemeService.Brush("InlineCodeForeground") };
                     PreviewTags.Tag(codeRun, "code");
                     target.Add(codeRun);
                     if (_result is { } r && code.Content.Length > 0 && code.Span.Start >= 0 && code.Span.End < r.Map.Source.Length)

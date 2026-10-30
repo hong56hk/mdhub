@@ -31,20 +31,26 @@ public static class MarkdownExporter
     public static string Css()
     {
         var c = LightColours;
+        // Item 35: the preview's fonts and spacing (gear flyout).
+        var p = PreviewSettings.Current;
+        string Px(double v) => PreviewSettings.Css(v) + "px";
+        var k = p.BodySize / PreviewSettings.DefaultBodySize;
+        var bodyFamily = p.BodyFamily is { } chosen ? PreviewSettings.CssFamily(chosen) + ", " : "";
+        var codeFamily = p.CodeFamily == PreviewSettings.DefaultCodeFamily ? "" : PreviewSettings.CssFamily(p.CodeFamily) + ", ";
         // (fonts use single quotes: CSS family names, not UI text)
         return $$"""
             :root { color-scheme: light; }
             html { background: {{c["PreviewBackground"]}}; }
             body { margin: 0 auto; max-width: 860px; padding: 32px 40px; color: {{c["TextPrimary"]}}; background: {{c["PreviewBackground"]}};
-              font-family: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, 'Microsoft JhengHei', 'Yu Gothic UI', 'Malgun Gothic', sans-serif;
-              font-size: 15px; line-height: 24px; overflow-wrap: break-word; }
+              font-family: {{bodyFamily}}'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, 'Microsoft JhengHei', 'Yu Gothic UI', 'Malgun Gothic', sans-serif;
+              font-size: {{Px(p.BodySize)}}; line-height: {{Px(PreviewSettings.BodyLineHeight)}}; overflow-wrap: break-word; }
             h1, h2, h3, h4, h5, h6 { font-weight: 600; margin: 10px 0 4px; break-after: avoid; page-break-after: avoid; }
-            h1 { font-size: 28px; line-height: 42px; } h2 { font-size: 23px; line-height: 34px; } h3 { font-size: 19px; line-height: 28px; } h4, h5, h6 { font-size: 16px; }
-            p, ul, ol, blockquote, pre, table { margin: 0 0 12px; }
+            h1 { font-size: {{Px(28 * k)}}; line-height: {{Px(42 * k)}}; } h2 { font-size: {{Px(23 * k)}}; line-height: {{Px(34 * k)}}; } h3 { font-size: {{Px(19 * k)}}; line-height: {{Px(28 * k)}}; } h4, h5, h6 { font-size: {{Px(16 * k)}}; }
+            p, ul, ol, blockquote, pre, table { margin: 0 0 {{Px(p.ParagraphSpacing)}}; }
             a { color: {{c["LinkForeground"]}}; text-decoration: none; } a:hover { text-decoration: underline; }
-            code { font-family: Consolas, Menlo, 'Cascadia Mono', monospace; font-size: 13px; background: {{c["InlineCodeBackground"]}}; color: {{c["InlineCodeForeground"]}}; padding: 1px 4px; border-radius: 3px; }
-            pre { background: {{c["CodeBlockBackground"]}}; border-radius: 5px; padding: 14px; line-height: 20px; white-space: pre-wrap; break-inside: avoid; page-break-inside: avoid; }
-            pre code { background: none; color: inherit; padding: 0; font-size: 13px; }
+            code { font-family: {{codeFamily}}Consolas, Menlo, 'Cascadia Mono', monospace; font-size: {{Px(p.CodeSize)}}; background: {{c["InlineCodeBackground"]}}; color: {{c["InlineCodeForeground"]}}; padding: 1px 4px; border-radius: 3px; }
+            pre { background: {{c["CodeBlockBackground"]}}; border-radius: 5px; padding: 14px; line-height: {{Px(Math.Round(p.CodeSize * 20 / PreviewSettings.DefaultCodeSize, 1))}}; white-space: pre-wrap; break-inside: avoid; page-break-inside: avoid; }
+            pre code { background: none; color: inherit; padding: 0; font-size: {{Px(p.CodeSize)}}; }
             blockquote { border-left: 3px solid {{c["QuoteBorder"]}}; padding: 4px 14px; margin-left: 0; break-inside: avoid; }
             table { border-collapse: collapse; }
             th, td { border: 0.5px solid {{c["TableBorder"]}}; padding: 10px; text-align: left; vertical-align: top; }
@@ -54,7 +60,8 @@ public static class MarkdownExporter
             hr { border: 0; height: 1px; background: {{c["RuleForeground"]}}; margin: 8px 0; }
             img { max-width: 100%; break-inside: avoid; }
             ul.contains-task-list { list-style: none; padding-left: 4px; } li.task-list-item input { margin-right: 8px; }
-            li + li { margin-top: 8px; }
+            li + li { margin-top: {{Px(PreviewSettings.NestedSpacing)}}; }
+            ol > li::marker { font-size: 1.1em; } ul > li::marker { font-size: 1.15em; }
             .tok-k { color: {{c["SyntaxCodeKeyword"]}}; } .tok-s { color: {{c["SyntaxCodeString"]}}; } .tok-c { color: {{c["SyntaxCodeComment"]}}; font-style: italic; } .tok-n { color: {{c["SyntaxCodeNumber"]}}; }
             @page { size: A4; margin: 18mm 16mm; }
             @media print { html, body { background: white; } body { max-width: none; padding: 0; } }

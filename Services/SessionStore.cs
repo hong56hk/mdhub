@@ -29,9 +29,22 @@ public sealed record SessionData
     public List<string> RecentFolders { get; init; } = [];
     // Custom shortcut bindings: id -> gestures like "Command+Shift+F"; missing in old files: none (defaults).
     public Dictionary<string, List<string>>? CustomShortcuts { get; init; }
+    // Item 35: preview fonts and spacing; missing in old files (or all defaults): null.
+    public PreviewSettingsData? Preview { get; init; }
 }
 
 // UI-free session file handling: atomic save, tolerant load and validation against the file system.
+// Item 35: preview typography; null family = the app's UI font. Defaults match PreviewSettings.Default*.
+public sealed record PreviewSettingsData
+{
+    public string? BodyFamily { get; init; }
+    public double BodySize { get; init; } = 15;
+    public string CodeFamily { get; init; } = "Consolas";
+    public double CodeSize { get; init; } = 13;
+    public double LineHeight { get; init; } = 1.6;
+    public double ParagraphSpacing { get; init; } = 14;
+}
+
 public static class SessionStore
 {
     public const int CurrentVersion = 1;
