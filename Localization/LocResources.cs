@@ -1,6 +1,8 @@
 using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 using Avalonia.Media;
 
 namespace Mdhub.Localization;
@@ -87,8 +89,48 @@ public static class LocResources
         }
     }
 
+    // Bug 55 (root cause): Avalonia 12.1.4 regression AvaloniaUI/Avalonia#22573 (fixed by PR #22624, not yet released).
+    // A popup with PlacementMode.Pointer (every right-clicked ContextMenu) keeps the window size of its first layout
+    // pass. Fluent menu items share the shortcut column (SharedSizeGroup), which settles only after that pass, so on
+    // a menu's first open the native popup window stayed narrower than the menu and the menu was centered in it:
+    // the border, the left padding and the right end of the hints were clipped. The second open reuses the settled
+    // size and looked right. Workaround from the issue: open at the pointer with AnchorAndGravity placement (a
+    // 1x1 PlacementRect at the click, top-left anchor, bottom-right gravity), which still resizes the popup.
+    public static readonly PlacementMode MenuPlacement = PlacementMode.AnchorAndGravity;
+    private static readonly ConditionalWeakTable<ContextMenu, object> Pointed = new();
+    private static bool _pointerHooked;
+    private static void HookPointerPlacement()
+    {
+        if (_pointerHooked) return;
+        _pointerHooked = true;
+        // At the event's source, before the owner's ContextMenu handler (which runs later in the bubble): put the
+        // anchor rectangle at the click, relative to the source, which ContextMenu uses as its placement target.
+        Control.ContextRequestedEvent.AddClassHandler<Control>((source, e) =>
+        {
+            if (!ReferenceEquals(source, e.Source)) return;
+            for (Visual? v = source; v is not null; v = v.GetVisualParent())
+            {
+                if (v is not Control { ContextMenu: { } menu }) continue;
+                if (Pointed.TryGetValue(menu, out _))
+                    menu.PlacementRect = e.TryGetPosition(source, out var point) ? AtPointer(point, source.Bounds.Size) : null;
+                return;
+            }
+        }, RoutingStrategies.Bubble, handledEventsToo: true);
+    }
+
+    // The positioner drops an anchor rectangle outside the target (falling back to the whole target), so a click in a
+    // source's padding (the editor reports the text presenter as source) is clamped onto its edge.
+    public static Rect AtPointer(Point point, Size bounds) =>
+        new(Math.Clamp(point.X, 0, Math.Max(0, bounds.Width - 1)), Math.Clamp(point.Y, 0, Math.Max(0, bounds.Height - 1)), 1, 1);
+
     public static ContextMenu Localized(this ContextMenu menu)
     {
+        HookPointerPlacement();
+        Pointed.AddOrUpdate(menu, menu);
+        menu.Placement = MenuPlacement;
+        menu.PlacementAnchor = Avalonia.Controls.Primitives.PopupPositioning.PopupAnchor.TopLeft;
+        menu.PlacementGravity = Avalonia.Controls.Primitives.PopupPositioning.PopupGravity.BottomRight;
+        menu.Closed += (_, _) => menu.PlacementRect = null;
         menu.Padding = MenuPadding;
         ApplyItemPadding(menu);
         // Fluent's template puts a 4px margin above and below the items; drop it so the padding is 10px on every side.
