@@ -86,7 +86,7 @@ internal static class FileViewTests
             var binary = Path.Combine(root, "binary.bin");
             File.WriteAllBytes(binary, [0, 1, 2, 3]);
             Invoke("OpenPathAsync", binary);
-            Check(ReferenceEquals(tabs.SelectedItem, imageDocument), "binary rejection keeps active tab");
+            Check(tabs.SelectedItem is NoteDocument { IsBinary: true } bin && bin.Path == binary && window.OwnedWindows.Count == 0, "item 52: a binary opens a placeholder tab, no error dialog");
             var invalid = Path.Combine(root, "invalid.dat");
             File.WriteAllBytes(invalid, [0x92, 0x81, 0xff]);
             var utf16 = Path.Combine(root, "unicode.txt");
@@ -126,7 +126,7 @@ internal static class FileViewTests
                 Check(item.Opacity < 1, "unsupported explorer item is dimmed");
                 tree.SelectedItem = item;
                 Dispatcher.UIThread.RunJobs();
-                Check(ReferenceEquals(tabs.SelectedItem, imageDocument) && window.OwnedWindows.Count == 0, "unsupported selection does not open a tab or error dialog");
+                Check(tabs.SelectedItem is NoteDocument { IsBinary: true } placeholderTab && placeholderTab.Path == path && window.OwnedWindows.Count == 0, "item 52: selecting an unsupported file shows its placeholder (no error dialog)");
             }
             Check(Mdhub.Services.FileSupport.Detect(utf16) == Mdhub.Services.SupportedFileKind.Text, "BOM-encoded Unicode text remains supported");
 

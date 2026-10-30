@@ -1,0 +1,13 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.BinaryPlaceholder">
+  <!-- Item 52 (VS Code): a binary or undecodable file shows this instead of an editor. -->
+  <Border Background="{DynamicResource EditorBackground}" Padding="24">
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14" MaxWidth="520">
+      <TextBlock x:Name="FileName" HorizontalAlignment="Center" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" TextTrimming="CharacterEllipsis" />
+      <TextBlock x:Name="Message" Text="{DynamicResource BinaryNotDisplayed}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondary}" />
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+        <Button x:Name="OpenDefaultButton" Classes="textAction" Content="{DynamicResource OpenWithDefaultApp}" Click="OpenDefault_Click" />
+        <Button x:Name="OpenAsTextButton" Classes="textAction" Content="{DynamicResource OpenAnywayAsText}" Click="OpenAsText_Click" />
+      </StackPanel>
+    </StackPanel>
+  </Border>
+</UserControl>

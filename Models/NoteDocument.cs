@@ -16,6 +16,11 @@ public sealed class NoteDocument : INotifyPropertyChanged
     public Encoding Encoding { get; set; } = TextFileStore.DefaultEncoding;
     public Avalonia.Media.Imaging.Bitmap? Image { get; init; }
     public bool IsImage => Image is not null;
+    // Item 52: a placeholder tab for a binary (or undecodable) file; no editor text.
+    public bool IsBinary { get; init; }
+    public bool IsViewOnly => IsImage || IsBinary;
+    // Text opened anyway from a binary with lossy decoding: read-only so saving cannot corrupt the file.
+    public bool IsReadOnlyText { get; init; }
     public TextBox Editor { get; } = new Mdhub.Components.MarkdownTextBox()
     {
         Classes = { "noteEditor" },
@@ -28,7 +33,7 @@ public sealed class NoteDocument : INotifyPropertyChanged
     };
     public string Text => Editor.Text ?? "";
     public bool IsDirty => Text != SavedText;
-    public bool IsMarkdown => !IsImage && System.IO.Path.GetExtension(Path ?? UntitledName).ToLowerInvariant() is ".md" or ".markdown";
+    public bool IsMarkdown => !IsViewOnly && System.IO.Path.GetExtension(Path ?? UntitledName).ToLowerInvariant() is ".md" or ".markdown";
     public string Title => (IsDirty ? "● " : "") + (Path is null ? UntitledName : System.IO.Path.GetFileName(Path));
     public event PropertyChangedEventHandler? PropertyChanged;
 

@@ -14,7 +14,7 @@ public partial class MainView
     {
         QuickOpenBox.RecentFiles = () => RecentService.Files;
         QuickOpenBox.Accept = AcceptQuickOpenAsync;
-        QuickOpenBox.Closed += () => { if (!_quickOpenAccepting && _active is { IsImage: false } d && QuickOpenBox.IsKeyboardFocusWithin) d.Editor.Focus(); };
+        QuickOpenBox.Closed += () => { if (!_quickOpenAccepting && _active is { IsViewOnly: false } d && QuickOpenBox.IsKeyboardFocusWithin) d.Editor.Focus(); };
         DetachedFromVisualTree += (_, _) => SetQuickOpenRoot(null);
     }
     private bool _quickOpenAccepting;
@@ -41,7 +41,7 @@ public partial class MainView
         try
         {
             if (path is not null) await OpenPathAsync(path);
-            if (line is { } l && _active is { IsImage: false } document && (path is null || SamePath(document.Path, path)))
+            if (line is { } l && _active is { IsViewOnly: false } document && (path is null || SamePath(document.Path, path)))
                 JumpToLine(document, l);
             else _active?.Editor.Focus();
         }

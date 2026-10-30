@@ -46,7 +46,7 @@ public partial class MainView
 
     private async void Edit(string action)
     {
-        if (_busy || _active?.IsImage == true) return;
+        if (_busy || _active?.IsViewOnly == true) return;
         if (action == "paste") await PasteAsync();
         else if (action == "copy" && MdEditor.PreviewHasFocus) await MdEditor.CopyPreviewAsync();
         else if (action == "select all" && MdEditor.PreviewHasFocus) MdEditor.SelectAllPreview();
@@ -220,15 +220,15 @@ public partial class MainView
             "file.save" => async () => { if (_active is not null) await SaveAsync(_active, false); },
             "file.saveAs" => async () => { if (_active is not null) await SaveAsync(_active, true); },
             "file.closeTab" => async () => { if (_active is not null) await CloseDocumentAsync(_active); },
-            "find.find" when _active?.IsImage != true => () => { TextEditor.OpenFind(false); return Task.CompletedTask; },
-            "find.replace" when _active?.IsImage != true => () => { TextEditor.OpenFind(true); return Task.CompletedTask; },
+            "find.find" when _active?.IsViewOnly != true => () => { TextEditor.OpenFind(false); return Task.CompletedTask; },
+            "find.replace" when _active?.IsViewOnly != true => () => { TextEditor.OpenFind(true); return Task.CompletedTask; },
             "edit.paste" when _active?.Editor.IsKeyboardFocusWithin == true => PasteAsync,
             "view.wordWrap" => () => { RequestAction(WorkspaceAction.WordWrap); return Task.CompletedTask; },
             "view.togglePreview" => () => { RequestAction(WorkspaceAction.TogglePreview); return Task.CompletedTask; },
             // Formatting and insert time act on the focused editor only; go to line / preview work anywhere but the find fields.
             "editor.bold" or "editor.italic" or "editor.link" or "editor.quote" when EditorFocused && _active!.IsMarkdown => EditorCommand(id),
             "editor.insertTime" when EditorFocused => EditorCommand(id),
-            "editor.goToLine" or "view.previewCaret" when _active is { IsImage: false } && !TextEditor.IsFindFocused => EditorCommand(id),
+            "editor.goToLine" or "view.previewCaret" when _active is { IsViewOnly: false } && !TextEditor.IsFindFocused => EditorCommand(id),
             _ => null
         };
         if (action is null) return;
@@ -258,7 +258,7 @@ public partial class MainView
         if (id is "view.nextTab" or "view.previousTab") { CycleTab(id == "view.nextTab" ? 1 : -1); return; }
         if (id == "file.quickOpen") { if (!_busy) OpenQuickOpen(); return; }
         if (id == "file.revealInSidebar") { await RevealInSidebarAsync(); return; }
-        if (_busy || _active is null || _active.IsImage || EditorCommand(id) is not { } action) return;
+        if (_busy || _active is null || _active.IsViewOnly || EditorCommand(id) is not { } action) return;
         if (id == "editor.goToLine") await RunAsync(action); else await action();
     }
 

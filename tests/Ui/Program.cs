@@ -19,6 +19,7 @@ if (args.Contains("--searchindent-only")) { SearchIndentTests.Run(); return; }
 if (args.Contains("--tabcycle-only")) { TabCycleTests.Run(); return; }
 if (args.Contains("--formaticons-only")) { FormatIconTests.Run(); return; }
 if (args.Contains("--export-only")) { ExportTests.Run(); return; }
+if (args.Contains("--binary-only")) { BinaryFileTests.Run(); return; }
 if (args.Contains("--strike-only")) { StrikeIconTests.Run(); return; }
 if (args.Contains("--drag-only")) { ExplorerDragTests.Run(); return; }
 if (args.Contains("--file-views")) { FileViewTests.Run(); return; }
@@ -331,8 +332,8 @@ RunOperation("LoadRootAsync", menuRoot);
 Pump();
 var noteItem = TreeItem(Path.Combine(menuRoot, "note.md"))!;
 var menuEntries = noteItem.ContextMenu!.Items.Cast<Control>().ToArray();
-Require(string.Join("|", menuEntries.Select(e => e is Separator ? "-" : ((MenuItem)e).Header)) == "Reveal in file explorer|-|Cut|Copy|Duplicate|-|Rename|Delete",
-    "Explorer context menu lists Reveal, Cut, Copy, Duplicate, Rename, Delete in order with separators");
+Require(string.Join("|", menuEntries.Select(e => e is Separator ? "-" : ((MenuItem)e).Header)) == "Open with default app|-|Reveal in file explorer|-|Cut|Copy|Duplicate|-|Rename|Delete",
+    "Explorer context menu lists Open with default app (item 52), Reveal, Cut, Copy, Duplicate, Rename, Delete in order with separators");
 Require(menuEntries.OfType<Separator>().All(s => s.Background is Avalonia.Media.ISolidColorBrush b && b.Color == Avalonia.Media.Colors.LightGray),
     "Explorer context menu separators are light gray");
 Require(TreeItem(Path.Combine(menuRoot, "Docs"))!.ContextMenu is not null, "Folders also have the explorer context menu");

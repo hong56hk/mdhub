@@ -30,10 +30,10 @@ public partial class TextEditor : UserControl
         LineGutter.InvalidateMeasure();
         LineGutter.InvalidateVisual();
     }
-    public void FocusEditor() { if (_document?.IsImage == false) _document.Editor.Focus(); }
+    public void FocusEditor() { if (_document?.IsViewOnly == false) _document.Editor.Focus(); }
     public void Edit(string action)
     {
-        if (_document is null || _document.IsImage) return;
+        if (_document is null || _document.IsViewOnly) return;
         var editor = _document.Editor;
         switch (action)
         {

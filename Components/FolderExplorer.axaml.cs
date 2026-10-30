@@ -14,11 +14,13 @@ public partial class FolderExplorer : UserControl
     public event Action<string>? FileRequested;
     // Enter or double-click on a file: open it and move focus to the editor.
     public event Action<string>? FileActivated;
+    // Item 52: launch a file with the system default app (context menu, or double-click on a binary).
+    public event Action<string>? DefaultAppRequested;
 
     private void FolderTree_KeyDown(object? sender, KeyEventArgs e)
     {
         if (IsRenaming || e.Key != Key.Enter || e.KeyModifiers != KeyModifiers.None) return;
-        if (FolderTree.SelectedItem is not TreeViewItem { Tag: FolderEntry { IsDirectory: false, IsSupported: true } entry }) return;
+        if (FolderTree.SelectedItem is not TreeViewItem { Tag: FolderEntry { IsDirectory: false } entry }) return;
         e.Handled = true;
         FileActivated?.Invoke(entry.Path);
     }
@@ -28,7 +30,7 @@ public partial class FolderExplorer : UserControl
     public event Action? OpenFolderRequested;
     public event Action<ExplorerRequest>? ExplorerRequested;
     public string? OpenedFolder => _folder;
-    private ContextMenu CreateContextMenu(string path)
+    private ContextMenu CreateContextMenu(string path, bool isDirectory = false)
     {
         MenuItem Item(string name, string header, ExplorerAction action)
         {
@@ -42,7 +44,7 @@ public partial class FolderExplorer : UserControl
             return item;
         }
         Separator Line() => new() { Background = Mdhub.Services.ThemeService.Brush("SeparatorForeground"), Foreground = Mdhub.Services.ThemeService.Brush("SeparatorForeground") };
-        return new ContextMenu
+        var menu = new ContextMenu
         {
             // Headers are resource keys; Localized() refreshes them on open after a language switch.
             Items =
@@ -52,7 +54,16 @@ public partial class FolderExplorer : UserControl
                 Item("DuplicateMenuItem", "Duplicate", ExplorerAction.Duplicate), Line(),
                 Item("RenameMenuItem", "Rename", ExplorerAction.Rename), Item("DeleteMenuItem", "Delete", ExplorerAction.Delete)
             }
-        }.Localized();
+        };
+        if (!isDirectory)
+        {
+            var open = LocResources.Item("OpenWithDefaultApp");
+            open.Name = "OpenDefaultMenuItem";
+            open.Click += (_, _) => DefaultAppRequested?.Invoke(path);
+            menu.Items.Insert(0, open);
+            menu.Items.Insert(1, Line());
+        }
+        return menu.Localized();
     }
     private void FolderName_Click(object? sender, RoutedEventArgs e) => OpenFolderRequested?.Invoke();
     public Func<bool>? CanPaste { get; set; }
@@ -253,7 +264,7 @@ public partial class FolderExplorer : UserControl
         {
             item.Opacity = 0.4;
         }
-        item.ContextMenu = CreateContextMenu(entry.Path);
+        item.ContextMenu = CreateContextMenu(entry.Path, entry.IsDirectory);
         if (entry.IsDirectory && !entry.IsLink)
         {
             item.Items.Add(new TreeViewItem { Header = Loc.T("Loading"), Tag = "Loading", IsEnabled = false });
@@ -288,9 +299,9 @@ public partial class FolderExplorer : UserControl
         if (IsRenaming && ItemAt(e.Source) == _renameItem) return;
         if (_busy || !e.GetCurrentPoint(FolderTree).Properties.IsLeftButtonPressed) return;
         // VS Code: a single click opens a file and keeps focus here; a double-click moves focus to the editor.
-        if (e.ClickCount == 2 && ItemAt(e.Source) is { Tag: FolderEntry { IsDirectory: false, IsSupported: true } file })
+        if (e.ClickCount == 2 && ItemAt(e.Source) is { Tag: FolderEntry { IsDirectory: false } file })
         {
-            FileActivated?.Invoke(file.Path);
+            if (file.IsSupported) FileActivated?.Invoke(file.Path); else DefaultAppRequested?.Invoke(file.Path);
             e.Handled = true;
             return;
         }
@@ -304,7 +315,7 @@ public partial class FolderExplorer : UserControl
 
     private void FolderTree_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (_marking || IsRenaming || FolderTree.SelectedItem is not TreeViewItem { Tag: FolderEntry entry } || entry.IsDirectory || !entry.IsSupported) return;
+        if (_marking || IsRenaming || FolderTree.SelectedItem is not TreeViewItem { Tag: FolderEntry entry } || entry.IsDirectory) return;
         FileRequested?.Invoke(entry.Path);
     }
     private void RefreshFolder_Click(object? sender, RoutedEventArgs e) => RefreshRequested?.Invoke();

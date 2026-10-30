@@ -18,6 +18,14 @@ public partial class MainView
             Path = path, SavedText = text, UntitledName = name ?? $"Untitled {++_untitled}.md",
             Encoding = encoding ?? TextFileStore.DefaultEncoding
         };
+        InitializeTextDocument(document, text);
+        _documents.Add(document);
+        FileTabs.SelectedDocument = document;
+        return document;
+    }
+
+    private void InitializeTextDocument(NoteDocument document, string text)
+    {
         document.Editor.Text = text;
         document.Editor.TextWrapping = _wrap ? TextWrapping.Wrap : TextWrapping.NoWrap;
         document.Editor.ContextFlyout = null; // item 41: our menu adds Reveal in Side Bar to Cut/Copy/Paste/Select All
@@ -34,9 +42,7 @@ public partial class MainView
             if (_active == document && (e.Property == Avalonia.Controls.TextBox.SelectionStartProperty || e.Property == Avalonia.Controls.TextBox.SelectionEndProperty || e.Property == Avalonia.Controls.TextBox.CaretIndexProperty))
                 UpdateCaretStatus();
         };
-        _documents.Add(document);
-        FileTabs.SelectedDocument = document;
-        return document;
+        if (document.IsReadOnlyText) document.Editor.IsReadOnly = true;
     }
 
     private async Task OpenAsync()
@@ -60,7 +66,7 @@ public partial class MainView
         var existing = _documents.FirstOrDefault(d => SamePath(d.Path, path));
         if (existing is not null) { FileTabs.SelectedDocument = existing; if (recent) RecentService.AddFile(path); return; }
         var kind = await Task.Run(() => FileSupport.Detect(path));
-        if (kind == SupportedFileKind.Unsupported) { UpdateStatus(Loc.F("UnsupportedFile", path)); return; }
+        if (kind == SupportedFileKind.Unsupported) { AddBinaryDocument(path, recent); return; }
         if (kind == SupportedFileKind.Image)
         {
             var bitmap = await Task.Run(() =>
@@ -74,10 +80,11 @@ public partial class MainView
             if (recent) RecentService.AddFile(path);
             return;
         }
+        if (!await ConfirmLargeAsync(path)) return;
         (string Text, System.Text.Encoding Encoding) loaded;
         try { loaded = await TextFileStore.ReadAsync(path); }
-        catch (System.Text.DecoderFallbackException) { UpdateStatus(Loc.F("UnsupportedEncoding", path)); return; }
-        if (!FileSupport.IsTextByExtension(path) && !FileSupport.IsText(loaded.Text)) { UpdateStatus(Loc.F("UnsupportedBinary", path)); return; }
+        catch (System.Text.DecoderFallbackException) { AddBinaryDocument(path, recent); return; }
+        if (!FileSupport.IsTextByExtension(path) && !FileSupport.IsText(loaded.Text)) { AddBinaryDocument(path, recent); return; }
         AddDocument(path, loaded.Text, encoding: loaded.Encoding);
         if (recent) RecentService.AddFile(path);
     }
@@ -91,6 +98,7 @@ public partial class MainView
     private async Task<bool> SaveAsync(NoteDocument document, bool saveAs)
     {
         if (document.IsImage) { UpdateStatus(Loc.T("ImagesViewOnly")); return true; }
+        if (document.IsBinary || document.IsReadOnlyText) return true;
         var path = document.Path;
         if (saveAs || path is null)
         {

@@ -53,8 +53,8 @@ public partial class BottomStatusBar : UserControl
         SetAction(null, null);
         SetPath(message is null ? document.Path : null);
         Status.Text = message ?? (document.IsDirty ? Loc.T("UnsavedPrefix") : "") + (document.Path ?? Loc.T("NewNote"));
-        FileKindLabel.Text = Loc.T(document.IsImage ? "KindImage" : document.IsMarkdown ? "KindMarkdown" : "KindPlain");
-        EncodingLabel.Text = document.IsImage ? "" : document.Encoding.WebName.ToUpperInvariant();
+        FileKindLabel.Text = Loc.T(document.IsImage ? "KindImage" : document.IsBinary ? "KindBinary" : document.IsMarkdown ? "KindMarkdown" : "KindPlain");
+        EncodingLabel.Text = document.IsViewOnly ? "" : document.Encoding.WebName.ToUpperInvariant() + (document.IsReadOnlyText ? " \u00b7 " + Loc.T("ReadOnly") : "");
         if (document.Image is { } image) SetCounts(() => Loc.F("ImagePixels", image.PixelSize.Width, image.PixelSize.Height));
     }
     public void SetMessage(string message) { SetPath(null); Status.Text = message; SetAction(null, null); }
