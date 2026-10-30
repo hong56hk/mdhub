@@ -22,15 +22,17 @@ public static class ExplorerFileOperations
         Process.Start(start);
     }
 
-    public static string UniqueCopyPath(string path)
+    // Item 53: note.md -> note-copy.md, then note-copy-2.md, ... (folders: Docs-copy, Docs-copy-2).
+    public static string UniqueCopyPath(string path) => UniqueCopyPath(path, Directory.Exists(path), p => File.Exists(p) || Directory.Exists(p));
+    public static string UniqueCopyPath(string path, bool isDirectory, Func<string, bool> exists)
     {
         var parent = Path.GetDirectoryName(path)!;
-        var extension = Directory.Exists(path) ? "" : Path.GetExtension(path);
-        var name = Directory.Exists(path) ? Path.GetFileName(path) : Path.GetFileNameWithoutExtension(path);
+        var extension = isDirectory ? "" : Path.GetExtension(path);
+        var name = isDirectory ? Path.GetFileName(path) : Path.GetFileNameWithoutExtension(path);
         for (var i = 1; ; i++)
         {
-            var target = Path.Combine(parent, $"{name} copy{(i == 1 ? "" : " " + i)}{extension}");
-            if (!File.Exists(target) && !Directory.Exists(target)) return target;
+            var target = Path.Combine(parent, $"{name}-copy{(i == 1 ? "" : "-" + i)}{extension}");
+            if (!exists(target)) return target;
         }
     }
 

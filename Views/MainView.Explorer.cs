@@ -71,8 +71,9 @@ public partial class MainView
                 break;
             case ExplorerAction.Delete:
             {
-                var answer = await DialogService.ShowAsync(Host, Loc.T("Delete"), Loc.F("DeleteConfirm", Path.GetFileName(path)), "Delete", "Cancel");
-                if (answer != "Delete") return;
+                // Item 53: the button says what happens (the item goes to the Recycle Bin, it is not erased).
+                var answer = await DialogService.ShowAsync(Host, Loc.T("Delete"), Loc.F("DeleteConfirm", Path.GetFileName(path)), "MoveToRecycleBin", "Cancel");
+                if (answer != "MoveToRecycleBin") return;
                 var affected = _documents.Where(d => d.Path is not null && IsSameOrInside(path, d.Path)).ToList();
                 foreach (var document in affected)
                     if (!await ConfirmCloseAsync(document)) return;

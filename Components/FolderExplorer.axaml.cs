@@ -17,9 +17,42 @@ public partial class FolderExplorer : UserControl
     // Item 52: launch a file with the system default app (context menu, or double-click on a binary).
     public event Action<string>? DefaultAppRequested;
 
+    // Item 53: explorer shortcuts. This handler sits on the tree, so it only sees keys while the explorer has focus;
+    // the editor's Ctrl+C/X/V and Delete never reach it.
+    public static ExplorerAction? ShortcutAction(string? id) => id switch
+    {
+        "explorer.cut" => ExplorerAction.Cut,
+        "explorer.copy" => ExplorerAction.Copy,
+        "explorer.paste" => ExplorerAction.Paste,
+        "explorer.duplicate" => ExplorerAction.Duplicate,
+        "explorer.delete" => ExplorerAction.Delete,
+        _ => null
+    };
+    // Paste goes into a selected folder, beside a selected file (its folder), or into the root with nothing selected.
+    public static string PasteTarget(string root, string? selectedPath, bool selectedIsDirectory) =>
+        selectedPath is null ? root : selectedIsDirectory ? selectedPath : Path.GetDirectoryName(selectedPath) ?? root;
+    private bool HandleExplorerShortcut(KeyEventArgs e)
+    {
+        if (_busy || _folder is null) return false;
+        if (ShortcutAction(ShortcutKeys.Match(e, s => s.ExplorerOnly)) is not { } action) return false;
+        var selected = FolderTree.SelectedItem is TreeViewItem { Tag: FolderEntry entry } ? entry : null;
+        if (action == ExplorerAction.Paste)
+        {
+            e.Handled = true;
+            if (CanPaste?.Invoke() == true) ExplorerRequested?.Invoke(new ExplorerRequest(action, PasteTarget(_folder, selected?.Path, selected?.IsDirectory == true)));
+            return true;
+        }
+        if (selected is null) return false;
+        e.Handled = true;
+        ExplorerRequested?.Invoke(new ExplorerRequest(action, selected.Path));
+        return true;
+    }
+
     private void FolderTree_KeyDown(object? sender, KeyEventArgs e)
     {
-        if (IsRenaming || e.Key != Key.Enter || e.KeyModifiers != KeyModifiers.None) return;
+        if (IsRenaming) return;
+        if (HandleExplorerShortcut(e)) return;
+        if (e.Key != Key.Enter || e.KeyModifiers != KeyModifiers.None) return;
         if (FolderTree.SelectedItem is not TreeViewItem { Tag: FolderEntry { IsDirectory: false } entry }) return;
         e.Handled = true;
         FileActivated?.Invoke(entry.Path);
@@ -32,10 +65,12 @@ public partial class FolderExplorer : UserControl
     public string? OpenedFolder => _folder;
     private ContextMenu CreateContextMenu(string path, bool isDirectory = false)
     {
-        MenuItem Item(string name, string header, ExplorerAction action)
+        MenuItem Item(string name, string header, ExplorerAction action, string? shortcut = null)
         {
             var item = LocResources.Item(header);
             item.Name = name;
+            // Item 53: right-aligned hint from the live shortcut table (follows rebinds).
+            if (shortcut is not null) ShortcutKeys.SetId(item, shortcut);
             item.Click += (_, _) =>
             {
                 if (action == ExplorerAction.Rename) BeginRename(path);
@@ -50,11 +85,12 @@ public partial class FolderExplorer : UserControl
             Items =
             {
                 Item("RevealMenuItem", "Reveal", ExplorerAction.Reveal), Line(),
-                Item("CutMenuItem", "MenuCut", ExplorerAction.Cut), Item("CopyMenuItem", "MenuCopy", ExplorerAction.Copy),
-                Item("DuplicateMenuItem", "Duplicate", ExplorerAction.Duplicate), Line(),
-                Item("RenameMenuItem", "Rename", ExplorerAction.Rename), Item("DeleteMenuItem", "Delete", ExplorerAction.Delete)
+                Item("CutMenuItem", "MenuCut", ExplorerAction.Cut, "explorer.cut"), Item("CopyMenuItem", "MenuCopy", ExplorerAction.Copy, "explorer.copy"),
+                Item("DuplicateMenuItem", "Duplicate", ExplorerAction.Duplicate, "explorer.duplicate"), Line(),
+                Item("RenameMenuItem", "Rename", ExplorerAction.Rename, "explorer.rename"), Item("DeleteMenuItem", "Delete", ExplorerAction.Delete, "explorer.delete")
             }
         };
+        ShortcutKeys.ApplyGestures(menu.Items.OfType<MenuItem>());
         if (!isDirectory)
         {
             var open = LocResources.Item("OpenWithDefaultApp");
@@ -113,8 +149,10 @@ public partial class FolderExplorer : UserControl
         var newFile = Item("BackgroundNewFileMenuItem", "NewFile", () => Create(false));
         var newFolder = Item("BackgroundNewFolderMenuItem", "NewFolder", () => Create(true));
         var paste = Item("BackgroundPasteMenuItem", "MenuPaste", () => { if (_folder is not null) ExplorerRequested?.Invoke(new ExplorerRequest(ExplorerAction.Paste, _folder)); });
+        ShortcutKeys.SetId(paste, "explorer.paste");
         var reload = Item("BackgroundReloadMenuItem", "Reload", () => RefreshFolder_Click(null, new RoutedEventArgs()));
         var menu = new ContextMenu { Items = { newFile, newFolder, Line(), paste, Line(), reload } }.Localized();
+        ShortcutKeys.ApplyGestures([paste]);
         menu.Opening += (_, _) => UpdateBackgroundMenu(menu);
         UpdateBackgroundMenu(menu);
         return menu;

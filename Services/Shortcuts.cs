@@ -12,7 +12,7 @@ public readonly record struct ShortcutGesture(string Key, ShortcutMods Mods, str
     private static readonly Dictionary<string, string> KeyNames = new()
     {
         ["OemPlus"] = "=", ["OemMinus"] = "-", ["OemPipe"] = "\\", ["Add"] = "Num +", ["Subtract"] = "Num -", ["NumPad0"] = "Num 0",
-        ["D0"] = "0", ["OemQuotes"] = "'", ["OemSemicolon"] = ";", ["Escape"] = "Esc", ["Left"] = "Left", ["Right"] = "Right"
+        ["D0"] = "0", ["OemQuotes"] = "'", ["OemSemicolon"] = ";", ["Escape"] = "Esc", ["Delete"] = "Del", ["Left"] = "Left", ["Right"] = "Right"
     };
 
     public string Format(bool mac)
@@ -32,7 +32,9 @@ public readonly record struct ShortcutGesture(string Key, ShortcutMods Mods, str
 
 // Handled says who acts on it: App (mdhub's key handlers) or TextBox (built into the editor, listed for reference).
 // Defaults are the built-in gestures; Gestures are the live ones (a user's custom binding when there is one).
-public sealed record Shortcut(string Id, ShortcutArea Area, string Label, IReadOnlyList<ShortcutGesture> Defaults, bool HandledByTextBox = false)
+// ExplorerOnly (item 53): acts only while the explorer has focus, so it may share a gesture with an Edit entry
+// (Ctrl+C/X/V) without conflicting: the editor keeps its keys and the explorer gets them only when focused.
+public sealed record Shortcut(string Id, ShortcutArea Area, string Label, IReadOnlyList<ShortcutGesture> Defaults, bool HandledByTextBox = false, bool ExplorerOnly = false)
 {
     public IReadOnlyList<ShortcutGesture> Gestures => Shortcuts.GesturesFor(this);
     // Only mdhub's own handlers read the live table; gestures built into the TextBox cannot be rebound.
@@ -48,6 +50,7 @@ public static class Shortcuts
 {
     private static Shortcut S(string id, ShortcutArea area, string label, params ShortcutGesture[] g) => new(id, area, label, g);
     private static Shortcut T(string id, ShortcutArea area, string label, params ShortcutGesture[] g) => new(id, area, label, g, true);
+    private static Shortcut E(string id, string label, params ShortcutGesture[] g) => new(id, ShortcutArea.File, label, g, ExplorerOnly: true);
     private static ShortcutGesture C(string key) => ShortcutGesture.Cmd(key);
     private static ShortcutGesture CS(string key) => ShortcutGesture.CmdShift(key);
     private static ShortcutGesture P(string key) => ShortcutGesture.Plain(key);
@@ -72,6 +75,12 @@ public static class Shortcuts
         T("edit.copy", ShortcutArea.Edit, "Copy", C("C")),
         S("edit.paste", ShortcutArea.Edit, "Paste (text or image)", C("V")),
         T("edit.selectAll", ShortcutArea.Edit, "Select all", C("A")),
+        // Item 53: after the Edit entries so a plain match of Ctrl+C/X/V still finds the editor entry first.
+        E("explorer.cut", "Cut selected explorer item (explorer focused)", C("X")),
+        E("explorer.copy", "Copy selected explorer item (explorer focused)", C("C")),
+        E("explorer.paste", "Paste into the explorer selection (explorer focused)", C("V")),
+        E("explorer.duplicate", "Duplicate selected explorer item (explorer focused)", C("D")),
+        E("explorer.delete", "Move selected explorer item to the Recycle Bin (explorer focused)", P("Delete")),
         S("view.wordWrap", ShortcutArea.View, "Toggle word wrap", new ShortcutGesture("Z", ShortcutMods.Alt)),
         S("view.togglePreview", ShortcutArea.View, "Toggle preview", C("OemPipe"), new ShortcutGesture("OemBackslash", ShortcutMods.Command, Hidden: true)),
         S("find.find", ShortcutArea.Find, "Find", C("F")),
@@ -113,7 +122,11 @@ public static class Shortcuts
 
     // Every other entry whose live gestures include this key combination.
     public static IReadOnlyList<Shortcut> FindConflicts(string id, ShortcutGesture gesture) =>
-        All.Where(s => s.Id != id && s.Gestures.Any(g => SameKeys(g, gesture))).ToList();
+        All.Where(s => s.Id != id && Overlap(Get(id), s) && s.Gestures.Any(g => SameKeys(g, gesture))).ToList();
+
+    // Whether two entries can both fire for the same key press: explorer-only entries never meet the editor's Edit keys.
+    public static bool Overlap(Shortcut a, Shortcut b) =>
+        !(a.ExplorerOnly && b.Area == ShortcutArea.Edit || b.ExplorerOnly && a.Area == ShortcutArea.Edit);
 
     // Binds the gesture to the entry. With conflicts nothing changes unless reassign is set, and a gesture the
     // TextBox handles itself is never taken away. Returns false when nothing changed.
@@ -183,7 +196,7 @@ public static class Shortcuts
             Store(s, gestures);
         }
         foreach (var id in Custom.Keys.ToList())
-            if (Custom[id].Any(g => All.Any(o => o.Id != id && o.Gestures.Any(x => SameKeys(x, g))))) Custom.Remove(id);
+            if (Custom[id].Any(g => All.Any(o => o.Id != id && Overlap(Get(id), o) && o.Gestures.Any(x => SameKeys(x, g))))) Custom.Remove(id);
         Changed?.Invoke();
     }
 
@@ -192,6 +205,6 @@ public static class Shortcuts
 
     // Pairs of entries that share a gesture (should be empty).
     public static IEnumerable<(Shortcut A, Shortcut B, ShortcutGesture Gesture)> Conflicts() =>
-        All.SelectMany(s => s.Gestures.Select(g => (s, g))).GroupBy(x => (x.g.Key, x.g.Mods)).Where(grp => grp.Count() > 1)
-           .SelectMany(grp => grp.Skip(1).Select(x => (grp.First().s, x.s, x.g)));
+        All.SelectMany((s, i) => All.Skip(i + 1).Where(o => Overlap(s, o))
+           .SelectMany(o => s.Gestures.Where(g => o.Gestures.Any(x => SameKeys(x, g))).Select(g => (s, o, g))));
 }

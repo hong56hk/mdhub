@@ -32,6 +32,7 @@ if (args.Contains("--l10n-only")) { LocalizationTests.Run(); return; }
 if (args.Contains("--selection-only")) { SelectionTests.Run(); return; }
 if (args.Contains("--quickopen-only")) { QuickOpenTests.Run(); return; }
 if (args.Contains("--syntax-only")) { SyntaxTests.Run(); return; }
+if (args.Contains("--explorerkeys-only")) { ExplorerShortcutTests.Run(); return; }
 if (args.Contains("--imagezoom-only")) { ImageZoomTests.Run(); return; }
 if (args.Contains("--search-bench")) { SearchBench.Run(args); return; }
 if (args.Contains("--search-only")) { SearchSpeedTests.Run(); WorkspaceSearchTests.Run(); return; }
@@ -351,11 +352,11 @@ WaitFor(() => Clipboard()!.ToString()!.EndsWith("False)"));
 Require(Clipboard()!.ToString() == $"({Path.Combine(menuRoot, "Docs")}, False)" && File.Exists(Path.Combine(menuRoot, "note.md")), "Copy stores the path and copy state without changing files");
 
 ClickContext(Path.Combine(menuRoot, "note.md"), "DuplicateMenuItem");
-WaitFor(() => SelectedPath() == Path.Combine(menuRoot, "note copy.md"));
-Require(File.ReadAllText(Path.Combine(menuRoot, "note copy.md")) == "note", "Duplicate creates '<name> copy' beside the file and reveals it");
+WaitFor(() => SelectedPath() == Path.Combine(menuRoot, "note-copy.md"));
+Require(File.ReadAllText(Path.Combine(menuRoot, "note-copy.md")) == "note", "Duplicate creates '<name>-copy' beside the file and reveals it");
 ClickContext(Path.Combine(menuRoot, "Docs"), "DuplicateMenuItem");
-WaitFor(() => SelectedPath() == Path.Combine(menuRoot, "Docs copy"));
-Require(File.Exists(Path.Combine(menuRoot, "Docs copy", "inner.md")), "Duplicate copies folders recursively");
+WaitFor(() => SelectedPath() == Path.Combine(menuRoot, "Docs-copy"));
+Require(File.Exists(Path.Combine(menuRoot, "Docs-copy", "inner.md")), "Duplicate copies folders recursively");
 
 RunOperation("OpenPathAsync", Path.Combine(menuRoot, "note.md"));
 RunOperation("OpenPathAsync", Path.Combine(menuRoot, "Docs", "inner.md"));
@@ -371,7 +372,7 @@ void SubmitRename(string name)
     box.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Enter });
     Pump();
 }
-SubmitRename("note copy.md");
+SubmitRename("note-copy.md");
 Require(explorer.IsRenaming && File.Exists(Path.Combine(menuRoot, "note.md")), "Inline rename rejects existing names");
 SubmitRename("bad/name.md");
 Require(explorer.IsRenaming, "Rename rejects names with paths");
@@ -391,7 +392,7 @@ ClickDialog("Cancel");
 Require(File.Exists(Path.Combine(menuRoot, "gone.md")), "Cancelling delete keeps the item");
 ClickContext(Path.Combine(menuRoot, "gone.md"), "DeleteMenuItem");
 WaitFor(() => window.OwnedWindows.Count == 1);
-ClickDialog("Delete");
+ClickDialog("Move the file to Recycle Bin"); // item 53: the button names the action
 WaitFor(() => !File.Exists(Path.Combine(menuRoot, "gone.md")) && TreeItem(Path.Combine(menuRoot, "gone.md")) is null);
 Require(recycled.SequenceEqual([Path.Combine(menuRoot, "gone.md")]) && !Directory.Exists(Path.Combine(menuRoot, ".md-trash")),
     "Delete confirms, sends the item to the Recycle Bin (not .md-trash), and refreshes the tree");
@@ -400,20 +401,20 @@ noteTab.Editor.Text += " edited";
 Pump();
 ClickContext(Path.Combine(menuRoot, "renamed.md"), "DeleteMenuItem");
 WaitFor(() => window.OwnedWindows.Count == 1);
-ClickDialog("Delete");
+ClickDialog("Move the file to Recycle Bin"); // item 53: the button names the action
 WaitFor(() => window.OwnedWindows.Count == 1);
 ClickDialog("Cancel");
 Require(File.Exists(Path.Combine(menuRoot, "renamed.md")) && tabs.Items.Contains(noteTab), "Cancelling the unsaved-changes prompt cancels the delete");
 ClickContext(Path.Combine(menuRoot, "renamed.md"), "DeleteMenuItem");
 WaitFor(() => window.OwnedWindows.Count == 1);
-ClickDialog("Delete");
+ClickDialog("Move the file to Recycle Bin"); // item 53: the button names the action
 WaitFor(() => window.OwnedWindows.Count == 1);
 ClickDialog("Discard");
 WaitFor(() => !tabs.Items.Contains(noteTab));
 Require(!File.Exists(Path.Combine(menuRoot, "renamed.md")), "Deleting an edited open file prompts, then closes its tab");
 ClickContext(Path.Combine(menuRoot, "Folder"), "DeleteMenuItem");
 WaitFor(() => window.OwnedWindows.Count == 1);
-ClickDialog("Delete");
+ClickDialog("Move the file to Recycle Bin"); // item 53: the button names the action
 WaitFor(() => !tabs.Items.Contains(innerTab));
 Require(!Directory.Exists(Path.Combine(menuRoot, "Folder")) && recycled.Last() == Path.Combine(menuRoot, "Folder"), "Deleting a folder closes clean tabs for files inside it");
 // Empty-space menu
@@ -445,8 +446,8 @@ ClickContext(Path.Combine(menuRoot, "paste.md"), "CopyMenuItem");
 WaitFor(() => Clipboard() is not null);
 Require(Bg("BackgroundPasteMenuItem").IsEnabled, "Paste is enabled after Copy");
 ClickBg("BackgroundPasteMenuItem");
-WaitFor(() => SelectedPath() == Path.Combine(menuRoot, "paste copy.md"));
-Require(File.ReadAllText(Path.Combine(menuRoot, "paste copy.md")) == "paste" && File.Exists(Path.Combine(menuRoot, "paste.md")) && Clipboard() is not null,
+WaitFor(() => SelectedPath() == Path.Combine(menuRoot, "paste-copy.md"));
+Require(File.ReadAllText(Path.Combine(menuRoot, "paste-copy.md")) == "paste" && File.Exists(Path.Combine(menuRoot, "paste.md")) && Clipboard() is not null,
     "Paste after Copy copies into the root with a unique name, reveals it, and keeps the clipboard");
 Await(explorer.RevealCreatedAsync(Path.Combine(menuRoot, "Sub", "moved.md")));
 ClickContext(Path.Combine(menuRoot, "Sub", "moved.md"), "CutMenuItem");

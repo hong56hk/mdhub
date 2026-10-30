@@ -502,7 +502,9 @@ try
         Require(quote.Gestures.Count == 2 && quote.Gestures.All(g => g.Key == "OemQuotes") && quote.Gestures.Count(g => g.Hidden) == 1, "Block quote accepts Ctrl+' and Ctrl+Shift+' but shows one gesture");
         Require(!Shortcuts.Conflicts().Any() && new[] { "editor.bold", "editor.italic", "editor.link", "editor.quote", "editor.insertTime", "editor.goToLine", "view.previewCaret" }.All(id => !Shortcuts.Get(id).HandledByTextBox),
             "New shortcuts do not clash and are handled by mdhub");
-        var dup = Shortcuts.All.SelectMany(s => s.Gestures.Select(g => (g.Key, g.Mods))).GroupBy(k => k).Where(g => g.Count() > 1).ToList();
+        // Item 53: explorer-only entries may share Ctrl+C/X/V with the Edit entries (they never fire together).
+        var dup = Shortcuts.All.SelectMany(s => s.Gestures.Select(g => (s, g.Key, g.Mods))).GroupBy(k => (k.Key, k.Mods)).Where(g => g.Count() > 1)
+            .Where(g => g.SelectMany((x, i) => g.Skip(i + 1).Select(y => (x.s, y.s))).Any(p => Shortcuts.Overlap(p.Item1, p.Item2))).ToList();
         Require(dup.Count == 0, "No key combination appears twice (display-only differences ignored)");
         var savedCulture = System.Globalization.CultureInfo.CurrentCulture;
         System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("fi-FI");
