@@ -177,6 +177,14 @@ public partial class MainView
     private async void OnShortcut(object? sender, KeyEventArgs e)
     {
         if (FolderExplorer.IsRenaming) return;
+        // Item 49: Ctrl+Tab / Ctrl+Shift+Tab from any focus (this tunnel handler runs before the editor and focus navigation).
+        if (ShortcutKeys.Match(e, s => s.Id is "view.nextTab" or "view.previousTab") is { } tabId)
+        {
+            e.Handled = true;
+            ShortcutFired?.Invoke(tabId);
+            CycleTab(tabId == "view.nextTab" ? 1 : -1);
+            return;
+        }
         if (HandleSidebarShortcut(e)) return;
         if (!_busy && FolderExplorer.IsKeyboardFocusWithin && ShortcutKeys.Match(e, s => s.Id == "explorer.rename") is not null)
         {
@@ -235,8 +243,17 @@ public partial class MainView
     internal static Func<DateTime> Clock { get; set; } = () => DateTime.Now;
 
     // Menu items carrying one of these ids (not focus-scoped: the menu has focus when clicked).
+    // Selects the tab step places to the right (negative: left), wrapping around at the ends.
+    internal void CycleTab(int step)
+    {
+        if (_documents.Count < 2 || _active is null) return;
+        var index = _documents.IndexOf(_active);
+        FileTabs.SelectedDocument = _documents[((index + step) % _documents.Count + _documents.Count) % _documents.Count];
+    }
+
     private async void RunMenuCommand(string id)
     {
+        if (id is "view.nextTab" or "view.previousTab") { CycleTab(id == "view.nextTab" ? 1 : -1); return; }
         if (id == "file.quickOpen") { if (!_busy) OpenQuickOpen(); return; }
         if (id == "file.revealInSidebar") { await RevealInSidebarAsync(); return; }
         if (_busy || _active is null || _active.IsImage || EditorCommand(id) is not { } action) return;

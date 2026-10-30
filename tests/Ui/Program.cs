@@ -16,6 +16,7 @@ if (args.Contains("--menu-only")) { MenuTests.Run(); return; }
 if (args.Contains("--previewtoggle-only")) { PreviewToggleTests.Run(); return; }
 if (args.Contains("--createtarget-only")) { CreateTargetTests.Run(); return; }
 if (args.Contains("--searchindent-only")) { SearchIndentTests.Run(); return; }
+if (args.Contains("--tabcycle-only")) { TabCycleTests.Run(); return; }
 if (args.Contains("--strike-only")) { StrikeIconTests.Run(); return; }
 if (args.Contains("--drag-only")) { ExplorerDragTests.Run(); return; }
 if (args.Contains("--file-views")) { FileViewTests.Run(); return; }

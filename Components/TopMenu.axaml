@@ -62,6 +62,8 @@
       <MenuItem Header="{DynamicResource MenuToggleFolders}" Click="ToggleFolders_Click" />
       <MenuItem Header="{DynamicResource MenuTogglePreview}" Click="TogglePreview_Click" c:ShortcutKeys.Id="view.togglePreview" />
       <MenuItem Header="{DynamicResource MenuToggleWordWrap}" Click="WordWrap_Click" c:ShortcutKeys.Id="view.wordWrap" />
+      <MenuItem Header="{DynamicResource MenuNextTab}" Click="Command_Click" c:ShortcutKeys.Id="view.nextTab" />
+      <MenuItem Header="{DynamicResource MenuPreviousTab}" Click="Command_Click" c:ShortcutKeys.Id="view.previousTab" />
       <MenuItem Header="{DynamicResource MenuScrollPreview}" Click="Command_Click" c:ShortcutKeys.Id="view.previewCaret" />
       <MenuItem x:Name="RevealInSidebarMenuItem" Header="{DynamicResource RevealInSidebar}" Click="Command_Click" c:ShortcutKeys.Id="file.revealInSidebar" />
       <MenuItem Header="{DynamicResource MenuRefreshFolder}" Click="RefreshFolder_Click" />
