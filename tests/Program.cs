@@ -12,6 +12,43 @@ var list = MarkdownFormatting.Apply("one\ntwo\nthree", 0, 8, "list");
 Require(list.Replacement == "- one\n- two" && list.End == 7, "List formatting excludes unselected next line");
 var heading = MarkdownFormatting.Apply("hello world", 7, 7, "h2");
 Require(heading.Replacement == "## hello world", "Heading applies to the current line");
+{
+    // Item 25: Open Recent list logic and persistence.
+    var sep = Path.DirectorySeparatorChar;
+    var baseDir = Path.Combine(Path.GetTempPath(), "mdhub-recent");
+    string P(string name) => Path.Combine(baseDir, name);
+    var recent = new List<string>();
+    foreach (var n in new[] { "a.md", "b.md", "c.md" }) recent = RecentList.Add(recent, P(n));
+    Require(recent.SequenceEqual([P("c.md"), P("b.md"), P("a.md")]), "Recent list puts the newest first");
+    recent = RecentList.Add(recent, P("a.md"));
+    Require(recent.SequenceEqual([P("a.md"), P("c.md"), P("b.md")]), "Reopening moves an entry to the front without duplicating it");
+    if (OperatingSystem.IsWindows())
+    {
+        recent = RecentList.Add(recent, P("B.MD"));
+        Require(recent.Count == 3 && recent[0] == P("B.MD"), "Recent list dedupes paths case-insensitively on Windows");
+    }
+    Require(RecentList.Add(recent, P("x") + sep)[0] == P("x") && RecentList.Same(P("x") + sep, P("x")), "Trailing separators do not make a second entry");
+    var many = new List<string>();
+    for (var i = 0; i < 15; i++) many = RecentList.Add(many, P($"f{i}.md"));
+    Require(many.Count == RecentList.Max && RecentList.Max == 10 && many[0] == P("f14.md") && many[^1] == P("f5.md"), "Recent list keeps the 10 newest");
+    Require(RecentList.Remove(many, P("f10.md")).Count == 9 && !RecentList.Remove(many, P("f10.md")).Contains(P("f10.md")), "Removing an entry drops only that entry");
+    Require(RecentList.Sanitize([P("a"), null, " ", P("a"), P("b")]).SequenceEqual([P("a"), P("b")]) && RecentList.Sanitize(null).Count == 0
+        && RecentList.Sanitize(Enumerable.Range(0, 20).Select(i => P($"s{i}"))).Count == 10, "Loaded lists drop blanks, duplicates and extras");
+    var home = Path.Combine(Path.GetTempPath(), "home");
+    Require(RecentList.ShortParent(Path.Combine(home, "notes", "x.md"), home) == "~" + sep + "notes" && RecentList.ShortParent(Path.Combine(home, "x.md"), home) == "~",
+        "Short path replaces the home folder with ~");
+    var deep = Path.Combine(Path.GetPathRoot(Path.GetTempPath())!, "aaaaaaaaaa", "bbbbbbbbbb", "cccccccccc", "dddddddddd", "eeeeeeeeee", "x.md");
+    var shortDeep = RecentList.ShortParent(deep, home);
+    Require(shortDeep.Contains("…") && shortDeep.EndsWith("dddddddddd" + sep + "eeeeeeeeee") && shortDeep.Length < 40, $"Long paths shorten to root…last two folders ({shortDeep})");
+    Require(RecentList.ShortParent(Path.Combine(baseDir, "y.md"), home) == baseDir.TrimEnd(sep) || baseDir.Length > 40, "Short paths are shown as they are");
+    var data = new SessionData { RecentFiles = [P("a.md"), P("b.md")], RecentFolders = [baseDir] };
+    var back = SessionStore.Deserialize(SessionStore.Serialize(data))!;
+    Require(back.RecentFiles.SequenceEqual(data.RecentFiles) && back.RecentFolders.SequenceEqual(data.RecentFolders), "Recent files and folders round-trip through the session file");
+    var old = SessionStore.Deserialize("{\"Version\":1,\"Windows\":[]}")!;
+    Require(old.RecentFiles.Count == 0 && old.RecentFolders.Count == 0, "Old session files load with empty recent lists");
+    var nulls = SessionStore.Deserialize("{\"Version\":1,\"RecentFiles\":null}");
+    Require(nulls is not null && RecentList.Sanitize(nulls.RecentFiles).Count == 0, "A null recent list loads as empty");
+}
 Directory.CreateDirectory(root);
 try
 {

@@ -11,6 +11,8 @@ public partial class TopMenu : UserControl
     public event Action<string>? EditRequested;
     public event Action<WindowAction>? WindowActionRequested;
     public event Action<string>? CommandRequested;
+    // (path, isFolder) for an Open Recent entry.
+    public event Action<string, bool>? RecentRequested;
     private void Command_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is MenuItem item && ShortcutKeys.GetId(item) is { } id) CommandRequested?.Invoke(id);
@@ -22,6 +24,41 @@ public partial class TopMenu : UserControl
         UpdateThemeChecks(Services.ThemeService.Current);
         AttachedToVisualTree += (_, _) => { Services.ThemeService.Changed += UpdateThemeChecks; UpdateThemeChecks(Services.ThemeService.Current); };
         DetachedFromVisualTree += (_, _) => Services.ThemeService.Changed -= UpdateThemeChecks;
+        RebuildRecent();
+        AttachedToVisualTree += (_, _) => { Services.RecentService.Changed += RebuildRecent; RebuildRecent(); };
+        DetachedFromVisualTree += (_, _) => Services.RecentService.Changed -= RebuildRecent;
+    }
+    private void RebuildRecent()
+    {
+        var items = new List<Control>();
+        MenuItem Entry(string path, bool folder)
+        {
+            var name = System.IO.Path.GetFileName(path.TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar));
+            if (string.IsNullOrEmpty(name)) name = path;
+            var header = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal };
+            header.Children.Add(new TextBlock { Text = name });
+            var parent = new TextBlock { Text = Services.RecentList.ShortParent(path) };
+            parent.Classes.Add("recentPath");
+            header.Children.Add(parent);
+            var item = new MenuItem { Header = header, Tag = path };
+            ToolTip.SetTip(item, path);
+            AutomationProperties.SetName(item, name);
+            item.Click += (_, _) => RecentRequested?.Invoke(path, folder);
+            return item;
+        }
+        items.AddRange(Services.RecentService.Files.Select(p => Entry(p, false)));
+        if (Services.RecentService.Files.Count > 0 && Services.RecentService.Folders.Count > 0) items.Add(new Separator());
+        items.AddRange(Services.RecentService.Folders.Select(p => Entry(p, true)));
+        if (items.Count > 0)
+        {
+            items.Add(new Separator());
+            var clear = new MenuItem { Header = "Clear Recently Opened" };
+            clear.Click += (_, _) => Services.RecentService.Clear();
+            items.Add(clear);
+        }
+        OpenRecentMenu.Items.Clear();
+        foreach (var item in items) OpenRecentMenu.Items.Add(item);
+        OpenRecentMenu.IsEnabled = items.Count > 0;
     }
     private void UpdateThemeChecks(Services.AppTheme theme)
     {

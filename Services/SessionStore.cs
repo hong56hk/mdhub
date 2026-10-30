@@ -23,6 +23,8 @@ public sealed record SessionData
     public int Version { get; init; } = SessionStore.CurrentVersion;
     public List<WindowSession> Windows { get; init; } = [];
     public string Theme { get; init; } = "Dark"; // "Dark" or "Light"; missing in old files: Dark
+    public List<string> RecentFiles { get; init; } = []; // File > Open Recent, newest first; missing in old files: empty
+    public List<string> RecentFolders { get; init; } = [];
 }
 
 // UI-free session file handling: atomic save, tolerant load and validation against the file system.

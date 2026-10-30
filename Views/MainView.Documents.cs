@@ -47,11 +47,14 @@ public partial class MainView
         }
     }
 
+    // Session restore reopens tabs without reordering Open Recent.
+    private bool _restoringTabs;
     private async Task OpenPathAsync(string path)
     {
+        var recent = !_restoringTabs;
         path = Path.GetFullPath(path);
         var existing = _documents.FirstOrDefault(d => SamePath(d.Path, path));
-        if (existing is not null) { FileTabs.SelectedDocument = existing; return; }
+        if (existing is not null) { FileTabs.SelectedDocument = existing; if (recent) RecentService.AddFile(path); return; }
         var kind = await Task.Run(() => FileSupport.Detect(path));
         if (kind == SupportedFileKind.Unsupported) { UpdateStatus("Unsupported file type or text encoding · " + path); return; }
         if (kind == SupportedFileKind.Image)
@@ -64,6 +67,7 @@ public partial class MainView
             var imageDocument = new NoteDocument { Path = path, Image = bitmap };
             _documents.Add(imageDocument);
             FileTabs.SelectedDocument = imageDocument;
+            if (recent) RecentService.AddFile(path);
             return;
         }
         (string Text, System.Text.Encoding Encoding) loaded;
@@ -71,6 +75,7 @@ public partial class MainView
         catch (System.Text.DecoderFallbackException) { UpdateStatus("Unsupported text encoding · " + path); return; }
         if (!FileSupport.IsText(loaded.Text)) { UpdateStatus("Unsupported binary file · " + path); return; }
         AddDocument(path, loaded.Text, encoding: loaded.Encoding);
+        if (recent) RecentService.AddFile(path);
     }
 
     private static bool SamePath(string? a, string b) => string.Equals(a, b,

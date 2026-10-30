@@ -21,7 +21,9 @@ public partial class App : Application
             desktop.ShutdownMode = ShutdownModeSetting;
             // Reopen the last session's windows; a missing or unusable session starts as a single new window.
             Services.SessionManager.Enabled = true;
-            Services.ThemeService.Apply(Services.ThemeService.Parse(Services.SessionStore.Load(Services.SessionManager.SessionPath)?.Theme), persist: false);
+            var saved = Services.SessionStore.Load(Services.SessionManager.SessionPath);
+            Services.ThemeService.Apply(Services.ThemeService.Parse(saved?.Theme), persist: false);
+            Services.RecentService.Load(saved);
             List<MainWindow> restored;
             try { restored = Services.SessionManager.Restore(); }
             catch (Exception) { restored = []; }

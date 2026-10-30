@@ -59,7 +59,8 @@ public static class SessionManager
 
     private static void Write(List<WindowSession> windows)
     {
-        try { SessionStore.Save(SessionPath, new SessionData { Windows = windows.Where(w => !w.IsEmpty).ToList(), Theme = ThemeService.Current.ToString() }); }
+        try { SessionStore.Save(SessionPath, new SessionData { Windows = windows.Where(w => !w.IsEmpty).ToList(), Theme = ThemeService.Current.ToString(),
+                RecentFiles = [.. RecentService.Files], RecentFolders = [.. RecentService.Folders] }); }
         catch (Exception) { /* A session that cannot be written must not block closing. */ }
     }
 
@@ -68,6 +69,14 @@ public static class SessionManager
     {
         if (!Enabled) return;
         Write(Entries.Count > 0 ? Entries.Select(e => e.Window.CaptureSession()).ToList() : SessionStore.Load(SessionPath)?.Windows ?? []);
+    }
+
+    // Open Recent changes are saved right away but keep the saved windows as they are: open windows are still
+    // only written when they close, so a session file never lists windows that were open at a crash.
+    public static void SaveRecent()
+    {
+        if (!Enabled) return;
+        Write(SessionStore.Load(SessionPath)?.Windows ?? []);
     }
 
     public static void Reset() { Entries.Clear(); _shuttingDown = false; }

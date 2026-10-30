@@ -12,6 +12,7 @@
     <Compile Include="../Text/ImageAssets.cs" Link="ImageAssets.cs" />
     <Compile Include="../Text/FindReplace.cs" Link="FindReplace.cs" />
     <Compile Include="../Services/SessionStore.cs" Link="SessionStore.cs" />
+    <Compile Include="../Services/RecentList.cs" Link="RecentList.cs" />
     <Compile Include="../Services/WindowPlacement.cs" Link="WindowPlacement.cs" />
     <Compile Include="../Rendering/PreviewSourceMap.cs" Link="PreviewSourceMap.cs" />
     <Compile Include="../Services/ZoomLevel.cs" Link="ZoomLevel.cs" />

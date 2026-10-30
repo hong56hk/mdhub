@@ -58,6 +58,11 @@ public partial class MainView
     {
         var path = await (FolderPickerOverride ?? PickFolderAsync)();
         if (path is null) return;
+        await OpenFolderHereOrNewWindowAsync(path);
+    }
+
+    private async Task OpenFolderHereOrNewWindowAsync(string path)
+    {
         if (FolderExplorer.OpenedFolder is { } current)
         {
             if (SameFolder(current, path)) { ActivationCount++; Host.Activate(); return; }
@@ -70,8 +75,29 @@ public partial class MainView
         await OpenFolderPathAsync(path);
     }
 
+    // Test seam: headless UI tests answer the "remove missing entry" prompt.
+    internal Func<string, Task<bool>>? ConfirmRemoveRecentOverride { get; set; }
+    internal string? LastRecentNote { get; private set; }
+
+    private async Task OpenRecentAsync(string path, bool folder)
+    {
+        if (folder ? Directory.Exists(path) : File.Exists(path))
+        {
+            if (folder) { await OpenFolderHereOrNewWindowAsync(path); RecentService.AddFolder(path); }
+            else await OpenPathAsync(path);
+            return;
+        }
+        LastRecentNote = $"{(folder ? "Folder" : "File")} no longer exists · {path}";
+        UpdateStatus(LastRecentNote);
+        if (_active is null) BottomStatusBar.SetMessage(LastRecentNote);
+        var remove = ConfirmRemoveRecentOverride is { } confirm ? await confirm(path)
+            : await DialogService.ShowAsync(Host, "Not found", $"{path} no longer exists. Remove it from Open Recent?", "Remove", "Keep") == "Remove";
+        if (remove) RecentService.Remove(path);
+    }
+
     public async Task OpenFolderPathAsync(string path)
     {
+        RecentService.AddFolder(path);
         await LoadRootAsync(path);
         if (!Sidebar.IsVisible) ToggleFolders_Click(null, new RoutedEventArgs());
     }

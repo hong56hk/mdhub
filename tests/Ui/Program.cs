@@ -16,6 +16,7 @@ if (args.Contains("--image-layout")) { ImageLayoutTests.Run(); return; }
 if (args.Contains("--rename-only")) { RenameTests.Run(); return; }
 if (args.Contains("--layout-only")) { ExplorerLayoutTests.Run(); return; }
 if (args.Contains("--theme-only")) { ThemeTests.Run(); return; }
+if (args.Contains("--recent-only")) { RecentTests.Run(); return; }
 if (args.Contains("--selection-only")) { SelectionTests.Run(); return; }
 if (args.Contains("--syntax-only")) { SyntaxTests.Run(); return; }
 if (args.Contains("--search-only")) { WorkspaceSearchTests.Run(); return; }
@@ -834,7 +835,7 @@ try
     Pump();
     TabsOf(wb).First(d => d.Path is null).Editor.Text = "unsaved scratch";
     Pump();
-    Require(!File.Exists(sessionFile), "No session is written while windows are open");
+    Require(!File.Exists(sessionFile) || Mdhub.Services.SessionStore.Load(sessionFile) is { Windows.Count: 0 }, "No window session is written while windows are open (only Open Recent)");
 
     wa.Close(); Pump();
     var afterFirst = Mdhub.Services.SessionStore.Load(sessionFile);

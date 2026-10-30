@@ -19,6 +19,10 @@
     <Style Selector="MenuItem MenuItem">
       <Setter Property="Padding" Value="19,9,11,10" />
     </Style>
+    <Style Selector="TextBlock.recentPath">
+      <Setter Property="Foreground" Value="{DynamicResource AcceleratorForeground}" />
+      <Setter Property="Margin" Value="12,0,0,0" />
+    </Style>
     <Style Selector="MenuItem /template/ TextBlock#PART_InputGestureText">
       <Setter Property="Foreground" Value="{DynamicResource AcceleratorForeground}" />
       <Setter Property="HorizontalAlignment" Value="Right" />
@@ -30,6 +34,8 @@
       <MenuItem Header="_New" Click="New_Click" c:ShortcutKeys.Id="file.new" />
       <MenuItem Header="_Open File…" Click="Open_Click" c:ShortcutKeys.Id="file.open" />
       <MenuItem Header="Open _Folder…" Click="OpenFolder_Click" c:ShortcutKeys.Id="file.openFolder" />
+      <!-- Filled from RecentService: files, folders, then Clear Recently Opened. -->
+      <MenuItem x:Name="OpenRecentMenu" Header="Open _Recent" />
       <MenuItem Header="_Save" Click="Save_Click" c:ShortcutKeys.Id="file.save" />
       <MenuItem Header="Save _As…" Click="SaveAs_Click" c:ShortcutKeys.Id="file.saveAs" />
       <MenuItem Header="_Close Tab" Click="CloseTab_Click" c:ShortcutKeys.Id="file.closeTab" />

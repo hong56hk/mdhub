@@ -34,6 +34,7 @@ public partial class MainView : UserControl
         TopMenu.WindowActionRequested += action => WindowActionRequested?.Invoke(action);
         TopMenu.EditRequested += Edit;
         TopMenu.CommandRequested += RunMenuCommand;
+        TopMenu.RecentRequested += (path, folder) => _ = RunAsync(() => OpenRecentAsync(path, folder));
         TextFormatter.ActionRequested += RequestAction;
         TextFormatter.EditRequested += Edit;
         TextFormatter.FormatRequested += action => { if (!_busy) TextEditor.Format(action); };
@@ -165,7 +166,8 @@ public partial class MainView : UserControl
         {
             try
             {
-                await OpenPathAsync(tab);
+                _restoringTabs = true;
+                try { await OpenPathAsync(tab); } finally { _restoringTabs = false; }
                 if (_active is { Path: { } openedPath } document && SamePath(openedPath, Path.GetFullPath(tab)))
                 {
                     if (!opened.Contains(document)) opened.Add(document);
