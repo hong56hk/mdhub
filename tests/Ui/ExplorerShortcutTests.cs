@@ -79,9 +79,10 @@ internal static class ExplorerShortcutTests
             var menu = row.ContextMenu!;
             var duplicate = menu.Items.OfType<MenuItem>().Single(i => i.Name == "DuplicateMenuItem");
             Check(ShortcutKeys.MenuText(duplicate) == "Ctrl+Alt+K", $"menu hint follows the rebind ({ShortcutKeys.MenuText(duplicate)})");
+            Check(Shortcuts.Rebind("explorer.paste", new ShortcutGesture("B", ShortcutMods.Command | ShortcutMods.Alt)) && ShortcutKeys.MenuText(menu.Items.OfType<MenuItem>().Single(i => i.Name == "PasteMenuItem")) == "Ctrl+Alt+B", "row Paste hint follows a rebind");
             Shortcuts.ResetAll();
             var hints = menu.Items.OfType<MenuItem>().Where(i => ShortcutKeys.GetId(i) is not null).ToDictionary(i => i.Name!, ShortcutKeys.MenuText);
-            Check(hints["CutMenuItem"] == "Ctrl+X" && hints["CopyMenuItem"] == "Ctrl+C" && hints["DuplicateMenuItem"] == "Ctrl+D"
+            Check(hints["CutMenuItem"] == "Ctrl+X" && hints["CopyMenuItem"] == "Ctrl+C" && hints["PasteMenuItem"] == "Ctrl+V" && hints["DuplicateMenuItem"] == "Ctrl+D"
                 && hints["RenameMenuItem"] == "F2" && hints["DeleteMenuItem"] == "Del", $"context menu shows shortcut hints ({string.Join(",", hints)})");
             var paste = tree.ContextMenu!.Items.OfType<MenuItem>().Single(i => i.Name == "BackgroundPasteMenuItem");
             Check(ShortcutKeys.MenuText(paste) == "Ctrl+V", "the explorer Paste menu item shows Ctrl+V");

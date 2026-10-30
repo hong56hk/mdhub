@@ -74,6 +74,8 @@ public partial class FolderExplorer : UserControl
             item.Click += (_, _) =>
             {
                 if (action == ExplorerAction.Rename) BeginRename(path);
+                // Paste on a file lands beside it (its folder); on a folder, inside it.
+                else if (action == ExplorerAction.Paste) { if (_folder is not null && CanPaste?.Invoke() == true) ExplorerRequested?.Invoke(new ExplorerRequest(action, PasteTarget(_folder, path, isDirectory))); }
                 else ExplorerRequested?.Invoke(new ExplorerRequest(action, path));
             };
             return item;
@@ -86,11 +88,14 @@ public partial class FolderExplorer : UserControl
             {
                 Item("RevealMenuItem", "Reveal", ExplorerAction.Reveal), Line(),
                 Item("CutMenuItem", "MenuCut", ExplorerAction.Cut, "explorer.cut"), Item("CopyMenuItem", "MenuCopy", ExplorerAction.Copy, "explorer.copy"),
+                Item("PasteMenuItem", "MenuPaste", ExplorerAction.Paste, "explorer.paste"),
                 Item("DuplicateMenuItem", "Duplicate", ExplorerAction.Duplicate, "explorer.duplicate"), Line(),
                 Item("RenameMenuItem", "Rename", ExplorerAction.Rename, "explorer.rename"), Item("DeleteMenuItem", "Delete", ExplorerAction.Delete, "explorer.delete")
             }
         };
         ShortcutKeys.ApplyGestures(menu.Items.OfType<MenuItem>());
+        UpdateItemPaste(menu);
+        menu.Opening += (_, _) => UpdateItemPaste(menu);
         if (!isDirectory)
         {
             var open = LocResources.Item("OpenWithDefaultApp");
@@ -157,7 +162,18 @@ public partial class FolderExplorer : UserControl
         UpdateBackgroundMenu(menu);
         return menu;
     }
-    public void UpdateBackgroundMenu() => UpdateBackgroundMenu(FolderTree.ContextMenu!);
+    // Also refreshes Paste in the row menus, so it follows the explorer clipboard everywhere.
+    public void UpdateBackgroundMenu()
+    {
+        UpdateBackgroundMenu(FolderTree.ContextMenu!);
+        foreach (var row in TreeNodes(FolderTree.Items.OfType<TreeViewItem>()))
+            if (row.ContextMenu is { } menu) UpdateItemPaste(menu);
+    }
+    private void UpdateItemPaste(ContextMenu menu)
+    {
+        foreach (var item in menu.Items.OfType<MenuItem>())
+            if (item.Name == "PasteMenuItem") item.IsEnabled = _folder is not null && !_busy && CanPaste?.Invoke() == true;
+    }
     private void UpdateBackgroundMenu(ContextMenu menu)
     {
         var open = _folder is not null && !_busy;

@@ -336,7 +336,7 @@ RunOperation("LoadRootAsync", menuRoot);
 Pump();
 var noteItem = TreeItem(Path.Combine(menuRoot, "note.md"))!;
 var menuEntries = noteItem.ContextMenu!.Items.Cast<Control>().ToArray();
-Require(string.Join("|", menuEntries.Select(e => e is Separator ? "-" : ((MenuItem)e).Header)) == "Open with default app|-|Reveal in file explorer|-|Cut|Copy|Duplicate|-|Rename|Delete",
+Require(string.Join("|", menuEntries.Select(e => e is Separator ? "-" : ((MenuItem)e).Header)) == "Open with default app|-|Reveal in file explorer|-|Cut|Copy|Paste|Duplicate|-|Rename|Delete",
     "Explorer context menu lists Open with default app (item 52), Reveal, Cut, Copy, Duplicate, Rename, Delete in order with separators");
 Require(menuEntries.OfType<Separator>().All(s => s.Background is Avalonia.Media.ISolidColorBrush b && b.Color == Avalonia.Media.Colors.LightGray),
     "Explorer context menu separators are light gray");
@@ -420,6 +420,7 @@ WaitFor(() => !tabs.Items.Contains(innerTab));
 Require(!Directory.Exists(Path.Combine(menuRoot, "Folder")) && recycled.Last() == Path.Combine(menuRoot, "Folder"), "Deleting a folder closes clean tabs for files inside it");
 // Empty-space menu
 MenuItem Bg(string name) { explorer.UpdateBackgroundMenu(); return Find<TreeView>("FolderTree")!.ContextMenu!.Items.OfType<MenuItem>().Single(m => m.Name == name); }
+MenuItem RowPaste(string path) { explorer.UpdateBackgroundMenu(); return TreeItem(path)!.ContextMenu!.Items.OfType<MenuItem>().Single(m => m.Name == "PasteMenuItem"); }
 void ClickBg(string name) { Bg(name).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Pump(); }
 Require(Bg("BackgroundNewFileMenuItem").IsEnabled && Bg("BackgroundReloadMenuItem").IsEnabled, "Empty-space menu entries are enabled with a folder open");
 Directory.CreateDirectory(Path.Combine(menuRoot, "Sub"));
@@ -443,6 +444,7 @@ Require(Directory.Exists(Path.Combine(menuRoot, "Root folder")), "Empty-space Ne
 var clipProperty = typeof(MainView).GetProperty("ExplorerClipboard", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
 clipProperty.GetSetMethod(true)!.Invoke(mainView, [null]);
 Require(!Bg("BackgroundPasteMenuItem").IsEnabled, "Paste is disabled when the clipboard is empty");
+Require(!RowPaste(Path.Combine(menuRoot, "paste.md")).IsEnabled && !RowPaste(Path.Combine(menuRoot, "Sub")).IsEnabled, "Row Paste (file and folder menus) is disabled when the clipboard is empty");
 ClickContext(Path.Combine(menuRoot, "paste.md"), "CopyMenuItem");
 WaitFor(() => Clipboard() is not null);
 Require(Bg("BackgroundPasteMenuItem").IsEnabled, "Paste is enabled after Copy");
@@ -450,6 +452,15 @@ ClickBg("BackgroundPasteMenuItem");
 WaitFor(() => SelectedPath() == Path.Combine(menuRoot, "paste-copy.md"));
 Require(File.ReadAllText(Path.Combine(menuRoot, "paste-copy.md")) == "paste" && File.Exists(Path.Combine(menuRoot, "paste.md")) && Clipboard() is not null,
     "Paste after Copy copies into the root with a unique name, reveals it, and keeps the clipboard");
+Require(RowPaste(Path.Combine(menuRoot, "Sub")).IsEnabled && Mdhub.Components.ShortcutKeys.MenuText(RowPaste(Path.Combine(menuRoot, "Sub"))) == "Ctrl+V", "Row Paste is enabled after Copy and shows Ctrl+V");
+ClickContext(Path.Combine(menuRoot, "Sub"), "PasteMenuItem");
+WaitFor(() => File.Exists(Path.Combine(menuRoot, "Sub", "paste.md")));
+Require(File.ReadAllText(Path.Combine(menuRoot, "Sub", "paste.md")) == "paste", "Paste on a folder pastes inside it");
+TreeItem(Path.Combine(menuRoot, "Sub"))!.IsExpanded = true;
+WaitFor(() => TreeItem(Path.Combine(menuRoot, "Sub", "moved.md")) is not null);
+ClickContext(Path.Combine(menuRoot, "Sub", "moved.md"), "PasteMenuItem");
+WaitFor(() => File.Exists(Path.Combine(menuRoot, "Sub", "paste-copy.md")));
+Require(File.ReadAllText(Path.Combine(menuRoot, "Sub", "paste-copy.md")) == "paste", "Paste on a file pastes beside it");
 Await(explorer.RevealCreatedAsync(Path.Combine(menuRoot, "Sub", "moved.md")));
 ClickContext(Path.Combine(menuRoot, "Sub", "moved.md"), "CutMenuItem");
 WaitFor(() => Clipboard()!.ToString()!.EndsWith("True)"));
