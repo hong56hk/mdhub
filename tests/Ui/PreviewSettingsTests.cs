@@ -156,14 +156,14 @@ internal static class PreviewSettingsTests
                     var ordered = marker.Text!.EndsWith('.');
                     if (ordered) worstNumber = Math.Max(worstNumber, Math.Abs(BaselineIn(marker) - BaselineIn(text)));
                     else worstBullet = Math.Max(worstBullet, Math.Abs(BulletCentre(marker) - FirstLineCentreOfX(text)));
-                    if (Math.Abs(marker.FontSize - size * (ordered ? 1.10 : 1.15)) > 0.001) throw new Exception($"marker size {marker.FontSize} at {size}");
+                    if (Math.Abs(marker.FontSize - (ordered ? size * 1.10 - 1 : size * 1.15)) > 0.001) throw new Exception($"marker size {marker.FontSize} at {size}");
                 }
                 cases++;
             }
             Console.WriteLine($"  markers: {cases} font/size/line-height cases, worst number baseline offset {worstNumber:F2}px, worst bullet centre offset {worstBullet:F2}px");
-            Check(worstNumber <= 0.5, "Ordered-list numbers sit on the first text line's baseline at any font, size and line height");
+            Check(worstNumber <= 0.05, "Ordered-list numbers (1 px under body x 1.10) sit on the first text line's baseline at any font, size and line height");
             Check(worstBullet <= 0.75, "Bullets are centred on the first line (x-height centre) at any font, size and line height");
-            Check(true, "Numbers are 10% and bullets 15% bigger than the body text");
+            Check(true, "Numbers are body x 1.10 - 1 px and bullets 15% bigger than the body text");
 
             // ---- Export CSS ----
             PreviewSettings.Reset(persist: false);
@@ -177,6 +177,45 @@ internal static class PreviewSettingsTests
             var html = MarkdownExporter.ToHtml(source, "t", null);
             Check(html.Contains("font-size: 18px; line-height: 36px;"), "HTML export embeds the settings' CSS (PDF uses the same HTML)");
 
+            // ---- Item 56: bullet / ordered list item spacing ----
+            PreviewSettings.Reset(persist: false); Settle();
+            var dd = new PreviewSettingsData();
+            Check(dd.BulletSpacing == 8 && dd.OrderedSpacing == 8 && PreviewSettings.NumberSize == 15.5,
+                "Item 56 defaults: list item spacing 8 px (the old nested spacing), numbers 15.5 px at 15 px body (was 16.5)");
+            double Gap(string kind)
+            {
+                var list = content.Children.OfType<StackPanel>().First(s => PreviewTags.Kind(s) == kind);
+                var a = list.Children[0]; var b = list.Children[1];
+                return b.TranslatePoint(default, content)!.Value.Y - a.TranslatePoint(new Point(0, a.Bounds.Height), content)!.Value.Y;
+            }
+            Check(Math.Abs(Gap("ul") - 8) < 0.01 && Math.Abs(Gap("ol") - 8) < 0.01, $"Default list item gaps measured from layout: ul {Gap("ul"):F2}, ol {Gap("ol"):F2}");
+            flyout.ShowAt(gear); Settle();
+            panel = (StackPanel)flyout.Content!;
+            var bulletBox = Find<NumericUpDown>("BulletSpacingBox"); var orderedBox = Find<NumericUpDown>("OrderedSpacingBox");
+            Check(bulletBox.Minimum == 0 && bulletBox.Maximum == 24 && bulletBox.Increment == 1 && orderedBox.Minimum == 0 && orderedBox.Maximum == 24 && orderedBox.Increment == 1
+                && bulletBox.Value == 8 && orderedBox.Value == 8, "Flyout has bullet and ordered spacing boxes (0-24 by 1, default 8)");
+            bulletBox.Value = 3; orderedBox.Value = 17; Settle();
+            Check(Math.Abs(Gap("ul") - 3) < 0.01 && Math.Abs(Gap("ol") - 17) < 0.01 && content.Spacing == 14,
+                $"Live: list gaps follow the settings independently (ul {Gap("ul"):F2}, ol {Gap("ol"):F2}), paragraph spacing unchanged");
+            var saved56 = SessionStore.Load(sessionPath)?.Preview;
+            Check(saved56 is { BulletSpacing: 3, OrderedSpacing: 17 }, "List spacings are saved in the session");
+            PreviewSettings.Import(null);
+            PreviewSettings.Import(SessionStore.Deserialize(SessionStore.Serialize(new SessionData { Preview = saved56 }))!.Preview);
+            Check(PreviewSettings.Current.BulletSpacing == 3 && PreviewSettings.Current.OrderedSpacing == 17, "A saved session restores the list spacings");
+            var odd56 = PreviewSettings.Normalize(new PreviewSettingsData { BulletSpacing = 30, OrderedSpacing = -4 });
+            var snap56 = PreviewSettings.Normalize(new PreviewSettingsData { BulletSpacing = 2.4, OrderedSpacing = 9.6 });
+            Check(odd56.BulletSpacing == 24 && odd56.OrderedSpacing == 0 && snap56.BulletSpacing == 2 && snap56.OrderedSpacing == 10, "List spacings are clamped to 0-24 and snapped to 1 px");
+            css = MarkdownExporter.Css();
+            Check(css.Contains("ul > li + li { margin-top: 3px; } ol > li + li { margin-top: 17px; }") && css.Contains("ol > li::marker { font-size: 15.5px; }"),
+                "Export CSS carries both list spacings and the 1 px smaller numbers");
+            Find<Button>("ResetPreviewSettings").RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent)); Settle();
+            panel = (StackPanel)flyout.Content!;
+            Check(PreviewSettings.IsDefault && Find<NumericUpDown>("BulletSpacingBox").Value == 8 && Find<NumericUpDown>("OrderedSpacingBox").Value == 8
+                && Math.Abs(Gap("ul") - 8) < 0.01 && Math.Abs(Gap("ol") - 8) < 0.01 && MarkdownExporter.Css().Contains("ul > li + li { margin-top: 8px; } ol > li + li { margin-top: 8px; }"),
+                "Reset restores both list spacings (controls, preview, export)");
+            Check(SessionStore.Load(sessionPath)!.Preview is null, "After the list-spacing reset the session stores no preview settings");
+            flyout.Hide(); Settle();
+
             // ---- Reset ----
             PreviewSettings.Update(_ => new PreviewSettingsData { BodySize = 22 });
             flyout.Hide(); flyout.ShowAt(gear); Settle();
@@ -188,7 +227,7 @@ internal static class PreviewSettingsTests
             Check(PreviewSettings.IsDefault && Find<NumericUpDown>("BodySizeBox").Value == 15 && Find<NumericUpDown>("LineHeightBox").Value == 1.6m && Paragraph().FontSize == 15 && content.Spacing == 14,
                 "Reset to defaults restores every value, the controls and the preview");
             Check(SessionStore.Load(sessionPath)!.Preview is null, "After reset the session stores no preview settings");
-            Check(Loc.Languages.All(l => new[] { "PreviewSettings", "PreviewBodyFont", "PreviewCodeFont", "PreviewLineHeight", "PreviewParagraphSpacing", "PreviewResetDefaults", "PreviewDefaultFont" }
+            Check(Loc.Languages.All(l => new[] { "PreviewSettings", "PreviewBodyFont", "PreviewCodeFont", "PreviewLineHeight", "PreviewParagraphSpacing", "PreviewResetDefaults", "PreviewDefaultFont", "PreviewBulletSpacing", "PreviewOrderedSpacing" }
                 .All(k => Loc.Table(l.Code).TryGetValue(k, out var v) && !string.IsNullOrWhiteSpace(v))), "Every flyout string exists in all 4 languages");
             flyout.Hide();
         }

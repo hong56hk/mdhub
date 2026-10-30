@@ -43,6 +43,9 @@ public sealed record PreviewSettingsData
     public double CodeSize { get; init; } = 13;
     public double LineHeight { get; init; } = 1.6;
     public double ParagraphSpacing { get; init; } = 14;
+    // Item 56: gap between list items (was the nested 8 px, i.e. 14 x 8/14).
+    public double BulletSpacing { get; init; } = 8;
+    public double OrderedSpacing { get; init; } = 8;
 }
 
 public static class SessionStore

@@ -127,7 +127,7 @@ public static class MarkdownPreview
                     }, "blockquote");
                     break;
                 case ListBlock list:
-                    var items = PreviewTags.Tag(new StackPanel { Spacing = Settings.NestedSpacing }, list.IsOrdered ? "ol" : "ul", list.IsOrdered ? list.OrderedStart ?? "1" : null);
+                    var items = PreviewTags.Tag(new StackPanel { Spacing = list.IsOrdered ? Settings.Current.OrderedSpacing : Settings.Current.BulletSpacing }, list.IsOrdered ? "ol" : "ul", list.IsOrdered ? list.OrderedStart ?? "1" : null);
                     var number = int.TryParse(list.OrderedStart, out var start) ? start : 1;
                     foreach (var item in list.OfType<ListItemBlock>())
                     {
@@ -261,7 +261,7 @@ public static class MarkdownPreview
     // text layout the paragraph uses (body font, size and line height), so they hold for any font.
     internal static TextBlock ListMarker(string text, bool ordered)
     {
-        var size = Settings.Current.BodySize * (ordered ? Settings.NumberScale : Settings.BulletScale);
+        var size = ordered ? Settings.NumberSize : Settings.BulletSize;
         // No layout rounding: the sub-pixel offset below is what lines the marker up.
         var marker = new TextBlock { Text = text, FontSize = size, Margin = new Thickness(0, 0, 10, 0), UseLayoutRounding = false };
         if (BodyFamily() is { } family) marker.FontFamily = family;

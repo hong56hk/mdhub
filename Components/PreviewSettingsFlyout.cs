@@ -91,6 +91,10 @@ public static class PreviewSettingsFlyout
         panel.Children.Add(Number("LineHeightBox", s.LineHeight, PreviewSettings.MinLineHeight, PreviewSettings.MaxLineHeight, 0.1, "0.0", (d, v) => d with { LineHeight = v }));
         panel.Children.Add(Label("PreviewParagraphSpacing"));
         panel.Children.Add(Number("ParagraphSpacingBox", s.ParagraphSpacing, PreviewSettings.MinParagraphSpacing, PreviewSettings.MaxParagraphSpacing, 2, "0", (d, v) => d with { ParagraphSpacing = v }));
+        panel.Children.Add(Label("PreviewBulletSpacing"));
+        panel.Children.Add(Number("BulletSpacingBox", s.BulletSpacing, PreviewSettings.MinListSpacing, PreviewSettings.MaxListSpacing, 1, "0", (d, v) => d with { BulletSpacing = v }));
+        panel.Children.Add(Label("PreviewOrderedSpacing"));
+        panel.Children.Add(Number("OrderedSpacingBox", s.OrderedSpacing, PreviewSettings.MinListSpacing, PreviewSettings.MaxListSpacing, 1, "0", (d, v) => d with { OrderedSpacing = v }));
         var reset = new Button { Name = "ResetPreviewSettings", Content = Loc.T("PreviewResetDefaults"), Classes = { "textAction" }, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 8, 0, 0) };
         reset.Click += (_, _) => { PreviewSettings.Reset(); rebuild?.Invoke(); };
         panel.Children.Add(reset);

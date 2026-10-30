@@ -299,6 +299,8 @@ public static partial class Loc
         ["PreviewCodeFont"] = "Code font",
         ["PreviewLineHeight"] = "Line height",
         ["PreviewParagraphSpacing"] = "Paragraph spacing",
+        ["PreviewBulletSpacing"] = "Bullet list item spacing",
+        ["PreviewOrderedSpacing"] = "Ordered list item spacing",
         ["PreviewResetDefaults"] = "Reset to defaults",
         ["PreviewDefaultFont"] = "Default",
         ["Exported"] = "Exported {0}",

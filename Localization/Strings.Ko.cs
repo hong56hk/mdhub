@@ -299,6 +299,8 @@ public static partial class Loc
         ["PreviewCodeFont"] = "\ucf54\ub4dc \uae00\uaf34",
         ["PreviewLineHeight"] = "\uc904 \ub192\uc774",
         ["PreviewParagraphSpacing"] = "\ub2e8\ub77d \uac04\uaca9",
+        ["PreviewBulletSpacing"] = "\uae00\uba38\ub9ac \uae30\ud638 \ubaa9\ub85d \ud56d\ubaa9 \uac04\uaca9",
+        ["PreviewOrderedSpacing"] = "\ubc88\ud638 \ub9e4\uae30\uae30 \ubaa9\ub85d \ud56d\ubaa9 \uac04\uaca9",
         ["PreviewResetDefaults"] = "\uae30\ubcf8\uac12\uc73c\ub85c \uc7ac\uc124\uc815",
         ["PreviewDefaultFont"] = "\uae30\ubcf8\uac12",
         ["Exported"] = "\ub0b4\ubcf4\ub0c4: {0}",

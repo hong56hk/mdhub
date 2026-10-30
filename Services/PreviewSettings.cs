@@ -14,6 +14,11 @@ public static class PreviewSettings
     // Nested stacks (list items, quotes, cells) were 8 px against the 14 px top level: keep that ratio.
     public const double NestedRatio = 8.0 / 14.0;
     public const double NumberScale = 1.10, BulletScale = 1.15;
+    // Item 56: ordered-list numbers are 1 px under body x 1.10.
+    public const double NumberShrink = 1;
+    public const double DefaultListSpacing = 8, MinListSpacing = 0, MaxListSpacing = 24;
+    public static double NumberSize => Math.Round(Current.BodySize * NumberScale - NumberShrink, 2);
+    public static double BulletSize => Math.Round(Current.BodySize * BulletScale, 2);
 
     public static PreviewSettingsData Current { get; private set; } = new();
     public static event Action? Changed;
@@ -32,6 +37,8 @@ public static class PreviewSettings
             CodeSize = Snap(data.CodeSize, MinCodeSize, MaxCodeSize, 1, DefaultCodeSize),
             LineHeight = Snap(data.LineHeight, MinLineHeight, MaxLineHeight, 0.1, DefaultLineHeight),
             ParagraphSpacing = Snap(data.ParagraphSpacing, MinParagraphSpacing, MaxParagraphSpacing, 2, DefaultParagraphSpacing),
+            BulletSpacing = Snap(data.BulletSpacing, MinListSpacing, MaxListSpacing, 1, DefaultListSpacing),
+            OrderedSpacing = Snap(data.OrderedSpacing, MinListSpacing, MaxListSpacing, 1, DefaultListSpacing),
         };
     }
 

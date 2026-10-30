@@ -61,7 +61,8 @@ public static class MarkdownExporter
             img { max-width: 100%; break-inside: avoid; }
             ul.contains-task-list { list-style: none; padding-left: 4px; } li.task-list-item input { margin-right: 8px; }
             li + li { margin-top: {{Px(PreviewSettings.NestedSpacing)}}; }
-            ol > li::marker { font-size: 1.1em; } ul > li::marker { font-size: 1.15em; }
+            ul > li + li { margin-top: {{Px(p.BulletSpacing)}}; } ol > li + li { margin-top: {{Px(p.OrderedSpacing)}}; }
+            ol > li::marker { font-size: {{Px(PreviewSettings.NumberSize)}}; } ul > li::marker { font-size: {{Px(PreviewSettings.BulletSize)}}; }
             .tok-k { color: {{c["SyntaxCodeKeyword"]}}; } .tok-s { color: {{c["SyntaxCodeString"]}}; } .tok-c { color: {{c["SyntaxCodeComment"]}}; font-style: italic; } .tok-n { color: {{c["SyntaxCodeNumber"]}}; }
             @page { size: A4; margin: 18mm 16mm; }
             @media print { html, body { background: white; } body { max-width: none; padding: 0; } }
