@@ -42,13 +42,25 @@ Open this folder in VS Code and install the recommended Microsoft C# extension (
 
 This is an initial workspace, not yet the full note organizer. It does not detect changes made by another app while a file is open. Images appear as alt-text labels; HTML is literal text, links do not launch a browser, and math/Mermaid diagrams are not rendered. No preview content is fetched from the network.
 
-## Publish for Windows
+## Publish
 
-```powershell
-dotnet publish Mdhub.csproj -c Release -r win-x64 --self-contained true -o artifacts/win-x64
+`.github/workflows/release.yml` publishes self-contained builds for `win-x64`, `osx-arm64`, and `osx-x64`. Pushing a `v*` tag runs it and attaches the archives to a GitHub Release. `workflow_dispatch` runs the same publish and uploads the archives as workflow artifacts, without creating a release.
+
+| Archive | Contents |
+| --- | --- |
+| `mdhub-win-x64.zip` | `mdhub-win-x64/Mdhub.exe` and its dependencies |
+| `mdhub-osx-arm64.zip` | unsigned `Mdhub.app` for Apple silicon |
+| `mdhub-osx-x64.zip` | unsigned `Mdhub.app` for Intel Macs |
+
+Users do not need to install .NET. The macOS bundles are not signed or notarized, so Gatekeeper blocks them until a follow-up adds Developer ID signing (hardened runtime, including `com.apple.security.cs.allow-jit`) and notarization.
+
+To pack the same archives locally:
+
+```bash
+GITHUB_REF=refs/tags/v1.2.3 bash scripts/package-release.sh --rid win-x64 --version 1.2.3
+bash scripts/package-release.sh --rid osx-arm64 --version 1.2.3
+bash scripts/package-release.sh --rid osx-x64 --version 1.2.3
 ```
-
-Distribute the entire output folder. Users do not need to install .NET. macOS requires its own build/package and platform testing.
 
 ## Structure
 
