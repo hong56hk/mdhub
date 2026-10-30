@@ -18,6 +18,13 @@
     </Style>
     <!-- VS Code row states. A 1px border is always reserved (transparent) so rows never shift when focus moves;
          the focused-selection colours apply while focus is anywhere inside the tree (rename box included). -->
+    <!-- Item 45: file and folder rows (chevron included) show the hand; the inline rename box keeps the I-beam. -->
+    <Style Selector="TreeView#FolderTree TreeViewItem">
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="TreeView#FolderTree TextBox">
+      <Setter Property="Cursor" Value="Ibeam" />
+    </Style>
     <Style Selector="TreeView#FolderTree TreeViewItem">
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="BorderBrush" Value="Transparent" />

@@ -41,12 +41,15 @@ public partial class MainView
         if (document is not null)
         {
             var editor = document.Editor;
+            // Item 45: Undo and Redo come first, with their gestures and live enabled state.
+            var undo = Item("EditorUndoMenuItem", "MenuUndo", () => editor.Undo(), "edit.undo");
+            var redo = Item("EditorRedoMenuItem", "MenuRedo", () => editor.Redo(), "edit.redo");
             var cut = Item("EditorCutMenuItem", "MenuCut", () => editor.Cut());
             var copy = Item("EditorCopyMenuItem", "MenuCopy", () => editor.Copy());
             var paste = Item("EditorPasteMenuItem", "MenuPaste", () => _ = PasteAsync());
             var all = Item("EditorSelectAllMenuItem", "MenuSelectAll", () => editor.SelectAll());
-            foreach (var item in new Control[] { cut, copy, paste, all, Line() }) menu.Items.Add(item);
-            void Edit() { cut.IsEnabled = editor.CanCut; copy.IsEnabled = editor.CanCopy; paste.IsEnabled = !editor.IsReadOnly; }
+            foreach (var item in new Control[] { undo, redo, Line(), cut, copy, paste, all, Line() }) menu.Items.Add(item);
+            void Edit() { undo.IsEnabled = editor.CanUndo && !editor.IsReadOnly; redo.IsEnabled = editor.CanRedo && !editor.IsReadOnly; cut.IsEnabled = editor.CanCut; copy.IsEnabled = editor.CanCopy; paste.IsEnabled = !editor.IsReadOnly; }
             menu.Opening += (_, _) => Edit();
             menu.Opened += (_, _) => Edit();
         }
@@ -56,7 +59,7 @@ public partial class MainView
         void Update() { reveal.IsEnabled = !_busy && CanRevealInSidebar; system.IsEnabled = _active?.Path is not null; }
         menu.Opening += (_, _) => Update();
         menu.Opened += (_, _) => Update();
-        ShortcutKeys.ApplyGestures([reveal]);
+        ShortcutKeys.ApplyGestures(menu.Items.OfType<MenuItem>().Where(i => ShortcutKeys.GetId(i) is not null).ToList());
         return menu.Localized();
     }
 }
