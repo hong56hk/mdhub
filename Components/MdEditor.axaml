@@ -3,6 +3,7 @@
     <ScrollViewer x:Name="PreviewScroll" HorizontalScrollBarVisibility="Disabled">
       <Panel x:Name="PreviewLayer">
         <c:PreviewBlockHighlight x:Name="PreviewBlockHighlights" IsHitTestVisible="False" />
+        <c:PreviewSelectionOverlay x:Name="PreviewSelectionLayer" IsHitTestVisible="False" />
         <StackPanel x:Name="PreviewContent" Margin="24" Spacing="14" />
       </Panel>
     </ScrollViewer>

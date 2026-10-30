@@ -313,6 +313,28 @@ try
         Require(global::Mdhub.Rendering.PreviewEdit.PlanInline("use `a*b`", code, "use a`b", any).Error == global::Mdhub.Rendering.PreviewEdit.Backtick, "Backticks are rejected in inline code");
         global::Mdhub.Rendering.EditPiece[] lines = [new("one", 0), new("\n", -1), new("two", 4)];
         Require(global::Mdhub.Rendering.PreviewEdit.PlanInline("one\ntwo", lines, "one\n- two", any).Edit == new global::Mdhub.Rendering.SourceEdit(4, 4, "\\- "), "Line start after a soft break is escaped");
+        {
+            // Rich copy (item 24): CF_HTML byte offsets, plain text without markers, RTF escaping.
+            var cf = global::Mdhub.Rendering.RichCopy.CfHtml("<p>caf\u00e9 \u4e2d \U0001F600</p>");
+            var bytes = System.Text.Encoding.UTF8.GetBytes(cf);
+            int H(string name) => int.Parse(System.Text.RegularExpressions.Regex.Match(cf, name + @":(\d{10})\r\n").Groups[1].Value);
+            string B(int a, int b) => System.Text.Encoding.UTF8.GetString(bytes, a, b - a);
+            Require(B(H("StartFragment"), H("EndFragment")) == "<p>caf\u00e9 \u4e2d \U0001F600</p>" && B(H("StartHTML"), H("StartHTML") + 6) == "<html>" && H("EndHTML") == bytes.Length
+                && B(0, H("StartHTML")).StartsWith("Version:0.9\r\nStartHTML:") && bytes.Length > cf.Length, "CF_HTML header offsets are UTF-8 byte offsets of the HTML and fragment");
+            Require(global::Mdhub.Rendering.RichCopy.CfHtml("").Contains("<!--StartFragment--><!--EndFragment-->") && H("StartFragment") < H("EndFragment"), "CF_HTML handles an empty fragment");
+            global::Mdhub.Rendering.CopyNode N(string kind, params global::Mdhub.Rendering.CopyNode[] children) { var n = new global::Mdhub.Rendering.CopyNode(kind); n.Children.AddRange(children); return n; }
+            global::Mdhub.Rendering.CopyNode T(string text) => new("text") { Text = text };
+            var link = new global::Mdhub.Rendering.CopyNode("a") { Href = "https://x.test/?a=1&b=\"2\"" }; link.Children.Add(T("x<y"));
+            var doc = N("doc", N("h2", T("Head")), N("p", T("a "), N("strong", T("b")), T(" {c}\\ "), link), N("ol") , N("table", N("tr", N("th", N("p", T("A"))), N("th", N("p", T("B")))), N("tr", N("td", N("p", T("1"))), N("td", N("p", T("2"))))));
+            doc.Children[2].Children.Add(N("li", N("p", T("one")))); doc.Children[2].Children.Add(N("li", N("p", T("two"))));
+            var style = new global::Mdhub.Rendering.RichCopyStyle("#0000FF", "#EEEEEE", "#DDDDDD", "#CCCCCC", "#F0F0F0", "#999999");
+            Require(global::Mdhub.Rendering.RichCopy.Plain(doc) == "Head\n\na b {c}\\ x<y\n\n1. one\n2. two\n\nA\tB\n1\t2", "Rich copy plain text drops markup and keeps list numbers and cell tabs");
+            var html = global::Mdhub.Rendering.RichCopy.Html(doc, style);
+            Require(html.Contains("<a href=\"https://x.test/?a=1&amp;b=&quot;2&quot;\" style=\"color:#0000FF;text-decoration:underline\">x&lt;y</a>") && html.Contains("<th style=\"border:1px solid #CCCCCC;") && html.Contains("<h2 style=\"font-size:23px"),
+                "Rich copy HTML escapes text and attributes and inlines styles");
+            var rtf = global::Mdhub.Rendering.RichCopy.Rtf(doc, style);
+            Require(rtf.Contains(" \\{c\\}\\\\ ") && rtf.Contains("\\red0\\green0\\blue255;") && rtf.Contains("1.\\tab one") && rtf.Contains("\\cellx4800") && rtf.Contains("{\\b\\fs46 Head}"), "Rich copy RTF escapes braces and backslashes and writes lists and tables");
+        }
         var fence = "```\r\nlet x;\r\n```\r\n";
         var codePlan = global::Mdhub.Rendering.PreviewEdit.PlanCode(fence, 5, 11, "let x;\nlet y;", any);
         Require(codePlan.Edit is { } ce && fence[..ce.Start] + ce.Replacement + fence[ce.End..] == "```\r\nlet x;\r\nlet y;\r\n```\r\n", "Code block edits keep the note's CRLF line breaks");

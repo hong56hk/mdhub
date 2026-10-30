@@ -89,16 +89,17 @@ public static class MarkdownPreview
                     title.LineHeight = HasInlineImage(title.Inlines!) ? double.NaN : title.FontSize * 1.5;
                     title.FontWeight = FontWeight.SemiBold;
                     title.Margin = new Thickness(0, 10, 0, 4);
+                    PreviewTags.Tag(title, $"h{Math.Clamp(heading.Level, 1, 6)}");
                     yield return title;
                     break;
                 case ParagraphBlock paragraph when ImageOnly(paragraph.Inline) is { } images:
                     foreach (var image in images) yield return Mapped(image, paragraph);
                     break;
                 case ParagraphBlock paragraph:
-                    yield return InlineText(paragraph.Inline, paragraph);
+                    yield return PreviewTags.Tag(InlineText(paragraph.Inline, paragraph), "p");
                     break;
                 case CodeBlock code:
-                    var codeText = Mapped(new SelectableTextBlock { FontFamily = new FontFamily("Consolas, Menlo, monospace"), FontSize = 13, TextWrapping = TextWrapping.Wrap }, code);
+                    var codeText = Mapped(PreviewTags.Tag(new TextBlock { FontFamily = new FontFamily("Consolas, Menlo, monospace"), FontSize = 13, TextWrapping = TextWrapping.Wrap }, "pre"), code);
                     var codeBlockId = _result is { } codeResult ? codeResult.Map.Blocks.Count - 1 : -1;
                     var lines = code.Lines.Lines ?? [];
                     for (var i = 0; i < code.Lines.Count; i++)
@@ -116,19 +117,19 @@ public static class MarkdownPreview
                     yield return new Border { Background = Mdhub.Services.ThemeService.Brush("CodeBlockBackground"), CornerRadius = new CornerRadius(5), Padding = new Thickness(14), Child = codeText };
                     break;
                 case QuoteBlock quote:
-                    yield return new Border
+                    yield return PreviewTags.Tag(new Border
                     {
                         BorderBrush = Mdhub.Services.ThemeService.Brush("QuoteBorder"), BorderThickness = new Thickness(3, 0, 0, 0), Padding = new Thickness(14, 4),
                         Child = Stack(Render(quote))
-                    };
+                    }, "blockquote");
                     break;
                 case ListBlock list:
-                    var items = new StackPanel { Spacing = 8 };
+                    var items = PreviewTags.Tag(new StackPanel { Spacing = 8 }, list.IsOrdered ? "ol" : "ul", list.IsOrdered ? list.OrderedStart ?? "1" : null);
                     var number = int.TryParse(list.OrderedStart, out var start) ? start : 1;
                     foreach (var item in list.OfType<ListItemBlock>())
                     {
-                        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
-                        row.Children.Add(new TextBlock { Text = list.IsOrdered ? $"{number++}." : "•", Margin = new Thickness(0, 0, 10, 0) });
+                        var row = PreviewTags.Tag(new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") }, "li");
+                        row.Children.Add(PreviewTags.Tag(new TextBlock { Text = list.IsOrdered ? $"{number++}." : "•", Margin = new Thickness(0, 0, 10, 0) }, "marker"));
                         var content = Stack(Render(item));
                         Grid.SetColumn(content, 1);
                         row.Children.Add(content);
@@ -137,7 +138,7 @@ public static class MarkdownPreview
                     yield return items;
                     break;
                 case Table table:
-                    var grid = Mapped(new Grid(), table, container: true);
+                    var grid = Mapped(PreviewTags.Tag(new Grid(), "table"), table, container: true);
                     var outerFallback = _fallback;
                     if (_result is { } tableResult) _fallback = tableResult.Map.Blocks.Count - 1;
                     var columnCount = table.OfType<TableRow>().Select(r => r.Count).DefaultIfEmpty(0).Max();
@@ -149,12 +150,12 @@ public static class MarkdownPreview
                         var col = 0;
                         foreach (var cell in row.OfType<TableCell>())
                         {
-                            var border = new Border
+                            var border = PreviewTags.Tag(new Border
                             {
                                 BorderBrush = Mdhub.Services.ThemeService.Brush("TableBorder"), BorderThickness = new Thickness(0.5), Padding = new Thickness(10),
                                 Background = row.IsHeader ? Mdhub.Services.ThemeService.Brush("TableHeaderBackground") : Brushes.Transparent,
                                 Child = Stack(Render(cell))
-                            };
+                            }, row.IsHeader ? "th" : "td");
                             Grid.SetRow(border, rowIndex); Grid.SetColumn(border, col++);
                             grid.Children.Add(border);
                         }
@@ -164,10 +165,10 @@ public static class MarkdownPreview
                     yield return grid;
                     break;
                 case ThematicBreakBlock:
-                    yield return Mapped(new Border { Height = 1, Background = Mdhub.Services.ThemeService.Brush("RuleForeground"), Margin = new Thickness(0, 8) }, block);
+                    yield return Mapped(PreviewTags.Tag(new Border { Height = 1, Background = Mdhub.Services.ThemeService.Brush("RuleForeground"), Margin = new Thickness(0, 8) }, "hr"), block);
                     break;
                 case HtmlBlock html:
-                    yield return Mapped(new SelectableTextBlock { Text = html.Lines.ToString(), TextWrapping = TextWrapping.Wrap }, html);
+                    yield return Mapped(PreviewTags.Tag(new TextBlock { Text = html.Lines.ToString(), TextWrapping = TextWrapping.Wrap }, "html"), html);
                     break;
                 case ContainerBlock container:
                     yield return Stack(Render(container));
@@ -259,6 +260,7 @@ public static class MarkdownPreview
                     break;
                 case CodeInline code:
                     var codeRun = new Run(code.Content) { FontFamily = new FontFamily("Consolas, Menlo, monospace"), Background = Mdhub.Services.ThemeService.Brush("InlineCodeBackground"), Foreground = Mdhub.Services.ThemeService.Brush("InlineCodeForeground") };
+                    PreviewTags.Tag(codeRun, "code");
                     target.Add(codeRun);
                     if (_result is { } r && code.Content.Length > 0 && code.Span.Start >= 0 && code.Span.End < r.Map.Source.Length)
                     {
@@ -269,22 +271,22 @@ public static class MarkdownPreview
                 case LineBreakInline: target.Add(new LineBreak()); break;
                 case EmphasisInline emphasis:
                     var span = new Span();
-                    if (emphasis.DelimiterChar == '~') span.TextDecorations = TextDecorations.Strikethrough;
-                    else if (emphasis.DelimiterCount >= 2) span.FontWeight = FontWeight.Bold;
-                    else span.FontStyle = FontStyle.Italic;
+                    if (emphasis.DelimiterChar == '~') PreviewTags.Tag(span, "del").TextDecorations = TextDecorations.Strikethrough;
+                    else if (emphasis.DelimiterCount >= 2) PreviewTags.Tag(span, "strong").FontWeight = FontWeight.Bold;
+                    else PreviewTags.Tag(span, "em").FontStyle = FontStyle.Italic;
                     AddInlines(span.Inlines, emphasis); target.Add(span);
                     break;
                 case LinkInline { IsImage: true } picture when LoadImage(picture) is { } inlineImage:
                     target.Add(new InlineUIContainer(inlineImage));
                     break;
                 case LinkInline link:
-                    var linkSpan = new Span { Foreground = Mdhub.Services.ThemeService.Brush("LinkForeground") };
+                    var linkSpan = PreviewTags.Tag(new Span { Foreground = Mdhub.Services.ThemeService.Brush("LinkForeground") }, "a", link.Url);
                     if (link.IsImage) linkSpan.Inlines.Add(new Run("[Image: "));
                     AddInlines(linkSpan.Inlines, link);
                     if (link.IsImage) linkSpan.Inlines.Add(new Run("]"));
                     target.Add(linkSpan);
                     break;
-                case AutolinkInline auto: target.Add(new Run(auto.Url) { Foreground = Mdhub.Services.ThemeService.Brush("LinkForeground") }); break;
+                case AutolinkInline auto: target.Add(PreviewTags.Tag(new Run(auto.Url) { Foreground = Mdhub.Services.ThemeService.Brush("LinkForeground") }, "a", auto.IsEmail ? "mailto:" + auto.Url : auto.Url)); break;
                 case HtmlInline html: target.Add(new Run(html.Tag)); break;
                 case ContainerInline nested: AddInlines(target, nested); break;
             }

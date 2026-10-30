@@ -16,6 +16,7 @@ if (args.Contains("--image-layout")) { ImageLayoutTests.Run(); return; }
 if (args.Contains("--rename-only")) { RenameTests.Run(); return; }
 if (args.Contains("--layout-only")) { ExplorerLayoutTests.Run(); return; }
 if (args.Contains("--theme-only")) { ThemeTests.Run(); return; }
+if (args.Contains("--selection-only")) { SelectionTests.Run(); return; }
 if (args.Contains("--syntax-only")) { SyntaxTests.Run(); return; }
 if (args.Contains("--search-only")) { WorkspaceSearchTests.Run(); return; }
 AppBuilder.Configure<App>().UseSkia().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).SetupWithoutStarting();

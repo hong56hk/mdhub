@@ -49,6 +49,7 @@
       <SolidColorBrush x:Key="SyntaxOrderedList" Color="#82AAFF" />
       <SolidColorBrush x:Key="SyntaxUnorderedList" Color="#8FD6A0" />
       <SolidColorBrush x:Key="PreviewHighlight" Color="#5C4F8FE8" />
+      <SolidColorBrush x:Key="PreviewSelectionBackground" Color="#99306FB8" />
       <SolidColorBrush x:Key="SearchLineNumberForeground" Color="#8993A4" />
       <SolidColorBrush x:Key="SearchMatchForeground" Color="#FFD580" />
       <SolidColorBrush x:Key="SearchMatchBackground" Color="#55452A" />
@@ -108,6 +109,7 @@
       <SolidColorBrush x:Key="SyntaxOrderedList" Color="#2563C9" />
       <SolidColorBrush x:Key="SyntaxUnorderedList" Color="#23804A" />
       <SolidColorBrush x:Key="PreviewHighlight" Color="#404F8FE8" />
+      <SolidColorBrush x:Key="PreviewSelectionBackground" Color="#99ADD6FF" />
       <SolidColorBrush x:Key="SearchLineNumberForeground" Color="#5F6875" />
       <SolidColorBrush x:Key="SearchMatchForeground" Color="#6B4100" />
       <SolidColorBrush x:Key="SearchMatchBackground" Color="#FFE3A3" />

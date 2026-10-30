@@ -27,6 +27,7 @@ public partial class MdEditor : UserControl
         _selectionTimer.Tick += (_, _) => { _selectionTimer.Stop(); ApplyHighlight(scroll: true); };
         PreviewContent.LayoutUpdated += (_, _) => PreviewBlockHighlights.InvalidateVisual();
         PreviewContent.DoubleTapped += OnPreviewDoubleTapped;
+        InitSelection();
     }
     public void ShowDocument(NoteDocument? document)
     {
@@ -41,6 +42,7 @@ public partial class MdEditor : UserControl
             ClearHighlight();
             _render = null;
             PreviewContent.Children.Clear();
+            ResetSelection();
             return;
         }
         document.Editor.PropertyChanged += OnEditorPropertyChanged;
@@ -110,6 +112,7 @@ public partial class MdEditor : UserControl
             {
                 var run = new Run(part) { FontFamily = target.Run.FontFamily, Foreground = target.Run.Foreground, FontWeight = target.Run.FontWeight, FontStyle = target.Run.FontStyle,
                     TextDecorations = target.Run.TextDecorations };
+                PreviewTags.Copy(target.Run, run);
                 run.Background = lit ? HighlightBrush : target.Run.Background;
                 return run;
             }
@@ -186,10 +189,11 @@ public partial class MdEditor : UserControl
         var id = render.Blocks.FirstOrDefault(kv => kv.Value == block, new(-1, block)).Key;
         if (id < 0) return false;
         ClearHighlight();
+        ClearPreviewSelection();
         string text;
         var code = render.CodeContent.TryGetValue(id, out var range);
         if (code) { text = render.Map.Source[range.Start..range.End].Replace("\r\n", "\n").Replace('\r', '\n'); _editCode = range; _editPieces = null; }
-        else if (block is TextBlock { Inlines: { } inlines } and not SelectableTextBlock)
+        else if (block is TextBlock { Inlines: { } inlines } and not SelectableTextBlock && PreviewTags.Kind(block) is not ("pre" or "html"))
         {
             var runIds = render.Runs.ToDictionary(kv => kv.Value.Run, kv => kv.Key);
             var pieces = new List<EditPiece>();
@@ -308,6 +312,7 @@ public partial class MdEditor : UserControl
                 foreach (var control in _render.Controls) PreviewContent.Children.Add(control);
             }
             else PreviewContent.Children.Add(new SelectableTextBlock { Text = text, TextWrapping = TextWrapping.Wrap, FontSize = 15 });
+            ResetSelection();
             ApplyHighlight(scroll: false);
             if (_pendingCenter is { } pending && _render is not null) CenterPreviewOnLine(pending);
         }

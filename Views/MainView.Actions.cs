@@ -44,6 +44,8 @@ public partial class MainView
     {
         if (_busy || _active?.IsImage == true) return;
         if (action == "paste") await PasteAsync();
+        else if (action == "copy" && MdEditor.PreviewHasFocus) await MdEditor.CopyPreviewAsync();
+        else if (action == "select all" && MdEditor.PreviewHasFocus) MdEditor.SelectAllPreview();
         else TextEditor.Edit(action);
     }
     private async Task LoadRootAsync(string path)
