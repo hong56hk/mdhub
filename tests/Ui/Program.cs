@@ -38,7 +38,7 @@ if (args.Contains("--explorerrefresh-only")) { ExplorerRefreshTests.Run(); retur
 if (args.Contains("--menupadding-only")) { MenuPaddingTests.Run(); return; }
 if (args.Contains("--imagezoom-only")) { ImageZoomTests.Run(); return; }
 if (args.Contains("--search-bench")) { SearchBench.Run(args); return; }
-if (args.Contains("--search-only")) { SearchSpeedTests.Run(); WorkspaceSearchTests.Run(); return; }
+if (args.Contains("--search-only")) { SearchSpeedTests.Run(); WorkspaceSearchTests.Run(); SearchClickTests.Run(); return; }
 if (args.Contains("--shortcuts-only")) { ShortcutTests.Run(); return; }
 AppBuilder.Configure<App>().UseSkia().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).SetupWithoutStarting();
 var window = new MainWindow();

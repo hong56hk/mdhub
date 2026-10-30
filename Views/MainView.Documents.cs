@@ -27,6 +27,9 @@ public partial class MainView
     private void InitializeTextDocument(NoteDocument document, string text)
     {
         document.Editor.Text = text;
+        // TextChanged for this initial load arrives after the handler below is attached (e.g. right after a
+        // search hit opens the file): only a real change in the text may restart the global search.
+        var searchedText = text;
         document.Editor.TextWrapping = _wrap ? TextWrapping.Wrap : TextWrapping.NoWrap;
         document.Editor.ContextFlyout = null; // item 41: our menu adds Reveal in Side Bar to Cut/Copy/Paste/Select All
         document.Editor.ContextMenu = CreateEditorMenu(document);
@@ -35,7 +38,9 @@ public partial class MainView
             document.Refresh();
             if (document.IsDirty) _sessionNote = null;
             if (_active == document) { UpdateStatus(); MdEditor.ScheduleRefresh(); }
-            if (GlobalSearch.IsVisible && !_busy) GlobalSearch.Schedule();
+            var textChanged = document.Editor.Text != searchedText;
+            searchedText = document.Editor.Text;
+            if (textChanged && GlobalSearch.IsVisible && !_busy) GlobalSearch.Schedule();
         };
         document.Editor.PropertyChanged += (_, e) =>
         {

@@ -22,6 +22,7 @@ public partial class GlobalSearch : UserControl
     private string _resultQuery = "";
     private FindOptions _resultOptions;
     public WorkspaceSearchResult Result { get; private set; } = new([]);
+    internal int SearchRuns { get; private set; } // searches actually started (tests)
     public Func<IReadOnlyDictionary<string, string>>? OpenBuffers { get; set; }
     public event Action<SearchFile, SearchHit>? HitRequested;
     public Func<WorkspaceReplaceRequest, Task<string>>? ReplaceRequested { get; set; }
@@ -88,6 +89,7 @@ public partial class GlobalSearch : UserControl
         if (_replacing || _root is null || string.IsNullOrEmpty(GlobalQuery.Text)) { if (!_replacing) Schedule(); return; }
         using var cancellation = new CancellationTokenSource();
         _search = cancellation;
+        SearchRuns++;
         var query = GlobalQuery.Text;
         var options = Options;
         SetSummary(() => Loc.T("Searching"));
