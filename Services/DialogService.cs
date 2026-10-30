@@ -95,7 +95,13 @@ public static class DialogService
     // Every shortcut, grouped by area; mdhub's own entries can be rebound (Components/ShortcutsDialog.cs).
     public static Task ShowShortcutsAsync(Window owner) => Mdhub.Components.ShortcutsDialog.ShowAsync(owner);
 
-    public static Task<string?> ShowAsync(Window owner, string title, string message, params string[] choices)
+    // Item 34: About shows the app logo beside the text.
+    public static Task<string?> ShowAboutAsync(Window owner) => ShowAsync(owner, Loc.T("AboutTitle"), Loc.T("AboutText"),
+        new Avalonia.Controls.Image { Name = "AboutLogo", Source = AppIcon.Logo(), Width = 64, Height = 64, VerticalAlignment = VerticalAlignment.Top }, "OK");
+
+    public static Task<string?> ShowAsync(Window owner, string title, string message, params string[] choices) => ShowAsync(owner, title, message, null, choices);
+
+    private static Task<string?> ShowAsync(Window owner, string title, string message, Control? logo, params string[] choices)
     {
         var dialog = new Window { Title = title, Width = 480, SizeToContent = SizeToContent.Height, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right };
@@ -106,7 +112,8 @@ public static class DialogService
             buttons.Children.Add(button);
         }
         dialog.Content = new StackPanel { Margin = new Thickness(20), Spacing = 20,
-            Children = { new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap }, buttons } };
+            Children = { logo is null ? new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap }
+                : new DockPanel { Children = { logo, new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(16, 0, 0, 0) } } }, buttons } };
         ApplyOwnerZoom(dialog, owner);
         ThemeService.PrepareTitleBar(dialog);
         return dialog.ShowDialog<string?>(owner);

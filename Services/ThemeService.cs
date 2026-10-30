@@ -83,6 +83,7 @@ public static class ThemeService
         Window.WindowOpenedEvent.AddClassHandler<Window>((window, args) =>
         {
             Track(window);
+            AppIcon.Apply(window);
             if (TitleBarDark(window) is { } early) TitleBarsAtOpen.AddOrUpdate(window, early);
             ApplyTitleBar(window);
         });
@@ -94,6 +95,7 @@ public static class ThemeService
     public static void PrepareTitleBar(Window window)
     {
         Track(window);
+        AppIcon.Apply(window); // item 34: one place gives every window the app icon
         ApplyTitleBar(window);
     }
 

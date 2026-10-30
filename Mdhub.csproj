@@ -5,11 +5,13 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\mdhub.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop" Version="12.1.4" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4" />
     <PackageReference Include="Markdig" Version="1.5.0" />
     <Compile Remove="tests/**/*.cs" />
+    <AvaloniaResource Include="Assets\mdhub-128.png" />
   </ItemGroup>
 </Project>

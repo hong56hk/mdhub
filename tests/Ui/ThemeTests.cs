@@ -59,6 +59,33 @@ internal static class ThemeTests
                 $"{theme}: surfaces are {(theme == AppTheme.Light ? "light" : "dark")} with readable text");
         }
 
+        // Item 34: the app logo. The .ico holds every size, small sizes are pixel-crisp, and every window carries it.
+        var ico = File.ReadAllBytes(Path.Combine(repo, "Assets", "mdhub.ico"));
+        var icoSizes = Enumerable.Range(0, BitConverter.ToUInt16(ico, 4)).Select(i => ico[6 + 16 * i] == 0 ? 256 : ico[6 + 16 * i]).Order().ToList();
+        Check(BitConverter.ToUInt16(ico, 2) == 1 && icoSizes.SequenceEqual(new[] { 16, 20, 24, 32, 40, 48, 64, 128, 256 }), $"mdhub.ico holds sizes {string.Join(", ", icoSizes)}");
+        var csproj = File.ReadAllText(Path.Combine(repo, "Mdhub.csproj"));
+        Check(csproj.Contains(@"<ApplicationIcon>Assets\mdhub.ico</ApplicationIcon>") && csproj.Contains(@"<AvaloniaResource Include=""Assets\mdhub-128.png"" />"), "the csproj sets ApplicationIcon and embeds the logo assets");
+        using (var stream = Avalonia.Platform.AssetLoader.Open(AppIcon.IconUri))
+        using (var frames = new System.IO.MemoryStream()) { stream.CopyTo(frames); Check(frames.Length == ico.Length, "the icon is an embedded avares resource"); }
+        using (var logo = AppIcon.Logo()) Check(logo.PixelSize == new PixelSize(128, 128), "the About logo loads (128 px)");
+        var blue = Color.Parse("#0078D4");
+        foreach (var theme in new[] { AppTheme.Dark, AppTheme.Light })
+            Check(new[] { "AppBackground", "EditorBackground", "FloatingBackground" }.All(s => Contrast(blue, ThemeService.Lookup(s, theme)) >= 3),
+                $"{theme}: the #0078D4 logo stays legible on the app surfaces ({string.Join(", ", new[] { "AppBackground", "EditorBackground", "FloatingBackground" }.Select(s => $"{Contrast(blue, ThemeService.Lookup(s, theme)):0.0}"))})");
+        var iconWindow = new MainWindow(); iconWindow.Show(); Pump();
+        Check(AppIcon.Icon is not null && ReferenceEquals(iconWindow.Icon, AppIcon.Icon), "the main window shows the app icon");
+        var about = DialogService.ShowAboutAsync(iconWindow); Pump();
+        var aboutWindow = iconWindow.OwnedWindows.Single();
+        Check(ReferenceEquals(aboutWindow.Icon, AppIcon.Icon) && aboutWindow.GetVisualDescendants().OfType<Image>().Any(i => i.Name == "AboutLogo" && i.Source is not null && i.Bounds.Width == 64),
+            "About shows the logo and carries the app icon");
+        aboutWindow.Close(); Pump();
+        var message = DialogService.ShowAsync(iconWindow, "t", "m", "OK"); Pump();
+        Check(ReferenceEquals(iconWindow.OwnedWindows.Single().Icon, AppIcon.Icon), "message dialogs carry the app icon");
+        iconWindow.OwnedWindows.Single().Close(); Pump();
+        var bare = new Window(); bare.Show(); Pump();
+        Check(ReferenceEquals(bare.Icon, AppIcon.Icon), "any other window gets the icon on open");
+        bare.Close(); iconWindow.Close(); Pump();
+
         // Two windows with a Markdown document that has a code block, table, link and inline code; find bar open.
         var windows = new[] { new MainWindow { Width = 1300, Height = 800 }, new MainWindow { Width = 1100, Height = 700 } };
         foreach (var w in windows) w.Show();

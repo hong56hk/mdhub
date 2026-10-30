@@ -321,6 +321,6 @@ public partial class MainView
     });
 
     private async void About_Click(object? sender, RoutedEventArgs e) => await RunAsync(async () =>
-        await DialogService.ShowAsync(Host, Loc.T("AboutTitle"), Loc.T("AboutText"), "OK"));
+        await DialogService.ShowAboutAsync(Host));
 
 }
