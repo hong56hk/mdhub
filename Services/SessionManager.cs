@@ -66,7 +66,8 @@ public static class SessionManager
                 Preview = PreviewSettings.IsDefault ? null : PreviewSettings.Current,
                 EditorFonts = EditorFonts.IsDefault ? null : EditorFonts.Current,
                 EditorColors = EditorColors.Export(),
-                EditorBehavior = EditorBehavior.IsDefault ? null : EditorBehavior.Current }); }
+                EditorBehavior = EditorBehavior.IsDefault ? null : EditorBehavior.Current,
+                DefaultEncoding = TextEncodings.DefaultEncodingId == TextEncodings.DefaultId ? null : TextEncodings.DefaultEncodingId }); }
         catch (Exception) { /* A session that cannot be written must not block closing. */ }
     }
 

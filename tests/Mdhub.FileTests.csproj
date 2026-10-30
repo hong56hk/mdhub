@@ -4,10 +4,15 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <DefineConstants>$(DefineConstants);FILE_TESTS</DefineConstants>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="UTF.Unknown" Version="2.6.0" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="../Services/TextFileStore.cs" Link="TextFileStore.cs" />
     <Compile Include="../Services/FileSupport.cs" Link="FileSupport.cs" />
+    <Compile Include="../Services/TextEncodings.cs" Link="TextEncodings.cs" />
     <Compile Include="../Text/TextStatistics.cs" Link="TextStatistics.cs" />
     <Compile Include="../Text/FuzzyMatch.cs" Link="FuzzyMatch.cs" />
     <Compile Include="../Services/QuickOpenIndex.cs" Link="QuickOpenIndex.cs" />

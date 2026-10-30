@@ -75,7 +75,7 @@ internal static class BinaryFileTests
             Check(Active().Path == log && Active().Text == big5Text && !Active().IsMarkdown && !Active().IsBinary, "A .log opens as plain text with Big5 detection (bug 39)");
             Check(editor.IsVisible && !md.IsVisible && !placeholder.IsVisible && !bar.FindControl<Button>("TogglePreviewButton")!.IsEnabled, "Plain text: no preview, Toggle Preview disabled");
             Check(!((MarkdownTextBox)Active().Editor).HighlightMarkdown, "Plain text: no Markdown highlighting");
-            Check(S("FileKindLabel").Text == Loc.T("KindPlain") && S("EncodingLabel").Text == "BIG5", $"Status bar: '{S("FileKindLabel").Text} · {S("EncodingLabel").Text}'");
+            Check(S("FileKindLabel").Text == Loc.T("KindPlain") && S("EncodingLabel").Text == "Big5", $"Status bar: '{S("FileKindLabel").Text} · {S("EncodingLabel").Text}'");
             TextFileStore.AnsiCodePageOverride = null;
 
             // --- Binary placeholder ---

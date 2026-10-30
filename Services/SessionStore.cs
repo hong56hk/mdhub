@@ -37,6 +37,8 @@ public sealed record SessionData
     public EditorColorsData? EditorColors { get; init; }
     // Item 70: editor typing behaviour (tabs); null when all defaults.
     public EditorBehaviorData? EditorBehavior { get; init; }
+    // Item 67: the Default encoding setting (TextEncodings id); null when UTF-8.
+    public string? DefaultEncoding { get; init; }
 }
 
 // Item 70: Tab inserts spaces (default) or a tab; TabSize (1-8) = spaces per Tab and the width of a tab character.

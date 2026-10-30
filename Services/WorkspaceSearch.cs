@@ -89,7 +89,7 @@ public static class WorkspaceSearch
                             if (info.Length > MaxFileBytes) { Interlocked.Increment(ref skipped); continue; }
                             var bytes = await File.ReadAllBytesAsync(path);
                             if (LooksBinary(bytes)) continue;
-                            (source, encoding, lossy) = TextFileStore.DecodeLenient(bytes);
+                            (source, encoding, lossy) = TextEncodings.DecodeForSearch(path, info, bytes); // item 67: same detection as opening, cached
                             if (!FileSupport.IsText(source)) continue;
                         }
                         // The caller's token, not `stop`: hits already counted towards MaxResults must be kept when another worker hits the limit.
@@ -119,6 +119,7 @@ public static class WorkspaceSearch
     {
         if (bytes.Length >= 2 && (bytes[0] == 0xFF && bytes[1] == 0xFE || bytes[0] == 0xFE && bytes[1] == 0xFF)) return false;
         if (bytes.Length >= 4 && bytes[0] == 0 && bytes[1] == 0 && bytes[2] == 0xFE && bytes[3] == 0xFF) return false;
+        if (TextFileStore.LooksUtf16(bytes)) return false; // item 67: BOM-less UTF-16
         return bytes[..Math.Min(bytes.Length, SniffBytes)].IndexOf((byte)0) >= 0;
     }
 

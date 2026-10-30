@@ -30,8 +30,9 @@ public static class TextFileStore
 
     public static async Task<(string Text, Encoding Encoding)> ReadAsync(string path) => Decode(await File.ReadAllBytesAsync(path));
 
-    // Bug 39: a BOM picks UTF-8/16/32; else UTF-16 without a BOM by its NUL pattern; else valid UTF-8; else the
-    // system ANSI code page (Big5/cp950, cp1252, ...), else Latin-1. The returned encoding is strict and is used to save, so the file
+    // Bug 39 / item 67: a BOM picks UTF-8/16/32; else UTF-16 without a BOM by its NUL pattern; else valid UTF-8; else the
+    // legacy candidates of TextEncodings (confident detector guess, UI language, Default encoding, system ANSI code page
+    // such as Big5/cp950, then a weak guess), else Latin-1. The returned encoding is strict and is used to save, so the file
     // keeps its encoding (and BOM or no BOM).
     // final = false: bytes is a sample cut from a longer file, so a sequence split at its end is ignored.
     public static (string Text, Encoding Encoding) Decode(ReadOnlySpan<byte> bytes, bool final = true)
@@ -49,19 +50,23 @@ public static class TextFileStore
         if (Utf16Endianness(bytes) is { } bigEndian)
         {
             var utf16 = new UnicodeEncoding(bigEndian, false, true);
-            try { return (utf16.GetString(Trim(bytes, utf16, final)), utf16); } catch (DecoderFallbackException) { }
+            if (TextEncodings.TryDecode(utf16, Trim(bytes, utf16, final), out var text16)) return (text16, utf16); // item 67: no first-chance exception
         }
+        // Item 67: ISO-2022-JP is 7-bit (valid UTF-8 too); its ESC $B / ESC $@ designations identify it.
+        if (TextEncodings.LooksIso2022Jp(bytes) && TextEncodings.Strict(50220) is { } jis && TextEncodings.TryDecode(jis, bytes, out var textJis)) return (textJis, jis);
         var utf8 = DefaultEncoding;
         var body = Trim(bytes, utf8, final);
         if (System.Text.Unicode.Utf8.IsValid(body)) return (utf8.GetString(body), utf8);
-        if (AnsiEncoding() is { } ansi)
-            try { return (ansi.GetString(Trim(bytes, ansi, final)), ansi); } catch (DecoderFallbackException) { }
+        foreach (var legacy in TextEncodings.LegacyCandidates(bytes))
+            if (TextEncodings.TryDecode(legacy, Trim(bytes, legacy, final), out var text)) return (text, legacy);
         // Last resort: Latin-1 maps every byte to one character, so any file opens and saves back byte for byte.
         var latin1 = Encoding.GetEncoding(28591, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
         return (latin1.GetString(bytes), latin1);
     }
 
     // UTF-16 without a BOM: mostly-ASCII text has a NUL in nearly every high byte and almost none in the low bytes.
+    // Item 67: gates the binary check, so tiny samples ('ab\0c') do not count as UTF-16.
+    public static bool LooksUtf16(ReadOnlySpan<byte> bytes) => bytes.Length >= 16 && Utf16Endianness(bytes) is not null;
     private static bool? Utf16Endianness(ReadOnlySpan<byte> bytes)
     {
         var length = Math.Min(bytes.Length, 4096) & ~1;
@@ -90,7 +95,7 @@ public static class TextFileStore
 
     private static bool Decodes(Encoding encoding, ReadOnlySpan<byte> bytes)
     {
-        try { encoding.GetCharCount(bytes); return true; } catch (DecoderFallbackException) { return false; }
+        return TextEncodings.TryDecode(encoding, bytes, out _);
     }
 
     // Search reads never throw on bad bytes: a BOM picks the encoding, else valid UTF-8, else UTF-8 with

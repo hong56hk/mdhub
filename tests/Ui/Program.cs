@@ -10,6 +10,7 @@ using Mdhub.Models;
 using Mdhub.Views;
 using Mdhub.Components;
 
+if (args.Contains("--encoding-only")) { EncodingTests.Run(); return; }
 if (args.Contains("--newfile-only")) { NewFileDialogTests.Run(); return; }
 if (args.Contains("--reveal-only")) { RevealTests.Run(); return; }
 if (args.Contains("--menu-only")) { MenuTests.Run(); return; }

@@ -123,6 +123,7 @@ public partial class MainView
             if (_documents.Any(d => d != document && SamePath(d.Path, path)))
                 throw new IOException(Loc.T("AlreadyOpenSaveAs"));
         }
+        if (!await EnsureEncodableAsync(document)) return false; // item 67
         await TextFileStore.WriteAsync(path, document.Text, document.Encoding);
         var isNewPath = document.Path is null || !SamePath(document.Path, Path.GetFullPath(path));
         document.Path = path;

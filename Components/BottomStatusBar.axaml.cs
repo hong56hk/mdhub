@@ -60,7 +60,8 @@ public partial class BottomStatusBar : UserControl
         SetPath(message is null ? document.Path : null);
         Status.Text = message ?? (document.IsDirty ? Loc.T("UnsavedPrefix") : "") + (document.Path ?? Loc.T("NewNote"));
         FileKindLabel.Text = Loc.T(document.IsImage ? "KindImage" : document.IsBinary ? "KindBinary" : document.IsMarkdown ? "KindMarkdown" : "KindPlain");
-        EncodingLabel.Text = document.IsViewOnly ? "" : document.Encoding.WebName.ToUpperInvariant() + (document.IsReadOnlyText ? " \u00b7 " + Loc.T("ReadOnly") : "");
+        EncodingLabel.Text = document.IsViewOnly ? "" : Mdhub.Services.TextEncodings.DisplayName(document.Encoding) + (document.IsReadOnlyText ? " \u00b7 " + Loc.T("ReadOnly") : "");
+        ToolTip.SetTip(EncodingLabel, document.IsViewOnly ? null : Loc.T("EncodingMenuTip"));
         if (document.Image is { } image) SetCounts(() => Loc.F("ImagePixels", image.PixelSize.Width, image.PixelSize.Height) + ImageZoomSuffix());
     }
     // Item 37: the image zoom shown after the pixel size (null when no image is shown).
@@ -104,6 +105,13 @@ public partial class BottomStatusBar : UserControl
     {
         ModeLabel.Text = Loc.T(Mdhub.Services.EditorMode.Overwrite ? "ModeOverwrite" : "ModeInsert");
         ToolTip.SetTip(ModeLabel, Loc.F("ModeToggleTip", Mdhub.Services.Shortcuts.Format("editor.toggleOverwrite", ShortcutKeys.IsMac)));
+    }
+    // Item 67: the encoding label opens the encoding menu (MainView builds it for the active document).
+    public event Action<Control>? EncodingRequested;
+    public Control EncodingTarget => EncodingLabel;
+    private void EncodingLabel_PointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (e.InitialPressMouseButton == MouseButton.Left && EncodingLabel.Text is { Length: > 0 }) EncodingRequested?.Invoke(EncodingLabel);
     }
     private void ModeLabel_Toggle(object? sender, PointerReleasedEventArgs? e) { if (e is null || e.InitialPressMouseButton == MouseButton.Left) Mdhub.Services.EditorMode.Toggle(); }
 }

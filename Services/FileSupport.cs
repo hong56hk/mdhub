@@ -38,6 +38,8 @@ public static class FileSupport
             var length = stream.ReadAtLeast(bytes, bytes.Length, throwOnEndOfStream: false);
             // Item 52 (VS Code): a raw NUL byte means binary unless a UTF-16/32 BOM says otherwise.
             var unicodeBom = length >= 2 && (bytes[0] == 0xFF && bytes[1] == 0xFE || bytes[0] == 0xFE && bytes[1] == 0xFF) || length >= 4 && bytes[0] == 0 && bytes[1] == 0 && bytes[2] == 0xFE && bytes[3] == 0xFF;
+            // Item 67: BOM-less UTF-16 too, so its NUL high bytes do not make it binary.
+            unicodeBom = unicodeBom || TextFileStore.LooksUtf16(bytes.AsSpan(0, length));
             if (!unicodeBom && bytes.AsSpan(0, length).Contains((byte)0)) return SupportedFileKind.Unsupported;
             // Same detection as opening (BOM, UTF-16, UTF-8, then the ANSI code page); binary data fails IsText.
             var text = TextFileStore.Decode(bytes.AsSpan(0, length), final: length < bytes.Length).Text;

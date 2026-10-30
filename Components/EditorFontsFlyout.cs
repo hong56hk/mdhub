@@ -31,7 +31,7 @@ public static class EditorFontsFlyout
     public static ScrollViewer Build() => new()
     {
         Name = "EditorSettingsScroll", MaxHeight = 560, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-        Content = new StackPanel { Spacing = 6, Children = { BuildFonts(), BuildTabs(), BuildColors() } },
+        Content = new StackPanel { Spacing = 6, Children = { BuildFonts(), BuildTabs(), BuildEncoding(), BuildColors() } },
     };
 
     private static TextBlock Label(string key) => new() { Text = Loc.T(key), Foreground = ThemeService.Brush("TextSecondary"), Margin = new Thickness(0, 4, 0, 0) };
@@ -77,6 +77,22 @@ public static class EditorFontsFlyout
         DockPanel.SetDock(label, Dock.Left); DockPanel.SetDock(size, Dock.Right);
         row.Children.Add(label); row.Children.Add(size);
         panel.Children.Add(row);
+        return panel;
+    }
+
+    // Item 67: the Default encoding used when a legacy file's encoding cannot be detected confidently.
+    public static StackPanel BuildEncoding()
+    {
+        var panel = new StackPanel { Name = "EditorEncodingPanel", Spacing = 6, Width = 280, Margin = new Thickness(0, 8, 0, 0) };
+        panel.Children.Add(new TextBlock { Text = Loc.T("EncodingSettings"), FontWeight = FontWeight.SemiBold });
+        panel.Children.Add(Label("DefaultEncoding"));
+        var options = TextEncodings.All.Where(o => !o.Bom).ToList();
+        var box = new ComboBox { Name = "DefaultEncodingBox", ItemsSource = options.Select(o => o.Name).ToList(), HorizontalAlignment = HorizontalAlignment.Stretch, MaxDropDownHeight = 320 };
+        AutomationProperties.SetName(box, Loc.T("DefaultEncoding"));
+        ToolTip.SetTip(box, Loc.T("DefaultEncodingTip"));
+        box.SelectedIndex = options.FindIndex(o => o.Id == TextEncodings.DefaultEncodingId);
+        box.SelectionChanged += (_, _) => { if (box.SelectedIndex >= 0) TextEncodings.SetDefault(options[box.SelectedIndex].Id); };
+        panel.Children.Add(box);
         return panel;
     }
 

@@ -24,7 +24,8 @@
       <!-- Item 66: INS/OVR; a click toggles insert/overwrite. -->
       <TextBlock x:Name="ModeLabel" Grid.Column="3" Margin="0,0,16,0" FontSize="11" Foreground="{DynamicResource TextSecondary}" Cursor="Hand" Background="Transparent" IsVisible="False" PointerReleased="ModeLabel_Toggle" />
       <TextBlock x:Name="FileKindLabel" Grid.Column="4" Margin="0,0,16,0" FontSize="11" Foreground="{DynamicResource TextMuted}" Text="Markdown" />
-      <TextBlock x:Name="EncodingLabel" Grid.Column="5" FontSize="11" Foreground="{DynamicResource Accent}" Text="UTF-8" />
+      <!-- Item 67: a click opens Reopen / Save with Encoding. -->
+      <TextBlock x:Name="EncodingLabel" Grid.Column="5" FontSize="11" Foreground="{DynamicResource Accent}" Text="UTF-8" Cursor="Hand" Background="Transparent" PointerReleased="EncodingLabel_PointerReleased" />
     </Grid>
   </Border>
 </UserControl>
