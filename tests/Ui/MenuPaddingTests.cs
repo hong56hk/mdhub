@@ -26,8 +26,8 @@ internal static class MenuPaddingTests
         AppBuilder.Configure<App>().UseSkia().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false, OverlayPopups = false }).SetupWithoutStarting();
         void Pump() { using var t = new CancellationTokenSource(50); Dispatcher.UIThread.MainLoop(t.Token); }
         void Wait(Task t) { var end = DateTime.UtcNow.AddSeconds(10); while (!t.IsCompleted && DateTime.UtcNow < end) Pump(); t.GetAwaiter().GetResult(); Pump(); }
-        var expected = new Thickness(10, 2, 8, 2);
-        Check(LocResources.MenuItemPadding == expected, "menu item padding is Thickness(10,2,8,2)");
+        var expected = new Thickness(21, 2, 11, 2); // ea98f32: menu padding 2, item padding 21,2,11,2
+        Check(LocResources.MenuItemPadding == expected, "menu item padding is Thickness(21,2,11,2)");
         var root = Path.Combine(Path.GetTempPath(), $"mdhub-menupad-{Guid.NewGuid():N}");
         Directory.CreateDirectory(Path.Combine(root, "sub"));
         var file = Path.Combine(root, "a.md"); File.WriteAllText(file, "x");
@@ -70,8 +70,8 @@ internal static class MenuPaddingTests
                     Check(menu.Placement == PlacementMode.AnchorAndGravity, $"{tag} avoids pointer placement (Avalonia #22573)");
                     var items = menu.Items.OfType<MenuItem>().Where(i => i.IsVisible).ToList();
                     var offsets = items.Select(i => i.GetVisualDescendants().OfType<ContentPresenter>().First(p => p.Name == "PART_HeaderPresenter").TranslatePoint(new Point(0, 0), i)!.Value.X).ToList();
-                    Check(items.Count > 0 && items.All(i => i.Padding == expected) && offsets.All(x => Math.Abs(x - 10) < 0.6),
-                        $"{tag} has item padding 10,2,8,2 and text 10px from the edge ({string.Join(",", offsets.Distinct())})");
+                    Check(items.Count > 0 && items.All(i => i.Padding == expected) && offsets.All(x => Math.Abs(x - expected.Left) < 0.6),
+                        $"{tag} has item padding 21,2,11,2 and text 21px from the edge ({string.Join(",", offsets.Distinct())})");
                     foreach (var item in items.Where(i => ShortcutKeys.GetId(i) is not null))
                     {
                         var hint = item.GetVisualDescendants().OfType<TextBlock>().FirstOrDefault(b => b.Name == "PART_InputGestureText");
@@ -79,7 +79,7 @@ internal static class MenuPaddingTests
                         var hintX = hint?.TranslatePoint(new Point(hint.Bounds.Width, 0), item)?.X ?? 0;
                         var hintInWindow = hint?.TranslatePoint(new Point(hint.Bounds.Width, 0), popup)?.X ?? double.MaxValue;
                         Check(hint is { IsVisible: true } && hint.Text == ShortcutKeys.MenuText(item) && hintX > header.TranslatePoint(new Point(header.Bounds.Width, 0), item)!.Value.X
-                              && item.Bounds.Width - hintX <= 8.6 && hintInWindow <= popup.ClientSize.Width - 1 && hint.DesiredSize.Width - hint.Margin.Left - hint.Margin.Right <= hint.Bounds.Width + 0.6,
+                              && item.Bounds.Width - hintX <= expected.Right + 0.6 && hintInWindow <= popup.ClientSize.Width - 1 && hint.DesiredSize.Width - hint.Margin.Left - hint.Margin.Right <= hint.Bounds.Width + 0.6,
                             $"{tag} keeps the right-aligned, unclipped hint for {item.Name} ({hint?.Text}; right {hintInWindow} of {popup.ClientSize.Width}, desired {hint?.DesiredSize} bounds {hint?.Bounds})");
                     }
                     var now = (popup.ClientSize, chrome.BorderThickness, chrome.CornerRadius);

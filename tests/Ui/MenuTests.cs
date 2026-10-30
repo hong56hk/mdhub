@@ -66,8 +66,9 @@ internal static class MenuTests
             var edge = border.BorderThickness;
             var firstOpen = Measure();
             Console.WriteLine($"first open padding {firstOpen} border {edge}");
-            Check(Math.Abs(firstOpen.l - 10 - edge.Left) < 0.6 && Math.Abs(firstOpen.t - 10 - edge.Top) < 0.6 && Math.Abs(firstOpen.r - 10 - edge.Right) < 0.6 && Math.Abs(firstOpen.b - 10 - edge.Bottom) < 0.6,
-                "The first open of the editor menu already has 10px padding on all four sides");
+            var pad = LocResources.MenuPadding;
+            Check(pad == new Thickness(2) && Math.Abs(firstOpen.l - pad.Left - edge.Left) < 0.6 && Math.Abs(firstOpen.t - pad.Top - edge.Top) < 0.6 && Math.Abs(firstOpen.r - pad.Right - edge.Right) < 0.6 && Math.Abs(firstOpen.b - pad.Bottom - edge.Bottom) < 0.6,
+                "The first open of the editor menu already has its 2px padding on all four sides");
             var names = menu.Items.OfType<Control>().Select(c => c is MenuItem m ? m.Name : "-").ToList();
             Check(names.Take(3).SequenceEqual(new[] { "EditorUndoMenuItem", "EditorRedoMenuItem", "-" }), "Undo and Redo are at the top, followed by a separator");
             var undo = ItemOf(menu, "EditorUndoMenuItem"); var redo = ItemOf(menu, "EditorRedoMenuItem");
@@ -97,15 +98,15 @@ internal static class MenuTests
 
             var preview = (Control)typeof(MainView).GetField("MdEditor", Flags)!.GetValue(v)!;
             preview.ContextMenu!.Open(preview); Pump();
-            Check(preview.ContextMenu.Padding == new Thickness(10) && preview.ContextMenu.Items.OfType<MenuItem>().All(i => CursorName(i) == handName), "The preview menu has 10px padding and hand-cursor items");
+            Check(preview.ContextMenu.Padding == LocResources.MenuPadding && preview.ContextMenu.Items.OfType<MenuItem>().All(i => CursorName(i) == handName), "The preview menu has the shared padding and hand-cursor items");
             preview.ContextMenu.Close(); Pump();
 
             var row = tree.GetVisualDescendants().OfType<TreeViewItem>().First(t => t.Tag is FolderEntry { IsDirectory: true });
             row.ContextMenu!.Open(row); Pump();
-            Check(row.ContextMenu.Padding == new Thickness(10) && row.ContextMenu.Items.OfType<MenuItem>().All(i => CursorName(i) == handName), "The explorer item menu has 10px padding and hand-cursor items");
+            Check(row.ContextMenu.Padding == LocResources.MenuPadding && row.ContextMenu.Items.OfType<MenuItem>().All(i => CursorName(i) == handName), "The explorer item menu has the shared padding and hand-cursor items");
             row.ContextMenu.Close(); Pump();
             tree.ContextMenu!.Open(tree); Pump();
-            Check(tree.ContextMenu.Padding == new Thickness(10) && tree.ContextMenu.Items.OfType<MenuItem>().All(i => CursorName(i) == handName), "The explorer background menu has 10px padding and hand-cursor items");
+            Check(tree.ContextMenu.Padding == LocResources.MenuPadding && tree.ContextMenu.Items.OfType<MenuItem>().All(i => CursorName(i) == handName), "The explorer background menu has the shared padding and hand-cursor items");
             tree.ContextMenu.Close(); Pump();
 
             var top = w.GetVisualDescendants().OfType<TopMenu>().Single();
