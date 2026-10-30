@@ -75,11 +75,11 @@ public static class LocResources
 
     // Item 45: the padding every context menu gets, set as a local value so it applies from the very first measure
     // (a style can land after the popup first lays out, which left the first open without padding).
-    public static readonly Thickness MenuPadding = new(10);
+    public static readonly Thickness MenuPadding = new(2, 2, 2, 2);
     // Bug 55: the item padding. It used to come only from the Fluent MenuItem theme, which resolves when the item
     // joins the popup's tree; on a menu's first open the items could be laid out before that, so the text touched
     // the left edge until the second open. A local value is there before the first measure.
-    public static readonly Thickness MenuItemPadding = new(10, 2, 8, 2);
+    public static readonly Thickness MenuItemPadding = new(21, 2, 11, 2);
     public static void ApplyItemPadding(ItemsControl menu)
     {
         foreach (var item in menu.Items.OfType<MenuItem>())
