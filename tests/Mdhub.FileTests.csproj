@@ -30,6 +30,10 @@
     <Compile Include="../Localization/Strings.ZhHant.cs" Link="Strings.ZhHant.cs" />
     <Compile Include="../Localization/Strings.Ja.cs" Link="Strings.Ja.cs" />
     <Compile Include="../Localization/Strings.Ko.cs" Link="Strings.Ko.cs" />
+    <Compile Include="../Localization/Strings.ZhHans.cs" Link="Strings.ZhHans.cs" />
+    <Compile Include="../Localization/Strings.De.cs" Link="Strings.De.cs" />
+    <Compile Include="../Localization/Strings.Fr.cs" Link="Strings.Fr.cs" />
+    <Compile Include="../Localization/Strings.Es.cs" Link="Strings.Es.cs" />
     <Compile Remove="Ui/**/*.cs" />
   </ItemGroup>
 </Project>

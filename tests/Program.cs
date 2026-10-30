@@ -81,7 +81,8 @@ Require(heading.Replacement == "## hello world", "Heading applies to the current
 }
 {
     // Item 27: localization tables, language detection and persistence.
-    var tables = new[] { ("zh-Hant", Loc.ZhHant), ("ja", Loc.Ja), ("ko", Loc.Ko) };
+    var tables = new[] { ("zh-Hant", Loc.ZhHant), ("ja", Loc.Ja), ("ko", Loc.Ko), ("zh-Hans", Loc.ZhHans), ("de", Loc.De), ("fr", Loc.Fr), ("es", Loc.Es) };
+    Require(tables.Length + 1 == Loc.Languages.Count && tables.All(t => Loc.Normalize(t.Item1) == t.Item1), "All 8 languages have a table");
     foreach (var (code, table) in tables)
     {
         var missing = Loc.En.Keys.Except(table.Keys).ToList();
@@ -91,7 +92,7 @@ Require(heading.Replacement == "## hello world", "Heading applies to the current
     }
     Require(Loc.En.Count > 200, $"English table has {Loc.En.Count} keys");
     var all = new[] { ("en", Loc.En) }.Concat(tables).ToList();
-    Require(all.All(t => t.Item2.Values.All(v => !string.IsNullOrWhiteSpace(v) && !v.StartsWith('^') && !v.EndsWith('^'))), "Every string is non-empty in all 4 languages");
+    Require(all.All(t => t.Item2.Values.All(v => !string.IsNullOrWhiteSpace(v) && !v.StartsWith('^') && !v.EndsWith('^'))), $"Every string is non-empty in all {all.Count} languages");
     static string Holes(string s) => string.Join(",", System.Text.RegularExpressions.Regex.Matches(s, @"\{(\d+)").Select(m => m.Groups[1].Value).Distinct().OrderBy(x => x));
     var badHoles = tables.SelectMany(t => t.Item2.Where(kv => Holes(kv.Value) != Holes(Loc.En[kv.Key])).Select(kv => $"{t.Item1}:{kv.Key}")).ToList();
     Require(badHoles.Count == 0, $"Placeholders match English in every language ({string.Join(", ", badHoles)})");
@@ -102,13 +103,14 @@ Require(heading.Replacement == "## hello world", "Heading applies to the current
     Require(Shortcuts.All.All(s => Loc.En["Sc." + s.Id] == s.Label), "English shortcut labels match the shortcut table");
     foreach (var area in Enum.GetNames<ShortcutArea>()) Require(Loc.En.ContainsKey("Area" + area), $"Shortcut area {area} has a label");
     var identical = tables.Select(t => (t.Item1, t.Item2.Count(kv => kv.Value == Loc.En[kv.Key]))).ToList();
-    Require(identical.All(t => t.Item2 <= 12), $"CJK tables translate nearly everything (same as English: {string.Join(", ", identical.Select(t => $"{t.Item1}={t.Item2}"))})");
-    Require(Loc.Languages.Select(l => l.NativeName).SequenceEqual(["English", "繁體中文", "日本語", "한국어"]), "Languages are listed under their own names");
+    Require(identical.All(t => t.Item2 <= 12), $"Translated tables translate nearly everything (same as English: {string.Join(", ", identical.Select(t => $"{t.Item1}={t.Item2}"))})");
+    Require(Loc.Languages.Select(l => l.NativeName).SequenceEqual(["English", "繁體中文", "日本語", "한국어", "简体中文", "Deutsch", "Français", "Español"]), "Languages are listed under their own names");
     Require(Loc.Detect("zh-TW") == "zh-Hant" && Loc.Detect("zh-HK") == "zh-Hant" && Loc.Detect("zh-MO") == "zh-Hant" && Loc.Detect("zh-Hant-TW") == "zh-Hant" && Loc.Detect("zh-Hant") == "zh-Hant",
         "Traditional Chinese OS cultures pick zh-Hant");
-    Require(Loc.Detect("zh-CN") == "en" && Loc.Detect("zh-Hans") == "en" && Loc.Detect("zh-SG") == "en", "Simplified Chinese falls back to English");
+    Require(Loc.Detect("zh-CN") == "zh-Hans" && Loc.Detect("zh-Hans") == "zh-Hans" && Loc.Detect("zh-SG") == "zh-Hans" && Loc.Detect("zh-Hans-CN") == "zh-Hans" && Loc.Detect("zh_CN") == "zh-Hans" && Loc.Detect("zh") == "zh-Hans", "Simplified Chinese OS cultures pick zh-Hans");
+    Require(Loc.Detect("de-DE") == "de" && Loc.Detect("de-AT") == "de" && Loc.Detect("fr-FR") == "fr" && Loc.Detect("fr-CA") == "fr" && Loc.Detect("es-ES") == "es" && Loc.Detect("es-MX") == "es" && Loc.Detect("es") == "es", "German, French and Spanish OS cultures are detected");
     Require(Loc.Detect("ja-JP") == "ja" && Loc.Detect("ja") == "ja" && Loc.Detect("ko-KR") == "ko" && Loc.Detect("ko") == "ko", "Japanese and Korean OS cultures are detected");
-    Require(Loc.Detect("fr-FR") == "en" && Loc.Detect("") == "en" && Loc.Detect(null) == "en" && Loc.Detect("en-GB") == "en" && Loc.Detect("kok-IN") == "en" && Loc.Detect("jam") == "en", "Other OS cultures fall back to English");
+    Require(Loc.Detect("pt-BR") == "en" && Loc.Detect("it-IT") == "en" && Loc.Detect("deu") == "en" && Loc.Detect("") == "en" && Loc.Detect(null) == "en" && Loc.Detect("en-GB") == "en" && Loc.Detect("kok-IN") == "en" && Loc.Detect("jam") == "en", "Other OS cultures fall back to English");
     Require(Loc.Normalize("ZH-HANT") == "zh-Hant" && Loc.Normalize("xx") is null && Loc.Normalize(null) is null, "Saved codes are normalized and unknown ones ignored");
     var changes = 0;
     void Count() => changes++;
@@ -118,6 +120,10 @@ Require(heading.Replacement == "## hello world", "Heading applies to the current
     Loc.Set("ja");
     Require(changes == 1, "Setting the same language does not raise Changed");
     Require(Loc.T("No.Such.Key") == "No.Such.Key", "A missing key falls back to the key itself");
+    var partial = new Dictionary<string, string> { ["MenuSave"] = "Sichern" };
+    Require(Loc.Lookup(partial, "MenuSave") == "Sichern" && Loc.Lookup(partial, "MenuSaveAs") == Loc.En["MenuSaveAs"] && Loc.Lookup(partial, "No.Such.Key") == "No.Such.Key", "A string missing from a language table falls back to English");
+    foreach (var (code, _) in tables) { Loc.Set(code); Require(Loc.Current == code && Loc.Table(code).Keys.All(k => Loc.T(k) == Loc.Table(code)[k]), $"{code} lookups use its own table"); }
+    Loc.Set("ja"); changes = 1;
     Require(FindReplace.CountLabel(1, 3) == string.Format(Loc.Ja["FindCount"], 2, 3) && CaretPosition.Format("ab", 0, 2).Contains(Loc.F("CaretSelected", 2).Trim()),
         "Find count and caret position use the current language");
     Loc.Set("xx");
