@@ -12,7 +12,6 @@ public partial class TextEditor : UserControl
         InitializeComponent();
         FindBar.Overlay = FindHighlights;
         FindBar.Closed += FocusEditor;
-        EditorFontsButton.Flyout = EditorFontsFlyout.Create();
     }
     public bool IsFindOpen => FindBar.IsOpen;
     public bool IsFindFocused => FindBar.IsKeyboardFocusWithin;
