@@ -38,6 +38,7 @@ if (args.Contains("--explorerkeys-only")) { ExplorerShortcutTests.Run(); return;
 if (args.Contains("--explorerrefresh-only")) { ExplorerRefreshTests.Run(); return; }
 if (args.Contains("--menupadding-only")) { MenuPaddingTests.Run(); return; }
 if (args.Contains("--about-only")) { AboutTests.Run(); return; }
+if (args.Contains("--sidebar-only")) { SidebarPersistTests.Run(); return; }
 if (args.Contains("--imagezoom-only")) { ImageZoomTests.Run(); return; }
 if (args.Contains("--search-bench")) { SearchBench.Run(args); return; }
 if (args.Contains("--search-only")) { SearchSpeedTests.Run(); WorkspaceSearchTests.Run(); SearchClickTests.Run(); return; }
