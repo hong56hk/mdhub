@@ -195,36 +195,68 @@ public partial class FolderExplorer : UserControl
     private FileSystemWatcher? _watcher;
     private Avalonia.Threading.DispatcherTimer? _watchTimer;
     private int _refreshing;
+    private readonly HashSet<TreeViewItem> _loaded = [];
     public event Action? ExternalChangeRefreshed;
     public bool WatchEnabled { get; set; } = true;
 
-    // Reloads the tree but keeps folders that were expanded open.
+    // Bug 54: updates the tree in place instead of rebuilding it. Rows that still exist keep their
+    // TreeViewItem, so expanded folders, the selection and the scroll offset survive; only rows that
+    // appeared or vanished are inserted or removed (in sorted position), and loaded folders are
+    // reconciled recursively. Unloaded folders are left alone: they read their children when expanded.
     public async Task RefreshAsync()
     {
         if (_folder is null) return;
-        var expanded = TreeNodes(FolderTree.Items.OfType<TreeViewItem>())
-            .Where(i => i.IsExpanded && i.Tag is FolderEntry).Select(i => ((FolderEntry)i.Tag!).Path)
-            .ToHashSet(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
-        var selected = (FolderTree.SelectedItem as TreeViewItem)?.Tag is FolderEntry s ? s.Path : null;
+        if (!_renameSaving) CancelRename();
         _refreshing++;
         try
         {
-            await LoadRootAsync(_folder, restartWatcher: false);
-            await ExpandAsync(FolderTree.Items.OfType<TreeViewItem>(), expanded);
-            if (selected is not null)
-                FolderTree.SelectedItem = TreeNodes(FolderTree.Items.OfType<TreeViewItem>()).FirstOrDefault(i => i.Tag is FolderEntry e && expanded.Comparer.Equals(e.Path, selected));
+            var entries = await FolderService.ReadAsync(_folder);
+            await ReconcileAsync(FolderTree.Items, entries);
         }
         finally { _refreshing--; }
     }
-    private async Task ExpandAsync(IEnumerable<TreeViewItem> items, HashSet<string> expanded)
+    private async Task ReconcileAsync(ItemCollection items, IReadOnlyList<FolderEntry> entries)
     {
-        foreach (var item in items.ToList())
+        var comparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+        var existing = new Dictionary<string, TreeViewItem>(comparer);
+        foreach (var item in items.OfType<TreeViewItem>())
+            if (item.Tag is FolderEntry e) existing.TryAdd(e.Path, item);
+        var desired = new List<TreeViewItem>(entries.Count);
+        foreach (var entry in entries)
         {
-            if (item.Tag is not FolderEntry entry || !expanded.Contains(entry.Path)) continue;
-            if (_loadChildren.TryGetValue(item, out var load)) await load();
-            item.IsExpanded = true;
-            await ExpandAsync(item.Items.OfType<TreeViewItem>(), expanded);
+            // Same path but now a different kind (file <-> folder, link): rebuild that one row.
+            if (existing.TryGetValue(entry.Path, out var keep) && keep.Tag is FolderEntry old && old == entry
+                && Path.GetFileName(old.Path) == Path.GetFileName(entry.Path))
+            {
+                existing.Remove(entry.Path);
+                desired.Add(keep);
+            }
+            else desired.Add(CreateTreeItem(entry));
         }
+        var wanted = desired.ToHashSet();
+        foreach (var stale in items.OfType<object>().Where(i => i is not TreeViewItem t || !wanted.Contains(t)).ToList())
+        {
+            items.Remove(stale);
+            if (stale is TreeViewItem t) Forget(t);
+        }
+        for (var i = 0; i < desired.Count; i++)
+        {
+            if (i < items.Count && ReferenceEquals(items[i], desired[i])) continue;
+            items.Remove(desired[i]);
+            items.Insert(i, desired[i]);
+        }
+        foreach (var item in desired)
+        {
+            if (!_loaded.Contains(item) || item.Tag is not FolderEntry folder) continue;
+            IReadOnlyList<FolderEntry> children;
+            try { children = await FolderService.ReadAsync(folder.Path); }
+            catch { continue; } // vanished between reads: the next watcher pass removes it
+            await ReconcileAsync(item.Items, children);
+        }
+    }
+    private void Forget(TreeViewItem item)
+    {
+        foreach (var node in TreeNodes([item])) { _loadChildren.Remove(node); _loaded.Remove(node); }
     }
     private static IEnumerable<TreeViewItem> TreeNodes(IEnumerable<TreeViewItem> items)
     {
@@ -283,6 +315,7 @@ public partial class FolderExplorer : UserControl
         if (restartWatcher || _watcher is null) StartWatcher(path);
         _folder = path;
         _loadChildren.Clear();
+        _loaded.Clear();
         FolderActions.IsEnabled = !_busy;
         FolderName.Text = Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar));
         ToolTip.SetTip(FolderNameButton, Loc.F("FolderTip", path));
@@ -314,6 +347,7 @@ public partial class FolderExplorer : UserControl
                     var children = await FolderService.ReadAsync(entry.Path);
                     item.Items.Clear();
                     foreach (var child in children) item.Items.Add(CreateTreeItem(child));
+                    _loaded.Add(item);
                 }
                 catch (Exception ex)
                 {

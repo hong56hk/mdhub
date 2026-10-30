@@ -33,6 +33,7 @@ if (args.Contains("--selection-only")) { SelectionTests.Run(); return; }
 if (args.Contains("--quickopen-only")) { QuickOpenTests.Run(); return; }
 if (args.Contains("--syntax-only")) { SyntaxTests.Run(); return; }
 if (args.Contains("--explorerkeys-only")) { ExplorerShortcutTests.Run(); return; }
+if (args.Contains("--explorerrefresh-only")) { ExplorerRefreshTests.Run(); return; }
 if (args.Contains("--imagezoom-only")) { ImageZoomTests.Run(); return; }
 if (args.Contains("--search-bench")) { SearchBench.Run(args); return; }
 if (args.Contains("--search-only")) { SearchSpeedTests.Run(); WorkspaceSearchTests.Run(); return; }
