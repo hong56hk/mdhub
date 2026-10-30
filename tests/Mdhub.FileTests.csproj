@@ -22,6 +22,11 @@
     <Compile Include="../Rendering/PreviewEdit.cs" Link="PreviewEdit.cs" />
     <Compile Include="../Rendering/RichCopy.cs" Link="RichCopy.cs" />
     <Compile Include="../Text/CaretPosition.cs" Link="CaretPosition.cs" />
+    <Compile Include="../Localization/Loc.cs" Link="Loc.cs" />
+    <Compile Include="../Localization/Strings.En.cs" Link="Strings.En.cs" />
+    <Compile Include="../Localization/Strings.ZhHant.cs" Link="Strings.ZhHant.cs" />
+    <Compile Include="../Localization/Strings.Ja.cs" Link="Strings.Ja.cs" />
+    <Compile Include="../Localization/Strings.Ko.cs" Link="Strings.Ko.cs" />
     <Compile Remove="Ui/**/*.cs" />
   </ItemGroup>
 </Project>

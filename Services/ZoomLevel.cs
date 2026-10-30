@@ -11,5 +11,5 @@ public static class ZoomLevel
     public static int Out(int percent) => Clamp(Normalize(percent) - Step);
     public static int Wheel(int percent, double deltaY) => deltaY > 0 ? In(percent) : deltaY < 0 ? Out(percent) : Normalize(percent);
     public static double Scale(int percent) => Normalize(percent) / 100.0;
-    public static string Label(int percent) => $"Zoom {Normalize(percent)}%";
+    public static string Label(int percent) => Mdhub.Localization.Loc.F("Zoom", Normalize(percent));
 }

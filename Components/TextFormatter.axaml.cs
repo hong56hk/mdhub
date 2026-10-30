@@ -11,7 +11,13 @@ public partial class TextFormatter : UserControl
     public TextFormatter()
     {
         InitializeComponent();
-        ToolTip.SetTip(TogglePreviewButton, $"Toggle preview ({Mdhub.Services.Shortcuts.Format("view.togglePreview", ShortcutKeys.IsMac)})");
+        UpdateLanguage();
+        AttachedToVisualTree += (_, _) => { Mdhub.Localization.Loc.Changed += UpdateLanguage; UpdateLanguage(); };
+        DetachedFromVisualTree += (_, _) => Mdhub.Localization.Loc.Changed -= UpdateLanguage;
+    }
+    private void UpdateLanguage()
+    {
+        ToolTip.SetTip(TogglePreviewButton, Mdhub.Localization.Loc.F("TogglePreviewTip", Mdhub.Services.Shortcuts.Format("view.togglePreview", ShortcutKeys.IsMac)));
     }
     public void SetFormattingEnabled(bool enabled)
     {

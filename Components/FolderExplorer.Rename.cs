@@ -57,7 +57,7 @@ public partial class FolderExplorer
         var current = Path.GetFileName(path);
         if (string.Equals(current, name, StringComparison.OrdinalIgnoreCase)) return null;
         var target = Path.Combine(Path.GetDirectoryName(path)!, name);
-        return File.Exists(target) || Directory.Exists(target) ? $"A file or folder named '{name}' already exists in this folder." : null;
+        return File.Exists(target) || Directory.Exists(target) ? Mdhub.Localization.Loc.F("NameExistsIn", name) : null;
     }
 
     // Selection for the inline box: the name without its extension; folders, extensionless names and dotfiles select everything.

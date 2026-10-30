@@ -19,8 +19,8 @@
     <Grid x:Name="Workspace" Grid.Row="3" ColumnDefinitions="240,4,*,4,*">
       <Grid x:Name="Sidebar" RowDefinitions="Auto,*" Background="{DynamicResource AppBackground}">
         <StackPanel Orientation="Horizontal" Spacing="4" Margin="6,6,4,4">
-          <Button x:Name="ExplorerTab" Content="EXPLORER" Classes="sidebarTab active" Click="ExplorerTab_Click" ToolTip.Tip="Explorer (Ctrl+Shift+E)" />
-          <Button x:Name="SearchTab" Content="SEARCH" Classes="sidebarTab" Click="SearchTab_Click" ToolTip.Tip="Search (Ctrl+Shift+F)" />
+          <Button x:Name="ExplorerTab" Content="{DynamicResource SidebarExplorer}" Classes="sidebarTab active" Click="ExplorerTab_Click" ToolTip.Tip="{DynamicResource SidebarExplorerTip}" />
+          <Button x:Name="SearchTab" Content="{DynamicResource SidebarSearch}" Classes="sidebarTab" Click="SearchTab_Click" ToolTip.Tip="{DynamicResource SidebarSearchTip}" />
         </StackPanel>
         <components:FolderExplorer x:Name="FolderExplorer" Grid.Row="1" />
         <components:GlobalSearch x:Name="GlobalSearch" Grid.Row="1" IsVisible="False" />

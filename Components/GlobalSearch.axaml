@@ -1,38 +1,38 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.GlobalSearch">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.GlobalSearch">
   <!-- Controls use the shared find styles (Styles/FindStyles.axaml) so they match the find bar. -->
   <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="8,8,4,0">
     <Grid ColumnDefinitions="Auto,*,Auto">
       <ToggleButton x:Name="GlobalExpandReplace" Classes="findAction" VerticalAlignment="Stretch" Height="NaN" Width="18" MinWidth="18" Padding="1"
-                    ToolTip.Tip="Toggle replace (Ctrl+Shift+H)" AutomationProperties.Name="Toggle replace">
+                    ToolTip.Tip="{DynamicResource GlobalToggleReplaceTip}" AutomationProperties.Name="{DynamicResource ToggleReplace}">
         <Path x:Name="GlobalExpandIcon" Classes="findIcon" Data="M 6,4 L 10,8 6,12" Stroke="{DynamicResource IconForeground}" />
       </ToggleButton>
-      <TextBox x:Name="GlobalQuery" Grid.Column="1" Classes="findField" Width="NaN" MinWidth="50" Margin="3,0,0,0" Watermark="Search in opened folder" AutomationProperties.Name="Search in folder">
+      <TextBox x:Name="GlobalQuery" Grid.Column="1" Classes="findField" Width="NaN" MinWidth="50" Margin="3,0,0,0" Watermark="{DynamicResource GlobalWatermark}" AutomationProperties.Name="{DynamicResource GlobalSearchName}">
         <TextBox.InnerRightContent>
           <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,2,0">
-            <ToggleButton x:Name="GlobalMatchCase" Classes="fieldToggle" Content="Aa" ToolTip.Tip="Match case" AutomationProperties.Name="Match case" />
-            <ToggleButton x:Name="GlobalWholeWord" Classes="fieldToggle" ToolTip.Tip="Match whole word" AutomationProperties.Name="Match whole word">
+            <ToggleButton x:Name="GlobalMatchCase" Classes="fieldToggle" Content="Aa" ToolTip.Tip="{DynamicResource MatchCase}" AutomationProperties.Name="{DynamicResource MatchCase}" />
+            <ToggleButton x:Name="GlobalWholeWord" Classes="fieldToggle" ToolTip.Tip="{DynamicResource WholeWord}" AutomationProperties.Name="{DynamicResource WholeWord}">
               <TextBlock Text="ab" TextDecorations="Underline" />
             </ToggleButton>
-            <ToggleButton x:Name="GlobalRegex" Classes="fieldToggle" Content=".*" ToolTip.Tip="Use regular expression" AutomationProperties.Name="Use regular expression" />
+            <ToggleButton x:Name="GlobalRegex" Classes="fieldToggle" Content=".*" ToolTip.Tip="{DynamicResource UseRegex}" AutomationProperties.Name="{DynamicResource UseRegex}" />
           </StackPanel>
         </TextBox.InnerRightContent>
       </TextBox>
-      <Button x:Name="GlobalRefresh" Grid.Column="2" Classes="findAction" Margin="2,0,0,0" VerticalAlignment="Center" ToolTip.Tip="Refresh results" AutomationProperties.Name="Refresh results">
+      <Button x:Name="GlobalRefresh" Grid.Column="2" Classes="findAction" Margin="2,0,0,0" VerticalAlignment="Center" ToolTip.Tip="{DynamicResource RefreshResults}" AutomationProperties.Name="{DynamicResource RefreshResults}">
         <Path Classes="findIcon" Data="M 12.5,8 A 4.5,4.5 0 1 1 10.9,4.6 M 11,1.8 L 11,4.8 8,4.8" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
       </Button>
     </Grid>
     <StackPanel x:Name="GlobalReplaceRow" Grid.Row="1" Margin="21,4,0,0" Spacing="4" IsVisible="False">
-      <TextBox x:Name="GlobalReplacement" Classes="findField" Width="NaN" MinWidth="50" Margin="0,0,28,0" Watermark="Replace" AutomationProperties.Name="Replace">
+      <TextBox x:Name="GlobalReplacement" Classes="findField" Width="NaN" MinWidth="50" Margin="0,0,28,0" Watermark="{DynamicResource Replace}" AutomationProperties.Name="{DynamicResource Replace}">
         <TextBox.InnerRightContent>
-          <ToggleButton x:Name="GlobalPreserveCase" Classes="fieldToggle" Content="AB" Margin="0,0,3,0" VerticalAlignment="Center" ToolTip.Tip="Preserve case" AutomationProperties.Name="Preserve case" />
+          <ToggleButton x:Name="GlobalPreserveCase" Classes="fieldToggle" Content="AB" Margin="0,0,3,0" VerticalAlignment="Center" ToolTip.Tip="{DynamicResource PreserveCase}" AutomationProperties.Name="{DynamicResource PreserveCase}" />
         </TextBox.InnerRightContent>
       </TextBox>
       <StackPanel Orientation="Horizontal" Spacing="4">
-        <Button x:Name="GlobalReplaceSelected" Classes="textAction" Content="Replace" ToolTip.Tip="Replace selected match or file" IsEnabled="False" />
-        <Button x:Name="GlobalReplaceAll" Classes="textAction" Content="Replace all" ToolTip.Tip="Replace all in folder" IsEnabled="False" />
+        <Button x:Name="GlobalReplaceSelected" Classes="textAction" Content="{DynamicResource Replace}" ToolTip.Tip="{DynamicResource GlobalReplaceTip}" IsEnabled="False" />
+        <Button x:Name="GlobalReplaceAll" Classes="textAction" Content="{DynamicResource ReplaceAll}" ToolTip.Tip="{DynamicResource GlobalReplaceAllTip}" IsEnabled="False" />
       </StackPanel>
     </StackPanel>
-    <TextBlock x:Name="GlobalSummary" Grid.Row="2" Margin="4,10,4,8" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource IconForeground}" Text="Open a folder to search." />
+    <TextBlock x:Name="GlobalSummary" Grid.Row="2" Margin="4,10,4,8" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource IconForeground}" />
     <TreeView x:Name="GlobalResults" Grid.Row="3" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
   </Grid>
 </UserControl>

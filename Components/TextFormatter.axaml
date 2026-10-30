@@ -3,24 +3,24 @@
     <Grid ColumnDefinitions="*,Auto">
       <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
         <StackPanel x:Name="FormatBar" Orientation="Horizontal" Spacing="2">
-          <Button Content="↶" Tag="undo" Classes="tool" Click="Edit_Click" ToolTip.Tip="Undo" />
-          <Button Content="↷" Tag="redo" Classes="tool" Click="Edit_Click" ToolTip.Tip="Redo" />
-          <Button Content="B" Tag="bold" Classes="tool" Click="Format_Click" ToolTip.Tip="Bold" />
-          <Button Content="I" Tag="italic" Classes="tool" Click="Format_Click" ToolTip.Tip="Italic" />
-          <Button Content="S̶" Tag="strike" Classes="tool" Click="Format_Click" ToolTip.Tip="Strikethrough" />
-          <Button Content="&lt;/&gt;" Tag="code" Classes="tool" Click="Format_Click" ToolTip.Tip="Inline code" />
-          <Button Content="H1" Tag="h1" Classes="tool" Click="Format_Click" ToolTip.Tip="Heading 1" />
-          <Button Content="H2" Tag="h2" Classes="tool" Click="Format_Click" ToolTip.Tip="Heading 2" />
-          <Button Content="H3" Tag="h3" Classes="tool" Click="Format_Click" ToolTip.Tip="Heading 3" />
-          <Button Content="• List" Tag="list" Classes="tool" Click="Format_Click" ToolTip.Tip="Bullet list" />
-          <Button Content="1. List" Tag="ordered" Classes="tool" Click="Format_Click" ToolTip.Tip="Numbered list" />
-          <Button Content="❝" Tag="quote" Classes="tool" Click="Format_Click" ToolTip.Tip="Block quote" />
-          <Button Content="Link" Tag="link" Classes="tool" Click="Format_Click" ToolTip.Tip="Insert link" />
-          <Button Content="Table" Tag="table" Classes="tool" Click="Format_Click" ToolTip.Tip="Insert table" />
+          <Button Content="↶" Tag="undo" Classes="tool" Click="Edit_Click" ToolTip.Tip="{DynamicResource Undo}" />
+          <Button Content="↷" Tag="redo" Classes="tool" Click="Edit_Click" ToolTip.Tip="{DynamicResource Redo}" />
+          <Button Content="B" Tag="bold" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Bold}" />
+          <Button Content="I" Tag="italic" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Italic}" />
+          <Button Content="S̶" Tag="strike" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Strikethrough}" />
+          <Button Content="&lt;/&gt;" Tag="code" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource InlineCode}" />
+          <Button Content="H1" Tag="h1" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Heading1}" />
+          <Button Content="H2" Tag="h2" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Heading2}" />
+          <Button Content="H3" Tag="h3" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Heading3}" />
+          <Button Content="{DynamicResource ListButton}" Tag="list" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource BulletList}" />
+          <Button Content="{DynamicResource NumberedButton}" Tag="ordered" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource NumberedList}" />
+          <Button Content="❝" Tag="quote" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource BlockQuote}" />
+          <Button Content="{DynamicResource LinkButton}" Tag="link" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource InsertLink}" />
+          <Button Content="{DynamicResource TableButton}" Tag="table" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource InsertTable}" />
         </StackPanel>
       </ScrollViewer>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="12,0,0,0">
-        <Button x:Name="TogglePreviewButton" Content="Toggle preview" Classes="tool" Click="TogglePreview_Click" AutomationProperties.Name="Toggle preview" />
+        <Button x:Name="TogglePreviewButton" Content="{DynamicResource TogglePreview}" Classes="tool" Click="TogglePreview_Click" AutomationProperties.Name="{DynamicResource TogglePreview}" />
       </StackPanel>
     </Grid>
   </Border>

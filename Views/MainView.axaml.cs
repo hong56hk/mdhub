@@ -7,6 +7,8 @@ using Mdhub.Components;
 using Mdhub.Models;
 using Mdhub.Services;
 
+using Mdhub.Localization;
+
 namespace Mdhub.Views;
 
 // Composes the workspace and coordinates actions across components. No component knows this view.
@@ -27,6 +29,9 @@ public partial class MainView : UserControl
     {
         InitializeComponent();
         FileTabs.SetDocuments(_documents);
+        // Code-set status texts follow a language switch (XAML texts use DynamicResource).
+        AttachedToVisualTree += (_, _) => Loc.Changed += OnLanguageChanged;
+        DetachedFromVisualTree += (_, _) => Loc.Changed -= OnLanguageChanged;
         FileTabs.DocumentSelected += SelectDocument;
         FileTabs.NewRequested += () => RequestAction(WorkspaceAction.New);
         FileTabs.CloseRequested += async document => await RunAsync(() => CloseDocumentAsync(document));
@@ -100,6 +105,13 @@ public partial class MainView : UserControl
         UpdateStatus();
     }
 
+    private void OnLanguageChanged()
+    {
+        if (_active is null) return;
+        UpdateStatus();
+        UpdateCaretStatus();
+        BottomStatusBar.Relocalize();
+    }
     private void UpdateStatus(string? message = null)
     {
         if (_active is null) return;
@@ -126,8 +138,8 @@ public partial class MainView : UserControl
         try { await action(); }
         catch (Exception ex)
         {
-            UpdateStatus("Operation failed; your open notes are still available.");
-            await DialogService.ShowAsync(Host, "Unable to complete operation", ex.Message, "OK");
+            UpdateStatus(Loc.T("OperationFailed"));
+            await DialogService.ShowAsync(Host, Loc.T("UnableToComplete"), ex.Message, "OK");
         }
         finally { SetBusy(false); TextEditor.FocusEditor(); }
     }
@@ -180,7 +192,7 @@ public partial class MainView : UserControl
         if (session.ActiveTab >= 0 && session.ActiveTab < session.Tabs.Count
             && _documents.FirstOrDefault(d => d.Path is { } p && SamePath(p, Path.GetFullPath(session.Tabs[session.ActiveTab]))) is { } active)
             FileTabs.SelectedDocument = active;
-        if (failed > 0) note = $"{note} Could not reopen {failed} {(failed == 1 ? "item" : "items")}.".Trim();
+        if (failed > 0) note = $"{note} {Loc.Plural("ReopenFailedOne", "ReopenFailedMany", failed)}".Trim();
         _sessionNote = note;
         UpdateStatus();
     }

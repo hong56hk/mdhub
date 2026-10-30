@@ -7,6 +7,8 @@ using Avalonia.Platform.Storage;
 using Mdhub.Components;
 using Mdhub.Services;
 
+using Mdhub.Localization;
+
 namespace Mdhub.Views;
 
 // Routes menu/toolbar/keyboard requests; panel sizing belongs to this whole-view layout.
@@ -87,11 +89,11 @@ public partial class MainView
             else await OpenPathAsync(path);
             return;
         }
-        LastRecentNote = $"{(folder ? "Folder" : "File")} no longer exists · {path}";
+        LastRecentNote = Loc.F(folder ? "MissingFolder" : "MissingFile", path);
         UpdateStatus(LastRecentNote);
         if (_active is null) BottomStatusBar.SetMessage(LastRecentNote);
         var remove = ConfirmRemoveRecentOverride is { } confirm ? await confirm(path)
-            : await DialogService.ShowAsync(Host, "Not found", $"{path} no longer exists. Remove it from Open Recent?", "Remove", "Keep") == "Remove";
+            : await DialogService.ShowAsync(Host, Loc.T("NotFoundTitle"), Loc.F("RemoveRecentConfirm", path), "Remove", "Keep") == "Remove";
         if (remove) RecentService.Remove(path);
     }
 
@@ -117,10 +119,10 @@ public partial class MainView
 
     private async Task<string?> PickFolderAsync()
     {
-        var folders = await Host.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Open notes folder", AllowMultiple = false });
+        var folders = await Host.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = Loc.T("OpenNotesFolderTitle"), AllowMultiple = false });
         if (folders.Count == 0) return null;
         using var folder = folders[0];
-        return folder.TryGetLocalPath() ?? throw new IOException("Choose a local folder.");
+        return folder.TryGetLocalPath() ?? throw new IOException(Loc.T("ChooseLocalFolder"));
     }
 
     private void ToggleFolders_Click(object? sender, RoutedEventArgs e)
@@ -273,6 +275,6 @@ public partial class MainView
     });
 
     private async void About_Click(object? sender, RoutedEventArgs e) => await RunAsync(async () =>
-        await DialogService.ShowAsync(Host, "About mdhub", "mdhub · Your notes, locally.\n\nAn offline text and Markdown workspace built with C#, Avalonia, and Markdig.\n\nPreview supports common Markdown. Images are shown as labels; HTML, math, and Mermaid are not executed or rendered.", "OK"));
+        await DialogService.ShowAsync(Host, Loc.T("AboutTitle"), Loc.T("AboutText"), "OK"));
 
 }

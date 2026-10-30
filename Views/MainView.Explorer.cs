@@ -1,6 +1,8 @@
 using Mdhub.Models;
 using Mdhub.Services;
 
+using Mdhub.Localization;
+
 namespace Mdhub.Views;
 
 public partial class MainView
@@ -8,13 +10,13 @@ public partial class MainView
     private async Task CreateExplorerItemAsync(bool isFolder)
     {
         var directory = FolderExplorer.GetCreationDirectory(_active?.Path);
-        var name = await DialogService.PromptNameAsync(Host, isFolder ? "New folder" : "New file", directory,
+        var name = await DialogService.PromptNameAsync(Host, Loc.T(isFolder ? "NewFolder" : "NewFile"), directory,
             isFolder ? "New folder" : "Untitled.md");
         if (name is null) return;
         var path = await FolderService.CreateAsync(directory, name, isFolder);
         await FolderExplorer.RevealCreatedAsync(path);
         if (!isFolder) await OpenPathAsync(path);
-        UpdateStatus($"Created {(isFolder ? "folder" : "file")} · {path}");
+        UpdateStatus(Loc.F(isFolder ? "CreatedFolder" : "CreatedFile", path));
     }
     // Test seam: headless UI tests replace the shell "reveal in file explorer" call.
     internal Action<string>? RevealOverride { get; set; }
@@ -26,7 +28,7 @@ public partial class MainView
     private async Task HandleExplorerRequestAsync(ExplorerRequest request)
     {
         var path = Path.GetFullPath(request.Path);
-        var root = FolderExplorer.OpenedFolder ?? throw new InvalidOperationException("Open a folder first.");
+        var root = FolderExplorer.OpenedFolder ?? throw new InvalidOperationException(Loc.T("OpenFolderFirst"));
         var parent = Path.GetDirectoryName(path)!;
         switch (request.Action)
         {
@@ -38,7 +40,7 @@ public partial class MainView
             case ExplorerAction.Copy:
                 ExplorerClipboard = (path, request.Action == ExplorerAction.Cut);
                 await FolderExplorer.RevealCreatedAsync(path);
-                UpdateStatus($"{(request.Action == ExplorerAction.Cut ? "Cut" : "Copied")} · {path}");
+                UpdateStatus(Loc.F(request.Action == ExplorerAction.Cut ? "CutStatus" : "CopiedStatus", path));
                 break;
             case ExplorerAction.Paste:
             {
@@ -53,7 +55,7 @@ public partial class MainView
                 }
                 else await Task.Run(() => ExplorerFileOperations.Copy(clip.Path, target));
                 await FolderExplorer.RevealCreatedAsync(target);
-                UpdateStatus($"{(clip.IsCut ? "Moved" : "Pasted")} · {target}");
+                UpdateStatus(Loc.F(clip.IsCut ? "Moved" : "PastedStatus", target));
                 break;
             }
             case ExplorerAction.Duplicate:
@@ -61,7 +63,7 @@ public partial class MainView
                 var target = ExplorerFileOperations.UniqueCopyPath(path);
                 await Task.Run(() => ExplorerFileOperations.Copy(path, target));
                 await FolderExplorer.RevealCreatedAsync(target);
-                UpdateStatus($"Duplicated · {target}");
+                UpdateStatus(Loc.F("Duplicated", target));
                 break;
             }
             case ExplorerAction.Rename:
@@ -69,7 +71,7 @@ public partial class MainView
                 break;
             case ExplorerAction.Delete:
             {
-                var answer = await DialogService.ShowAsync(Host, "Delete", $"Move {Path.GetFileName(path)} to the Recycle Bin?", "Delete", "Cancel");
+                var answer = await DialogService.ShowAsync(Host, Loc.T("Delete"), Loc.F("DeleteConfirm", Path.GetFileName(path)), "Delete", "Cancel");
                 if (answer != "Delete") return;
                 var affected = _documents.Where(d => d.Path is not null && IsSameOrInside(path, d.Path)).ToList();
                 foreach (var document in affected)
@@ -78,7 +80,7 @@ public partial class MainView
                 await Task.Run(() => { if (recycle is null) ExplorerFileOperations.Recycle(root, path); else recycle(path); });
                 foreach (var document in affected) RemoveDocument(document);
                 await FolderExplorer.RevealCreatedAsync(parent);
-                UpdateStatus($"Moved to Recycle Bin · {path}");
+                UpdateStatus(Loc.F("MovedToBin", path));
                 break;
             }
         }

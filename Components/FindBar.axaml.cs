@@ -39,6 +39,9 @@ public partial class FindBar : UserControl
         FindPreviousButton.Click += (_, _) => Previous();
         FindNextButton.Click += (_, _) => Next();
         FindCloseButton.Click += (_, _) => Close();
+        FindCount.Text = Mdhub.Localization.Loc.T("NoResults");
+        AttachedToVisualTree += (_, _) => Mdhub.Localization.Loc.Changed += UpdateView;
+        DetachedFromVisualTree += (_, _) => Mdhub.Localization.Loc.Changed -= UpdateView;
         ReplaceButton.Click += (_, _) => Replace();
         ReplaceAllButton.Click += (_, _) => ReplaceAll();
         FindInput.AddHandler(KeyDownEvent, OnFindKey, RoutingStrategies.Tunnel);
@@ -195,7 +198,7 @@ public partial class FindBar : UserControl
 
     private void UpdateView()
     {
-        FindCount.Text = string.IsNullOrEmpty(FindInput.Text) ? "No results" : FindReplace.CountLabel(_current, _matches.Count);
+        FindCount.Text = string.IsNullOrEmpty(FindInput.Text) ? Mdhub.Localization.Loc.T("NoResults") : FindReplace.CountLabel(_current, _matches.Count);
         FindCount.Foreground = _matches.Count == 0 && !string.IsNullOrEmpty(FindInput.Text) ? Mdhub.Services.ThemeService.Brush("ErrorForeground") : Mdhub.Services.ThemeService.Brush("IconForeground");
         var any = _matches.Count > 0;
         FindPreviousButton.IsEnabled = FindNextButton.IsEnabled = any;

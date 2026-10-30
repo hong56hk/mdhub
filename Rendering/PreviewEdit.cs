@@ -15,10 +15,10 @@ public readonly record struct EditPlan(SourceEdit? Edit, string? Error)
 // Pure (the structure check is passed in), so it is unit tested.
 public static class PreviewEdit
 {
-    public const string SpansFormatting = "That edit crosses formatting or markup the preview can't edit. Use the source pane.";
-    public const string NoLineBreaks = "Line breaks can't be added in the preview. Use the source pane.";
-    public const string ChangesStructure = "That text would change the Markdown structure, so it wasn't applied.";
-    public const string Backtick = "Backticks can't be typed inside inline code.";
+    public static string SpansFormatting => Mdhub.Localization.Loc.T("PreviewSpansFormatting");
+    public static string NoLineBreaks => Mdhub.Localization.Loc.T("PreviewNoLineBreaks");
+    public static string ChangesStructure => Mdhub.Localization.Loc.T("PreviewChangesStructure");
+    public static string Backtick => Mdhub.Localization.Loc.T("PreviewBacktick");
 
     private const string Specials = "\\`*_[]<>!~|#&";
 

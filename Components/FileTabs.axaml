@@ -11,11 +11,11 @@
           <StackPanel Orientation="Horizontal" Spacing="12">
             <TextBlock Text="▤" Foreground="{DynamicResource Accent}" VerticalAlignment="Center" />
             <TextBlock Text="{Binding Title}" VerticalAlignment="Center" MaxWidth="200" TextTrimming="CharacterEllipsis" />
-            <Button Content="×" Classes="tool" Padding="4,0" MinWidth="20" Click="TabClose_Click" ToolTip.Tip="Close tab" />
+            <Button Content="×" Classes="tool" Padding="4,0" MinWidth="20" Click="TabClose_Click" ToolTip.Tip="{DynamicResource CloseTab}" />
           </StackPanel>
         </DataTemplate>
       </ListBox.ItemTemplate>
     </ListBox>
-    <Button Grid.Column="1" Content="+" Classes="tool" Click="New_Click" ToolTip.Tip="New note" Margin="4" />
+    <Button Grid.Column="1" Content="+" Classes="tool" Click="New_Click" ToolTip.Tip="{DynamicResource NewNote}" Margin="4" />
   </Grid>
 </UserControl>

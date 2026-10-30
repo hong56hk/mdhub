@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Mdhub.Localization;
 
 namespace Mdhub.Services;
 
@@ -10,16 +11,16 @@ public static class DialogService
     public static Task<string?> PromptNameAsync(Window owner, string title, string directory, string initialName)
     {
         var dialog = new Window { Title = title, Width = 480, SizeToContent = SizeToContent.Height, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-        var input = new TextBox { Name = "ItemName", Text = initialName, PlaceholderText = "Name" };
+        var input = new TextBox { Name = "ItemName", Text = initialName, PlaceholderText = Loc.T("DialogName") };
         var error = new TextBlock { Foreground = ThemeService.Brush("DialogErrorForeground"), TextWrapping = TextWrapping.Wrap, IsVisible = false };
-        var create = new Button { Content = "Create", IsDefault = true, MinWidth = 80 };
-        var cancel = new Button { Content = "Cancel", IsCancel = true, MinWidth = 80 };
+        var create = new Button { Content = Loc.T("Create"), IsDefault = true, MinWidth = 80 };
+        var cancel = new Button { Content = Loc.T("Cancel"), IsCancel = true, MinWidth = 80 };
         create.Click += (_, _) =>
         {
             var name = input.Text ?? "";
             var message = FolderService.ValidateName(name);
             if (message is null && (File.Exists(Path.Combine(directory, name)) || Directory.Exists(Path.Combine(directory, name))))
-                message = "A file or folder with that name already exists.";
+                message = Loc.T("NameExists");
             if (message is not null) { error.Text = message; error.IsVisible = true; input.Focus(); return; }
             dialog.Close(name);
         };
@@ -30,7 +31,7 @@ public static class DialogService
             Margin = new Thickness(20), Spacing = 12,
             Children =
             {
-                new TextBlock { Text = $"Create in: {directory}", TextWrapping = TextWrapping.Wrap }, input, error,
+                new TextBlock { Text = Loc.F("CreateIn", directory), TextWrapping = TextWrapping.Wrap }, input, error,
                 new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, Children = { create, cancel } }
             }
         };
@@ -52,12 +53,12 @@ public static class DialogService
     // Small "Go to line" prompt: digits only, returns the clamped 1-based line or null on cancel.
     public static Task<int?> PromptLineAsync(Window owner, int lineCount, int currentLine)
     {
-        var dialog = new Window { Title = "Go to line", Width = 300, SizeToContent = SizeToContent.Height, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-        var input = new TextBox { Name = "LineNumber", Text = currentLine.ToString(), PlaceholderText = "Line number" };
+        var dialog = new Window { Title = Loc.T("GoToLineTitle"), Width = 300, SizeToContent = SizeToContent.Height, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+        var input = new TextBox { Name = "LineNumber", Text = currentLine.ToString(), PlaceholderText = Loc.T("LineNumber") };
         input.AddHandler(Avalonia.Input.InputElement.TextInputEvent, (_, e) => { if (e.Text is { } t && !t.All(char.IsAsciiDigit)) e.Handled = true; }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         input.TextChanged += (_, _) => { if (input.Text is { } t && !t.All(char.IsAsciiDigit)) input.Text = new string(t.Where(char.IsAsciiDigit).ToArray()); };
-        var go = new Button { Content = "Go", IsDefault = true, MinWidth = 70 };
-        var cancel = new Button { Content = "Cancel", IsCancel = true, MinWidth = 70 };
+        var go = new Button { Content = Loc.T("Go"), IsDefault = true, MinWidth = 70 };
+        var cancel = new Button { Content = Loc.T("Cancel"), IsCancel = true, MinWidth = 70 };
         go.Click += (_, _) => { if (Mdhub.Text.EditorCommands.ParseLine(input.Text, lineCount) is { } line) dialog.Close(line); else input.Focus(); };
         cancel.Click += (_, _) => dialog.Close(null);
         dialog.Opened += (_, _) => { input.Focus(); input.SelectAll(); };
@@ -66,7 +67,7 @@ public static class DialogService
             Margin = new Thickness(16), Spacing = 10,
             Children =
             {
-                new TextBlock { Name = "LineHint", Text = $"Line number (1 to {lineCount})", Foreground = ThemeService.Brush("DialogHintForeground") }, input,
+                new TextBlock { Name = "LineHint", Text = Loc.F("LineHint", lineCount), Foreground = ThemeService.Brush("DialogHintForeground") }, input,
                 new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, Children = { go, cancel } }
             }
         };
@@ -78,23 +79,23 @@ public static class DialogService
     public static Task ShowShortcutsAsync(Window owner)
     {
         var mac = OperatingSystem.IsMacOS();
-        var dialog = new Window { Title = "Shortcuts", Width = 520, Height = 560, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+        var dialog = new Window { Title = Loc.T("ShortcutsTitle"), Width = 520, Height = 560, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
         var list = new StackPanel { Name = "ShortcutList", Spacing = 4, Margin = new Thickness(20, 16) };
         // Areas in enum order (File, Edit, View, Find, Zoom, Editor), not first-appearance order in the table.
         foreach (var group in Shortcuts.All.GroupBy(s => s.Area).OrderBy(g => g.Key))
         {
-            list.Children.Add(new TextBlock { Text = group.Key.ToString(), FontWeight = Avalonia.Media.FontWeight.SemiBold, FontSize = 15, Margin = new Thickness(0, 10, 0, 2), Classes = { "shortcut-area" } });
+            list.Children.Add(new TextBlock { Text = Loc.T("Area" + group.Key), FontWeight = Avalonia.Media.FontWeight.SemiBold, FontSize = 15, Margin = new Thickness(0, 10, 0, 2), Classes = { "shortcut-area" } });
             foreach (var s in group)
             {
                 var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Classes = { "shortcut-row" }, Tag = s.Id };
-                row.Children.Add(new TextBlock { Text = s.Label });
+                row.Children.Add(new TextBlock { Text = s.DisplayLabel });
                 var keys = new TextBlock { Text = s.Format(mac), Foreground = ThemeService.Brush("ShortcutKeyForeground"), FontFamily = new Avalonia.Media.FontFamily("Consolas, Menlo, monospace") };
                 Grid.SetColumn(keys, 1);
                 row.Children.Add(keys);
                 list.Children.Add(row);
             }
         }
-        var close = new Button { Content = "Close", IsDefault = true, IsCancel = true, MinWidth = 80, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right, Margin = new Thickness(20, 0, 20, 16) };
+        var close = new Button { Content = Loc.T("Close"), IsDefault = true, IsCancel = true, MinWidth = 80, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right, Margin = new Thickness(20, 0, 20, 16) };
         close.Click += (_, _) => dialog.Close();
         var root = new DockPanel();
         DockPanel.SetDock(close, Dock.Bottom);
@@ -111,7 +112,7 @@ public static class DialogService
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right };
         foreach (var choice in choices)
         {
-            var button = new Button { Content = choice, MinWidth = 80 };
+            var button = new Button { Content = Loc.T(choice), MinWidth = 80 };
             button.Click += (_, _) => dialog.Close(choice);
             buttons.Children.Add(button);
         }

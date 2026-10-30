@@ -59,7 +59,7 @@ public static class SessionManager
 
     private static void Write(List<WindowSession> windows)
     {
-        try { SessionStore.Save(SessionPath, new SessionData { Windows = windows.Where(w => !w.IsEmpty).ToList(), Theme = ThemeService.Current.ToString(),
+        try { SessionStore.Save(SessionPath, new SessionData { Windows = windows.Where(w => !w.IsEmpty).ToList(), Theme = ThemeService.Current.ToString(), Language = Mdhub.Localization.Loc.Chosen,
                 RecentFiles = [.. RecentService.Files], RecentFolders = [.. RecentService.Folders] }); }
         catch (Exception) { /* A session that cannot be written must not block closing. */ }
     }
@@ -92,7 +92,7 @@ public static class SessionManager
             var window = (factory ?? (() => new MainWindow()))();
             window.ApplyBounds(session);
             var note = windows.Count == 0 && skipped > 0
-                ? $"Skipped {skipped} missing {(skipped == 1 ? "item" : "items")} from the last session."
+                ? Mdhub.Localization.Loc.Plural("SessionSkippedOne", "SessionSkippedMany", skipped)
                 : null;
             window.RestoreOnOpen(session, note);
             windows.Add(window);

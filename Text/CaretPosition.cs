@@ -25,6 +25,6 @@ public static class CaretPosition
     public static string Format(string text, int selectionStart, int selectionEnd)
     {
         var (line, column, selected) = Measure(text, selectionStart, selectionEnd);
-        return $"Ln {line}, Col {column}" + (selected > 0 ? $" ({selected} selected)" : "");
+        return Mdhub.Localization.Loc.F("CaretPos", line, column) + (selected > 0 ? Mdhub.Localization.Loc.F("CaretSelected", selected) : "");
     }
 }

@@ -223,7 +223,7 @@ public partial class MdEditor : UserControl
         PreviewLayer.Children.Add(box);
         box.Focus();
         box.CaretIndex = text.Length;
-        MessageChanged?.Invoke(code ? "Editing code in the preview: Ctrl+Enter applies, Esc cancels." : "Editing in the preview: Enter applies, Esc cancels.");
+        MessageChanged?.Invoke(Mdhub.Localization.Loc.T(code ? "PreviewEditCode" : "PreviewEditText"));
         return true;
     }
 
@@ -263,7 +263,7 @@ public partial class MdEditor : UserControl
     {
         var (pieces, code) = (_editPieces, _editCode);
         if (EndEdit() is not { } box) return null;
-        if (_render is not { } render || _active?.Editor is not { } editor || editor.Text != render.Map.Source) return Report("The note changed while editing; the preview edit was not applied.");
+        if (_render is not { } render || _active?.Editor is not { } editor || editor.Text != render.Map.Source) return Report(Mdhub.Localization.Loc.T("PreviewEditStale"));
         var source = render.Map.Source;
         var check = MarkdownStructure.SameAs(source);
         var plan = code is { } range ? PreviewEdit.PlanCode(source, range.Start, range.End, box.Text ?? "", check)
@@ -304,7 +304,10 @@ public partial class MdEditor : UserControl
             PreviewContent.Children.Clear();
             if (text.Length == 0)
             {
-                PreviewContent.Children.Add(new TextBlock { Text = "Your preview will appear here.", Foreground = Mdhub.Services.ThemeService.Brush("PreviewPlaceholderForeground"), Margin = new Thickness(0, 12) });
+                var placeholder = new TextBlock { Foreground = Mdhub.Services.ThemeService.Brush("PreviewPlaceholderForeground"), Margin = new Thickness(0, 12) };
+                // Follows a language switch while it is shown (resolved from the app resources once attached).
+                placeholder.Bind(TextBlock.TextProperty, placeholder.GetResourceObservable("PreviewPlaceholder"));
+                PreviewContent.Children.Add(placeholder);
             }
             else if (result.Markdown is not null)
             {
@@ -318,7 +321,7 @@ public partial class MdEditor : UserControl
         }
         catch (Exception ex)
         {
-            if (version == _previewVersion) MessageChanged?.Invoke($"Preview unavailable: {ex.Message}");
+            if (version == _previewVersion) MessageChanged?.Invoke(Mdhub.Localization.Loc.F("PreviewUnavailable", ex.Message));
         }
     }
 }

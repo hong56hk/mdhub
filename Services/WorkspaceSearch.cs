@@ -82,7 +82,7 @@ public static class WorkspaceSearch
                     if (hits.Count > 0) { files.Add(new(path, source, encoding, hits, lossy)); if (lossy) lossyFiles++; }
                     if (total >= MaxResults) return new WorkspaceSearchResult(files, Skipped: skipped, Limited: true, Lossy: lossyFiles);
                 }
-                catch (RegexMatchTimeoutException) { return new WorkspaceSearchResult([], "Search pattern took too long. Try a simpler expression."); }
+                catch (RegexMatchTimeoutException) { return new WorkspaceSearchResult([], Mdhub.Localization.Loc.T("SearchTimeout")); }
                 // One unreadable or odd file never aborts the whole search.
                 catch (Exception) { skipped++; }
             }

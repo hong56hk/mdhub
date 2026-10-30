@@ -3,12 +3,14 @@ using Avalonia.Platform.Storage;
 using Mdhub.Models;
 using Mdhub.Services;
 
+using Mdhub.Localization;
+
 namespace Mdhub.Views;
 
 // Document workflows: file dialogs, duplicate tabs, saving, and unsaved-change decisions.
 public partial class MainView
 {
-    private static readonly FilePickerFileType TextFiles = new("Text and Markdown") { Patterns = ["*.txt", "*.md", "*.markdown"] };
+    private static FilePickerFileType TextFiles => new(Loc.T("TextAndMarkdown")) { Patterns = ["*.txt", "*.md", "*.markdown"] };
     private NoteDocument AddDocument(string? path, string text, string? name = null, System.Text.Encoding? encoding = null)
     {
         var document = new NoteDocument
@@ -39,11 +41,11 @@ public partial class MainView
     {
         var files = await Host.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "Open files", AllowMultiple = true, FileTypeFilter = [FilePickerFileTypes.All, TextFiles]
+            Title = Loc.T("OpenFilesTitle"), AllowMultiple = true, FileTypeFilter = [FilePickerFileTypes.All, TextFiles]
         });
         foreach (var file in files)
         {
-            using (file) await OpenPathAsync(file.TryGetLocalPath() ?? throw new IOException("Choose a local file."));
+            using (file) await OpenPathAsync(file.TryGetLocalPath() ?? throw new IOException(Loc.T("ChooseLocalFile")));
         }
     }
 
@@ -56,7 +58,7 @@ public partial class MainView
         var existing = _documents.FirstOrDefault(d => SamePath(d.Path, path));
         if (existing is not null) { FileTabs.SelectedDocument = existing; if (recent) RecentService.AddFile(path); return; }
         var kind = await Task.Run(() => FileSupport.Detect(path));
-        if (kind == SupportedFileKind.Unsupported) { UpdateStatus("Unsupported file type or text encoding · " + path); return; }
+        if (kind == SupportedFileKind.Unsupported) { UpdateStatus(Loc.F("UnsupportedFile", path)); return; }
         if (kind == SupportedFileKind.Image)
         {
             var bitmap = await Task.Run(() =>
@@ -72,8 +74,8 @@ public partial class MainView
         }
         (string Text, System.Text.Encoding Encoding) loaded;
         try { loaded = await TextFileStore.ReadAsync(path); }
-        catch (System.Text.DecoderFallbackException) { UpdateStatus("Unsupported text encoding · " + path); return; }
-        if (!FileSupport.IsText(loaded.Text)) { UpdateStatus("Unsupported binary file · " + path); return; }
+        catch (System.Text.DecoderFallbackException) { UpdateStatus(Loc.F("UnsupportedEncoding", path)); return; }
+        if (!FileSupport.IsText(loaded.Text)) { UpdateStatus(Loc.F("UnsupportedBinary", path)); return; }
         AddDocument(path, loaded.Text, encoding: loaded.Encoding);
         if (recent) RecentService.AddFile(path);
     }
@@ -86,7 +88,7 @@ public partial class MainView
 
     private async Task<bool> SaveAsync(NoteDocument document, bool saveAs)
     {
-        if (document.IsImage) { UpdateStatus("Images are view-only."); return true; }
+        if (document.IsImage) { UpdateStatus(Loc.T("ImagesViewOnly")); return true; }
         var path = document.Path;
         if (saveAs || path is null)
         {
@@ -95,16 +97,16 @@ public partial class MainView
             {
                 using var file = await Host.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
                 {
-                    Title = "Save note", SuggestedFileName = path is null ? document.UntitledName : Path.GetFileName(path),
+                    Title = Loc.T("SaveNoteTitle"), SuggestedFileName = path is null ? document.UntitledName : Path.GetFileName(path),
                     DefaultExtension = document.IsMarkdown ? "md" : "txt",
                     FileTypeChoices = [TextFiles, FilePickerFileTypes.All], ShowOverwritePrompt = true
                 });
                 if (file is null) return false;
-                path = file.TryGetLocalPath() ?? throw new IOException("Choose a local file.");
+                path = file.TryGetLocalPath() ?? throw new IOException(Loc.T("ChooseLocalFile"));
             }
             if (path is null) return false;
             if (_documents.Any(d => d != document && SamePath(d.Path, path)))
-                throw new IOException("That file is already open in another tab. Save to a different name.");
+                throw new IOException(Loc.T("AlreadyOpenSaveAs"));
         }
         await TextFileStore.WriteAsync(path, document.Text, document.Encoding);
         var isNewPath = document.Path is null || !SamePath(document.Path, Path.GetFullPath(path));
@@ -113,7 +115,7 @@ public partial class MainView
         document.Refresh();
         if (_active == document) MdEditor.ShowDocument(document.IsMarkdown ? document : null);
         UpdateContentLayout();
-        UpdateStatus("Saved · " + path);
+        UpdateStatus(Loc.F("Saved", path));
         MdEditor.ScheduleRefresh();
         if (isNewPath && FolderExplorer.Contains(path)) await FolderExplorer.RevealCreatedAsync(path);
         return true;
@@ -123,7 +125,7 @@ public partial class MainView
     {
         if (!document.IsDirty) return true;
         FileTabs.SelectedDocument = document;
-        var answer = await DialogService.ShowAsync(Host, "Unsaved changes", $"Save changes to {document.Title.TrimStart('●', ' ')}?", "Save", "Discard", "Cancel");
+        var answer = await DialogService.ShowAsync(Host, Loc.T("UnsavedTitle"), Loc.F("SaveChangesTo", document.Title.TrimStart('●', ' ')), "Save", "Discard", "Cancel");
         return answer == "Discard" || (answer == "Save" && await SaveAsync(document, false));
     }
 

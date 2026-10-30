@@ -4,6 +4,8 @@ using Mdhub.Components;
 using Mdhub.Services;
 using Mdhub.Text;
 
+using Mdhub.Localization;
+
 namespace Mdhub.Views;
 
 public partial class MainView
@@ -35,7 +37,7 @@ public partial class MainView
     {
         await OpenPathAsync(file.Path);
         if (_active is not { } document || !SamePath(document.Path, file.Path)) return;
-        if (document.Text != file.Source) { GlobalSearch.Schedule(); UpdateStatus("File changed; search results refreshed."); return; }
+        if (document.Text != file.Source) { GlobalSearch.Schedule(); UpdateStatus(Loc.T("SearchRefreshed")); return; }
         document.Editor.Focus();
         document.Editor.SelectionStart = hit.Start;
         document.Editor.SelectionEnd = hit.Start + hit.Length;
@@ -45,15 +47,15 @@ public partial class MainView
 
     private async Task<string> ReplaceSearchResultsAsync(WorkspaceReplaceRequest request)
     {
-        if (_busy) return "Wait for the current operation to finish.";
+        if (_busy) return Loc.T("WaitForOperation");
         var count = request.Files.Sum(f => f.Hits.Count);
-        if (count == 0) return "No matches to replace.";
+        if (count == 0) return Loc.T("NoMatchesToReplace");
         SetBusy(true);
         try
         {
-            var answer = await DialogService.ShowAsync(Host, "Replace in folder",
-                $"Replace {count:N0} matches in {request.Files.Count:N0} files? Open files will keep changes unsaved; other files will be saved to disk.", "Replace", "Cancel");
-            if (answer != "Replace") return "Replacement cancelled.";
+            var answer = await DialogService.ShowAsync(Host, Loc.T("ReplaceInFolderTitle"),
+                Loc.F("ReplaceConfirm", count, request.Files.Count), "Replace", "Cancel");
+            if (answer != "Replace") return Loc.T("ReplaceCancelled");
             var replaced = 0;
             var changed = 0;
             var skipped = 0;
@@ -94,7 +96,7 @@ public partial class MainView
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or System.Text.DecoderFallbackException) { skipped++; }
             }
             UpdateStatus();
-            return $"Replaced {replaced:N0} matches in {changed:N0} files." + (skipped > 0 ? $" {skipped} changed or unavailable files skipped." : "");
+            return Loc.F("Replaced", replaced, changed) + (skipped > 0 ? Loc.F("ReplacedSkipped", skipped) : "");
         }
         finally { SetBusy(false); }
     }

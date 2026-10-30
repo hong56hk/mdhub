@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Mdhub.Services;
+using Mdhub.Localization;
 
 namespace Mdhub.Components;
 
@@ -21,7 +22,8 @@ public partial class FolderExplorer : UserControl
     {
         MenuItem Item(string name, string header, ExplorerAction action)
         {
-            var item = new MenuItem { Name = name, Header = header };
+            var item = LocResources.Item(header);
+            item.Name = name;
             item.Click += (_, _) =>
             {
                 if (action == ExplorerAction.Rename) BeginRename(path);
@@ -32,14 +34,15 @@ public partial class FolderExplorer : UserControl
         Separator Line() => new() { Background = Mdhub.Services.ThemeService.Brush("SeparatorForeground"), Foreground = Mdhub.Services.ThemeService.Brush("SeparatorForeground") };
         return new ContextMenu
         {
+            // Headers are resource keys; Localized() refreshes them on open after a language switch.
             Items =
             {
-                Item("RevealMenuItem", "Reveal in file explorer", ExplorerAction.Reveal), Line(),
-                Item("CutMenuItem", "Cut", ExplorerAction.Cut), Item("CopyMenuItem", "Copy", ExplorerAction.Copy),
+                Item("RevealMenuItem", "Reveal", ExplorerAction.Reveal), Line(),
+                Item("CutMenuItem", "MenuCut", ExplorerAction.Cut), Item("CopyMenuItem", "MenuCopy", ExplorerAction.Copy),
                 Item("DuplicateMenuItem", "Duplicate", ExplorerAction.Duplicate), Line(),
                 Item("RenameMenuItem", "Rename", ExplorerAction.Rename), Item("DeleteMenuItem", "Delete", ExplorerAction.Delete)
             }
-        };
+        }.Localized();
     }
     private void FolderName_Click(object? sender, RoutedEventArgs e) => OpenFolderRequested?.Invoke();
     public Func<bool>? CanPaste { get; set; }
@@ -50,23 +53,46 @@ public partial class FolderExplorer : UserControl
         InitializeDragDrop();
         FolderTree.AddHandler(PointerPressedEvent, FolderRow_PointerPressed, RoutingStrategies.Tunnel);
         FolderTree.ContextMenu = CreateBackgroundMenu();
+        UpdateLanguage();
+        AttachedToVisualTree += (_, _) => { Loc.Changed += UpdateLanguage; UpdateLanguage(); };
+        DetachedFromVisualTree += (_, _) => Loc.Changed -= UpdateLanguage;
     }
+    // Code-set texts follow a language switch: the header, and the tooltips and placeholders of tree items.
+    private void UpdateLanguage()
+    {
+        if (_folder is null) { FolderName.Text = Loc.T("OpenFolderButton"); ToolTip.SetTip(FolderNameButton, Loc.T("OpenFolderTip")); }
+        else ToolTip.SetTip(FolderNameButton, Loc.F("FolderTip", _folder));
+        void Walk(ItemsControl parent)
+        {
+            foreach (var item in parent.Items.OfType<TreeViewItem>())
+            {
+                if (item.Tag is FolderEntry entry) { ToolTip.SetTip(item, TipFor(entry)); Walk(item); }
+                else if (item.Tag is string key) item.Header = Loc.T(key);
+            }
+        }
+        Walk(FolderTree);
+    }
+    private static string TipFor(FolderEntry entry) =>
+        !entry.IsDirectory && !entry.IsSupported ? entry.Path + "\n" + Loc.T("UnsupportedTip")
+        : entry.IsDirectory && entry.IsLink ? entry.Path + Loc.T("LinkedFolder")
+        : entry.Path;
     // Empty-space menu: tree items have their own menu, so this opens only for the background.
     private ContextMenu CreateBackgroundMenu()
     {
         MenuItem Item(string name, string header, Action action)
         {
-            var item = new MenuItem { Name = name, Header = header };
+            var item = LocResources.Item(header);
+            item.Name = name;
             item.Click += (_, _) => action();
             return item;
         }
         Separator Line() => new() { Background = Mdhub.Services.ThemeService.Brush("SeparatorForeground"), Foreground = Mdhub.Services.ThemeService.Brush("SeparatorForeground") };
         void Create(bool isFolder) { FolderTree.SelectedItem = null; _createInRoot = true; NewItem(isFolder); }
-        var newFile = Item("BackgroundNewFileMenuItem", "New file", () => Create(false));
-        var newFolder = Item("BackgroundNewFolderMenuItem", "New folder", () => Create(true));
-        var paste = Item("BackgroundPasteMenuItem", "Paste", () => { if (_folder is not null) ExplorerRequested?.Invoke(new ExplorerRequest(ExplorerAction.Paste, _folder)); });
+        var newFile = Item("BackgroundNewFileMenuItem", "NewFile", () => Create(false));
+        var newFolder = Item("BackgroundNewFolderMenuItem", "NewFolder", () => Create(true));
+        var paste = Item("BackgroundPasteMenuItem", "MenuPaste", () => { if (_folder is not null) ExplorerRequested?.Invoke(new ExplorerRequest(ExplorerAction.Paste, _folder)); });
         var reload = Item("BackgroundReloadMenuItem", "Reload", () => RefreshFolder_Click(null, new RoutedEventArgs()));
-        var menu = new ContextMenu { Items = { newFile, newFolder, Line(), paste, Line(), reload } };
+        var menu = new ContextMenu { Items = { newFile, newFolder, Line(), paste, Line(), reload } }.Localized();
         menu.Opening += (_, _) => UpdateBackgroundMenu(menu);
         UpdateBackgroundMenu(menu);
         return menu;
@@ -86,10 +112,10 @@ public partial class FolderExplorer : UserControl
     }
     public string GetCreationDirectory(string? activeFilePath)
     {
-        if (_createInRoot) { _createInRoot = false; return _folder ?? throw new InvalidOperationException("Open a folder first."); }
+        if (_createInRoot) { _createInRoot = false; return _folder ?? throw new InvalidOperationException(Loc.T("OpenFolderFirst")); }
         return FolderService.CreationDirectory(
         (FolderTree.SelectedItem as TreeViewItem)?.Tag is FolderEntry entry ? entry.Path : null,
-        activeFilePath, _folder ?? throw new InvalidOperationException("Open a folder first."));
+        activeFilePath, _folder ?? throw new InvalidOperationException(Loc.T("OpenFolderFirst")));
     }
     private FileSystemWatcher? _watcher;
     private Avalonia.Threading.DispatcherTimer? _watchTimer;
@@ -184,24 +210,23 @@ public partial class FolderExplorer : UserControl
         _loadChildren.Clear();
         FolderActions.IsEnabled = !_busy;
         FolderName.Text = Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar));
-        ToolTip.SetTip(FolderNameButton, $"{path}`nClick to open a different folder (Ctrl+Shift+O)");
+        ToolTip.SetTip(FolderNameButton, Loc.F("FolderTip", path));
         FolderTree.Items.Clear();
         foreach (var entry in entries) FolderTree.Items.Add(CreateTreeItem(entry));
-        MessageChanged?.Invoke($"Opened folder · {path}");
+        MessageChanged?.Invoke(Loc.F("OpenedFolder", path));
     }
     private TreeViewItem CreateTreeItem(FolderEntry entry)
     {
         var item = new ExplorerTreeViewItem { Header = (entry.IsDirectory ? "" : "▤  ") + Path.GetFileName(entry.Path), Tag = entry };
-        ToolTip.SetTip(item, entry.Path);
+        ToolTip.SetTip(item, TipFor(entry));
         if (!entry.IsDirectory && !entry.IsSupported)
         {
             item.Opacity = 0.4;
-            ToolTip.SetTip(item, entry.Path + "\nUnsupported file type or text encoding; cannot be opened.");
         }
         item.ContextMenu = CreateContextMenu(entry.Path);
         if (entry.IsDirectory && !entry.IsLink)
         {
-            item.Items.Add(new TreeViewItem { Header = "Loading…", IsEnabled = false });
+            item.Items.Add(new TreeViewItem { Header = Loc.T("Loading"), Tag = "Loading", IsEnabled = false });
             Task? loading = null;
             async Task LoadAsync()
             {
@@ -214,7 +239,7 @@ public partial class FolderExplorer : UserControl
                 catch (Exception ex)
                 {
                     item.Items.Clear();
-                    item.Items.Add(new TreeViewItem { Header = "Unable to read folder", IsEnabled = false });
+                    item.Items.Add(new TreeViewItem { Header = Loc.T("UnableToReadFolder"), Tag = "UnableToReadFolder", IsEnabled = false });
                     MessageChanged?.Invoke(ex.Message);
                     loading = null;
                 }
@@ -226,7 +251,6 @@ public partial class FolderExplorer : UserControl
                 if (e.Property == TreeViewItem.IsExpandedProperty && item.IsExpanded) await EnsureLoaded();
             };
         }
-        else if (entry.IsLink) ToolTip.SetTip(item, entry.Path + " (linked folder; not followed)");
         return item;
     }
     private void FolderRow_PointerPressed(object? sender, PointerPressedEventArgs e)

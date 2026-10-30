@@ -30,66 +30,67 @@
   </UserControl.Styles>
   <Grid ColumnDefinitions="Auto,*,Auto" Height="32" Background="{DynamicResource AppBackground}">
   <Menu x:Name="MainMenu" Background="{DynamicResource AppBackground}" VerticalAlignment="Center">
-    <MenuItem Header="_File">
-      <MenuItem Header="_New" Click="New_Click" c:ShortcutKeys.Id="file.new" />
-      <MenuItem Header="_Open File…" Click="Open_Click" c:ShortcutKeys.Id="file.open" />
-      <MenuItem Header="Open _Folder…" Click="OpenFolder_Click" c:ShortcutKeys.Id="file.openFolder" />
+    <MenuItem Header="{DynamicResource MenuFile}">
+      <MenuItem Header="{DynamicResource MenuNew}" Click="New_Click" c:ShortcutKeys.Id="file.new" />
+      <MenuItem Header="{DynamicResource MenuOpenFile}" Click="Open_Click" c:ShortcutKeys.Id="file.open" />
+      <MenuItem Header="{DynamicResource MenuOpenFolder}" Click="OpenFolder_Click" c:ShortcutKeys.Id="file.openFolder" />
       <!-- Filled from RecentService: files, folders, then Clear Recently Opened. -->
-      <MenuItem x:Name="OpenRecentMenu" Header="Open _Recent" />
-      <MenuItem Header="_Save" Click="Save_Click" c:ShortcutKeys.Id="file.save" />
-      <MenuItem Header="Save _As…" Click="SaveAs_Click" c:ShortcutKeys.Id="file.saveAs" />
-      <MenuItem Header="_Close Tab" Click="CloseTab_Click" c:ShortcutKeys.Id="file.closeTab" />
-      <MenuItem Header="E_xit" Click="Exit_Click" />
+      <MenuItem x:Name="OpenRecentMenu" Header="{DynamicResource MenuOpenRecent}" />
+      <MenuItem Header="{DynamicResource MenuSave}" Click="Save_Click" c:ShortcutKeys.Id="file.save" />
+      <MenuItem Header="{DynamicResource MenuSaveAs}" Click="SaveAs_Click" c:ShortcutKeys.Id="file.saveAs" />
+      <MenuItem Header="{DynamicResource MenuCloseTab}" Click="CloseTab_Click" c:ShortcutKeys.Id="file.closeTab" />
+      <MenuItem Header="{DynamicResource MenuExit}" Click="Exit_Click" />
     </MenuItem>
-    <MenuItem Header="_Edit">
-      <MenuItem Header="Undo" Click="Edit_Click" Tag="undo" c:ShortcutKeys.Id="edit.undo" />
-      <MenuItem Header="Redo" Click="Edit_Click" Tag="redo" c:ShortcutKeys.Id="edit.redo" />
-      <MenuItem Header="Cut" Click="Edit_Click" Tag="cut" c:ShortcutKeys.Id="edit.cut" />
-      <MenuItem Header="Copy" Click="Edit_Click" Tag="copy" c:ShortcutKeys.Id="edit.copy" />
-      <MenuItem Header="Paste" Click="Edit_Click" Tag="paste" c:ShortcutKeys.Id="edit.paste" />
-      <MenuItem Header="Select All" Click="Edit_Click" Tag="select all" c:ShortcutKeys.Id="edit.selectAll" />
+    <MenuItem Header="{DynamicResource MenuEdit}">
+      <MenuItem Header="{DynamicResource MenuUndo}" Click="Edit_Click" Tag="undo" c:ShortcutKeys.Id="edit.undo" />
+      <MenuItem Header="{DynamicResource MenuRedo}" Click="Edit_Click" Tag="redo" c:ShortcutKeys.Id="edit.redo" />
+      <MenuItem Header="{DynamicResource MenuCut}" Click="Edit_Click" Tag="cut" c:ShortcutKeys.Id="edit.cut" />
+      <MenuItem Header="{DynamicResource MenuCopy}" Click="Edit_Click" Tag="copy" c:ShortcutKeys.Id="edit.copy" />
+      <MenuItem Header="{DynamicResource MenuPaste}" Click="Edit_Click" Tag="paste" c:ShortcutKeys.Id="edit.paste" />
+      <MenuItem Header="{DynamicResource MenuSelectAll}" Click="Edit_Click" Tag="select all" c:ShortcutKeys.Id="edit.selectAll" />
       <Separator />
-      <MenuItem Header="Bold" Click="Command_Click" c:ShortcutKeys.Id="editor.bold" />
-      <MenuItem Header="Italic" Click="Command_Click" c:ShortcutKeys.Id="editor.italic" />
-      <MenuItem Header="Insert Link" Click="Command_Click" c:ShortcutKeys.Id="editor.link" />
-      <MenuItem Header="Block Quote" Click="Command_Click" c:ShortcutKeys.Id="editor.quote" />
-      <MenuItem Header="Insert Date and Time" Click="Command_Click" c:ShortcutKeys.Id="editor.insertTime" />
+      <MenuItem Header="{DynamicResource MenuBold}" Click="Command_Click" c:ShortcutKeys.Id="editor.bold" />
+      <MenuItem Header="{DynamicResource MenuItalic}" Click="Command_Click" c:ShortcutKeys.Id="editor.italic" />
+      <MenuItem Header="{DynamicResource MenuInsertLink}" Click="Command_Click" c:ShortcutKeys.Id="editor.link" />
+      <MenuItem Header="{DynamicResource MenuBlockQuote}" Click="Command_Click" c:ShortcutKeys.Id="editor.quote" />
+      <MenuItem Header="{DynamicResource MenuInsertDateTime}" Click="Command_Click" c:ShortcutKeys.Id="editor.insertTime" />
       <Separator />
-      <MenuItem Header="Go to Line…" Click="Command_Click" c:ShortcutKeys.Id="editor.goToLine" />
+      <MenuItem Header="{DynamicResource MenuGoToLine}" Click="Command_Click" c:ShortcutKeys.Id="editor.goToLine" />
     </MenuItem>
-    <MenuItem Header="_View">
-      <MenuItem Header="Toggle Folder Panel" Click="ToggleFolders_Click" />
-      <MenuItem Header="Toggle Preview" Click="TogglePreview_Click" c:ShortcutKeys.Id="view.togglePreview" />
-      <MenuItem Header="Toggle Word Wrap" Click="WordWrap_Click" c:ShortcutKeys.Id="view.wordWrap" />
-      <MenuItem Header="Scroll Preview to Caret" Click="Command_Click" c:ShortcutKeys.Id="view.previewCaret" />
-      <MenuItem Header="Refresh Folder" Click="RefreshFolder_Click" />
+    <MenuItem Header="{DynamicResource MenuView}">
+      <MenuItem Header="{DynamicResource MenuToggleFolders}" Click="ToggleFolders_Click" />
+      <MenuItem Header="{DynamicResource MenuTogglePreview}" Click="TogglePreview_Click" c:ShortcutKeys.Id="view.togglePreview" />
+      <MenuItem Header="{DynamicResource MenuToggleWordWrap}" Click="WordWrap_Click" c:ShortcutKeys.Id="view.wordWrap" />
+      <MenuItem Header="{DynamicResource MenuScrollPreview}" Click="Command_Click" c:ShortcutKeys.Id="view.previewCaret" />
+      <MenuItem Header="{DynamicResource MenuRefreshFolder}" Click="RefreshFolder_Click" />
     </MenuItem>
-    <MenuItem Header="_Settings">
-      <MenuItem Header="Shortcut" Click="Shortcuts_Click" />
-      <MenuItem x:Name="ThemeMenu" Header="_Theme">
-        <MenuItem x:Name="ThemeDarkMenuItem" Header="Dark" ToggleType="Radio" GroupName="theme" Click="Theme_Click" Tag="Dark" />
-        <MenuItem x:Name="ThemeLightMenuItem" Header="Light" ToggleType="Radio" GroupName="theme" Click="Theme_Click" Tag="Light" />
+    <MenuItem Header="{DynamicResource MenuSettings}">
+      <MenuItem Header="{DynamicResource MenuShortcut}" Click="Shortcuts_Click" />
+      <MenuItem x:Name="ThemeMenu" Header="{DynamicResource MenuTheme}">
+        <MenuItem x:Name="ThemeDarkMenuItem" Header="{DynamicResource ThemeDark}" ToggleType="Radio" GroupName="theme" Click="Theme_Click" Tag="Dark" />
+        <MenuItem x:Name="ThemeLightMenuItem" Header="{DynamicResource ThemeLight}" ToggleType="Radio" GroupName="theme" Click="Theme_Click" Tag="Light" />
       </MenuItem>
+      <MenuItem x:Name="LanguageMenu" Header="{DynamicResource MenuLanguage}" />
     </MenuItem>
-    <MenuItem Header="_Help">
-      <MenuItem Header="Markdown Guide" Click="Guide_Click" />
-      <MenuItem Header="About mdhub" Click="About_Click" />
+    <MenuItem Header="{DynamicResource MenuHelp}">
+      <MenuItem Header="{DynamicResource MenuGuide}" Click="Guide_Click" />
+      <MenuItem Header="{DynamicResource MenuAbout}" Click="About_Click" />
     </MenuItem>
   </Menu>
   <Border x:Name="TitleBarDragRegion" Grid.Column="1" Background="Transparent"
           WindowDecorationProperties.ElementRole="TitleBar" />
   <StackPanel Grid.Column="2" Orientation="Horizontal">
     <Button x:Name="MinimizeButton" Classes="caption" Click="Minimize_Click"
-            ToolTip.Tip="Minimize" AutomationProperties.Name="Minimize">
+            ToolTip.Tip="{DynamicResource Minimize}" AutomationProperties.Name="{DynamicResource Minimize}">
       <Path Data="M 0,5 L 10,5" Width="10" Height="10" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1" />
     </Button>
     <Button x:Name="MaximizeButton" Classes="caption" Click="Maximize_Click"
-            ToolTip.Tip="Maximize" AutomationProperties.Name="Maximize">
+            ToolTip.Tip="{DynamicResource Maximize}" AutomationProperties.Name="{DynamicResource Maximize}">
       <Path x:Name="MaximizeIcon" Data="M 0.5,0.5 L 9.5,0.5 9.5,9.5 0.5,9.5 Z" Width="10" Height="10"
             Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1" />
     </Button>
     <Button x:Name="CloseWindowButton" Classes="caption close" Click="CloseWindow_Click"
-            ToolTip.Tip="Close" AutomationProperties.Name="Close window">
+            ToolTip.Tip="{DynamicResource Close}" AutomationProperties.Name="{DynamicResource CloseWindow}">
       <Path Data="M 0,0 L 10,10 M 10,0 L 0,10" Width="10" Height="10" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1" />
     </Button>
   </StackPanel>

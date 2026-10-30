@@ -5,6 +5,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using Mdhub.Services;
 using Mdhub.Text;
+using Mdhub.Localization;
 
 namespace Mdhub.Components;
 
@@ -61,7 +62,13 @@ public partial class GlobalSearch : UserControl
         GlobalQuery.Focus();
         Dispatcher.UIThread.Post(() => { GlobalQuery.Focus(); GlobalQuery.SelectAll(); }, DispatcherPriority.Loaded);
         Schedule();
+        AttachedToVisualTree += (_, _) => { Loc.Changed += UpdateSummary; UpdateSummary(); };
+        DetachedFromVisualTree += (_, _) => Loc.Changed -= UpdateSummary;
     }
+    // The summary is kept as a function so a language switch re-renders it without searching again.
+    private Func<string> _summary = () => "";
+    private void SetSummary(Func<string> summary) { _summary = summary; UpdateSummary(); }
+    private void UpdateSummary() => GlobalSummary.Text = _summary();
     public void Schedule()
     {
         _search?.Cancel();
@@ -69,9 +76,9 @@ public partial class GlobalSearch : UserControl
         Result = new([]);
         GlobalResults.Items.Clear();
         UpdateButtons();
-        if (_root is null) { GlobalSummary.Text = "Open a folder to search."; return; }
-        if (string.IsNullOrEmpty(GlobalQuery.Text)) { GlobalSummary.Text = "Search text files in the opened folder."; return; }
-        GlobalSummary.Text = "Searching…";
+        if (_root is null) { SetSummary(() => Loc.T("GlobalOpenFolder")); return; }
+        if (string.IsNullOrEmpty(GlobalQuery.Text)) { SetSummary(() => Loc.T("GlobalHint")); return; }
+        SetSummary(() => Loc.T("Searching"));
         _debounce.Start();
     }
     public async Task SearchAsync()
@@ -83,7 +90,7 @@ public partial class GlobalSearch : UserControl
         _search = cancellation;
         var query = GlobalQuery.Text;
         var options = Options;
-        GlobalSummary.Text = "Searching…";
+        SetSummary(() => Loc.T("Searching"));
         Result = new([]);
         GlobalResults.Items.Clear();
         UpdateButtons();
@@ -114,14 +121,14 @@ public partial class GlobalSearch : UserControl
                 }
                 GlobalResults.Items.Add(group);
             }
-            GlobalSummary.Text = result.Error ?? $"{result.Count:N0} results in {result.Files.Count:N0} files" +
-                (result.Limited ? $" · First {WorkspaceSearch.MaxResults:N0} matches shown" : "") +
-                (result.Skipped > 0 ? $" · {result.Skipped} unreadable or large files skipped (5 MB limit)" : "") +
-                (result.Lossy > 0 ? $" · {result.Lossy} files have undecodable bytes (shown as �, not replaced)" : "");
+            SetSummary(() => result.Error ?? Loc.F("GlobalResults", result.Count, result.Files.Count) +
+                (result.Limited ? Loc.F("GlobalLimited", WorkspaceSearch.MaxResults) : "") +
+                (result.Skipped > 0 ? Loc.F("GlobalSkipped", result.Skipped) : "") +
+                (result.Lossy > 0 ? Loc.F("GlobalLossy", result.Lossy) : ""));
             GlobalQuery.Classes.Set("invalid", result.Error is not null);
         }
         catch (OperationCanceledException) { }
-        catch (Exception ex) { if (!cancellation.IsCancellationRequested) GlobalSummary.Text = ex.Message; }
+        catch (Exception ex) { if (!cancellation.IsCancellationRequested) SetSummary(() => ex.Message); }
         finally { if (_search == cancellation) _search = null; UpdateButtons(); }
     }
     private void UpdateButtons()
@@ -149,9 +156,10 @@ public partial class GlobalSearch : UserControl
             var message = await ReplaceRequested(new(files, _resultQuery, GlobalReplacement.Text ?? "", _resultOptions with { PreserveCase = GlobalPreserveCase.IsChecked == true }));
             _replacing = false;
             await SearchAsync();
-            GlobalSummary.Text = message + "\n" + GlobalSummary.Text;
+            var previous = _summary;
+            SetSummary(() => message + "\n" + previous());
         }
-        catch (Exception ex) { GlobalSummary.Text = ex.Message; }
+        catch (Exception ex) { SetSummary(() => ex.Message); }
         finally { _replacing = false; UpdateButtons(); }
     }
 }

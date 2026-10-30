@@ -1,6 +1,7 @@
 using System.Text;
 using Mdhub.Services;
 using Mdhub.Text;
+using Mdhub.Localization;
 
 var root = Path.Combine(Path.GetTempPath(), $"mdhub-tests-{Guid.NewGuid():N}");
 Require(TextStatistics.Count("") == new TextStatistics(0, 0, 1), "Empty document has one editor line");
@@ -13,6 +14,59 @@ Require(list.Replacement == "- one\n- two" && list.End == 7, "List formatting ex
 var heading = MarkdownFormatting.Apply("hello world", 7, 7, "h2");
 Require(heading.Replacement == "## hello world", "Heading applies to the current line");
 {
+    // Item 27: localization tables, language detection and persistence.
+    var tables = new[] { ("zh-Hant", Loc.ZhHant), ("ja", Loc.Ja), ("ko", Loc.Ko) };
+    foreach (var (code, table) in tables)
+    {
+        var missing = Loc.En.Keys.Except(table.Keys).ToList();
+        var extra = table.Keys.Except(Loc.En.Keys).ToList();
+        Require(missing.Count == 0 && extra.Count == 0, $"{code} has every English key and no extras (missing: {string.Join(", ", missing)}; extra: {string.Join(", ", extra)})");
+        Require(Loc.Table(code) == table, $"{code} table is selected by its code");
+    }
+    Require(Loc.En.Count > 200, $"English table has {Loc.En.Count} keys");
+    var all = new[] { ("en", Loc.En) }.Concat(tables).ToList();
+    Require(all.All(t => t.Item2.Values.All(v => !string.IsNullOrWhiteSpace(v) && !v.StartsWith('^') && !v.EndsWith('^'))), "Every string is non-empty in all 4 languages");
+    static string Holes(string s) => string.Join(",", System.Text.RegularExpressions.Regex.Matches(s, @"\{(\d+)").Select(m => m.Groups[1].Value).Distinct().OrderBy(x => x));
+    var badHoles = tables.SelectMany(t => t.Item2.Where(kv => Holes(kv.Value) != Holes(Loc.En[kv.Key])).Select(kv => $"{t.Item1}:{kv.Key}")).ToList();
+    Require(badHoles.Count == 0, $"Placeholders match English in every language ({string.Join(", ", badHoles)})");
+    var formatErrors = all.SelectMany(t => t.Item2.Where(kv => { try { string.Format(kv.Value, 1, 2, 3); return false; } catch (FormatException) { return true; } }).Select(kv => $"{t.Item1}:{kv.Key}")).ToList();
+    Require(formatErrors.Count == 0, $"Every string is a valid format string ({string.Join(", ", formatErrors)})");
+    var scKeys = Loc.En.Keys.Where(k => k.StartsWith("Sc.")).Select(k => k[3..]).ToHashSet();
+    Require(Shortcuts.All.All(s => scKeys.Contains(s.Id)) && scKeys.All(id => Shortcuts.All.Any(s => s.Id == id)), "Every shortcut has a localized label key and every label key a shortcut");
+    Require(Shortcuts.All.All(s => Loc.En["Sc." + s.Id] == s.Label), "English shortcut labels match the shortcut table");
+    foreach (var area in Enum.GetNames<ShortcutArea>()) Require(Loc.En.ContainsKey("Area" + area), $"Shortcut area {area} has a label");
+    var identical = tables.Select(t => (t.Item1, t.Item2.Count(kv => kv.Value == Loc.En[kv.Key]))).ToList();
+    Require(identical.All(t => t.Item2 <= 12), $"CJK tables translate nearly everything (same as English: {string.Join(", ", identical.Select(t => $"{t.Item1}={t.Item2}"))})");
+    Require(Loc.Languages.Select(l => l.NativeName).SequenceEqual(["English", "繁體中文", "日本語", "한국어"]), "Languages are listed under their own names");
+    Require(Loc.Detect("zh-TW") == "zh-Hant" && Loc.Detect("zh-HK") == "zh-Hant" && Loc.Detect("zh-MO") == "zh-Hant" && Loc.Detect("zh-Hant-TW") == "zh-Hant" && Loc.Detect("zh-Hant") == "zh-Hant",
+        "Traditional Chinese OS cultures pick zh-Hant");
+    Require(Loc.Detect("zh-CN") == "en" && Loc.Detect("zh-Hans") == "en" && Loc.Detect("zh-SG") == "en", "Simplified Chinese falls back to English");
+    Require(Loc.Detect("ja-JP") == "ja" && Loc.Detect("ja") == "ja" && Loc.Detect("ko-KR") == "ko" && Loc.Detect("ko") == "ko", "Japanese and Korean OS cultures are detected");
+    Require(Loc.Detect("fr-FR") == "en" && Loc.Detect("") == "en" && Loc.Detect(null) == "en" && Loc.Detect("en-GB") == "en" && Loc.Detect("kok-IN") == "en" && Loc.Detect("jam") == "en", "Other OS cultures fall back to English");
+    Require(Loc.Normalize("ZH-HANT") == "zh-Hant" && Loc.Normalize("xx") is null && Loc.Normalize(null) is null, "Saved codes are normalized and unknown ones ignored");
+    var changes = 0;
+    void Count() => changes++;
+    Loc.Changed += Count;
+    Loc.Set("ja");
+    Require(Loc.Current == "ja" && changes == 1 && Loc.T("MenuSave") == Loc.Ja["MenuSave"], "Switching language changes lookups and raises Changed");
+    Loc.Set("ja");
+    Require(changes == 1, "Setting the same language does not raise Changed");
+    Require(Loc.T("No.Such.Key") == "No.Such.Key", "A missing key falls back to the key itself");
+    Require(FindReplace.CountLabel(1, 3) == string.Format(Loc.Ja["FindCount"], 2, 3) && CaretPosition.Format("ab", 0, 2).Contains(Loc.F("CaretSelected", 2).Trim()),
+        "Find count and caret position use the current language");
+    Loc.Set("xx");
+    Require(Loc.Current == "en" && changes == 2, "An unknown language falls back to English");
+    Require(Loc.F("GlobalResults", 1234, 5) == "1,234 results in 5 files" && ZoomLevel.Label(110) == "Zoom 110%" && CaretPosition.Format("a\nb", 3, 3) == "Ln 2, Col 2",
+        "English formatting is unchanged");
+    Require(Loc.Plural("SessionSkippedOne", "SessionSkippedMany", 1).Contains("1 missing item ") && Loc.Plural("SessionSkippedOne", "SessionSkippedMany", 2).Contains("items"), "English plurals pick one or many");
+    Loc.Changed -= Count;
+    var langPath = Path.Combine(Path.GetTempPath(), $"mdhub-lang-{Guid.NewGuid():N}.json");
+    SessionStore.Save(langPath, new SessionData { Language = "ko" });
+    Require(SessionStore.Load(langPath)?.Language == "ko", "The chosen language is saved in the session file");
+    SessionStore.Save(langPath, new SessionData());
+    Require(SessionStore.Load(langPath)?.Language is null, "No language is saved until the user picks one");
+    File.Delete(langPath);
+}{
     // Item 25: Open Recent list logic and persistence.
     var sep = Path.DirectorySeparatorChar;
     var baseDir = Path.Combine(Path.GetTempPath(), "mdhub-recent");

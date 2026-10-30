@@ -1,18 +1,20 @@
 using Mdhub.Services;
 
+using Mdhub.Localization;
+
 namespace Mdhub.Views;
 
 public partial class MainView
 {
     private async Task<string?> RenameExplorerItemAsync(string path, string name)
     {
-        if (_busy) return "Wait for the current operation to finish.";
+        if (_busy) return Loc.T("WaitForOperation");
         if (FolderService.ValidateName(name) is { } error) return error;
-        if (FolderExplorer.OpenedFolder is not { } root || !ExplorerFileOperations.Contains(root, path)) return "The item is outside the opened folder.";
+        if (FolderExplorer.OpenedFolder is not { } root || !ExplorerFileOperations.Contains(root, path)) return Loc.T("OutsideFolder");
         var parent = Path.GetDirectoryName(path)!;
         var target = Path.Combine(parent, name);
         if (Components.FolderExplorer.DuplicateError(path, name) is { } duplicate) return duplicate;
-        if (_documents.Any(d => d.Path is { } p && SamePath(p, target) && !SamePath(p, path))) return "That name is already open in another tab.";
+        if (_documents.Any(d => d.Path is { } p && SamePath(p, target) && !SamePath(p, path))) return Loc.T("NameOpenInTab");
         SetBusy(true);
         try
         {
@@ -34,7 +36,7 @@ public partial class MainView
                 ExplorerClipboard = (relative == "." ? target : Path.Combine(target, relative), clipboard.IsCut);
             }
             await FolderExplorer.RevealCreatedAsync(target);
-            UpdateStatus($"Renamed · {target}");
+            UpdateStatus(Loc.F("Renamed", target));
             return null;
         }
         catch (Exception ex) { return ex.Message; }

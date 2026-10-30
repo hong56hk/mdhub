@@ -151,6 +151,8 @@ internal static class ThemeTests
         Check(sources.Count > 30 && leftovers.Count == 0, $"no hardcoded colours left in {sources.Count} source files{(leftovers.Count > 0 ? ": " + string.Join(", ", leftovers) : "")}");
         var used = sources.SelectMany(f => Regex.Matches(File.ReadAllText(f), @"DynamicResource (\w+)\}|ThemeService\.Brush\(""(\w+)""\)").Select(m => m.Groups[1].Success ? m.Groups[1].Value : m.Groups[2].Value)).ToHashSet();
         var fluentKeys = new HashSet<string>();
+        // Localized strings are DynamicResources too; they are checked by the localization tests.
+        used.RemoveWhere(Mdhub.Localization.Loc.En.ContainsKey);
         var missing = used.Where(k => !keys.Contains(k)).ToList();
         Check(used.Count > 30 && missing.Count == 0, $"all {used.Count} theme keys used in code exist in the palette{(missing.Count > 0 ? ": " + string.Join(", ", missing) : "")}");
 

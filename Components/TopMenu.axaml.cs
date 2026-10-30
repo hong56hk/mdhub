@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Automation;
 using Avalonia.Media;
+using Mdhub.Localization;
 
 namespace Mdhub.Components;
 
@@ -27,6 +28,24 @@ public partial class TopMenu : UserControl
         RebuildRecent();
         AttachedToVisualTree += (_, _) => { Services.RecentService.Changed += RebuildRecent; RebuildRecent(); };
         DetachedFromVisualTree += (_, _) => Services.RecentService.Changed -= RebuildRecent;
+        // Each language is listed under its own name, whatever the current language.
+        foreach (var language in Loc.Languages)
+        {
+            var item = new MenuItem { Header = language.NativeName, Tag = language.Code, ToggleType = MenuItemToggleType.Radio, GroupName = "language" };
+            AutomationProperties.SetName(item, language.NativeName);
+            item.Click += (_, _) => LocResources.Choose(language.Code);
+            LanguageMenu.Items.Add(item);
+        }
+        UpdateLanguage();
+        AttachedToVisualTree += (_, _) => { Loc.Changed += UpdateLanguage; UpdateLanguage(); };
+        DetachedFromVisualTree += (_, _) => Loc.Changed -= UpdateLanguage;
+    }
+    private WindowState _windowState;
+    private void UpdateLanguage()
+    {
+        foreach (var item in LanguageMenu.Items.OfType<MenuItem>()) item.IsChecked = Equals(item.Tag, Loc.Current);
+        UpdateWindowState(_windowState);
+        RebuildRecent();
     }
     private void RebuildRecent()
     {
@@ -52,7 +71,7 @@ public partial class TopMenu : UserControl
         if (items.Count > 0)
         {
             items.Add(new Separator());
-            var clear = new MenuItem { Header = "Clear Recently Opened" };
+            var clear = new MenuItem { Header = Loc.T("RecentClear") };
             clear.Click += (_, _) => Services.RecentService.Clear();
             items.Add(clear);
         }
@@ -72,8 +91,9 @@ public partial class TopMenu : UserControl
     private void Shortcuts_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.Shortcuts);
     public void UpdateWindowState(WindowState state)
     {
+        _windowState = state;
         var maximized = state == WindowState.Maximized;
-        var label = maximized ? "Restore" : "Maximize";
+        var label = Loc.T(maximized ? "Restore" : "Maximize");
         ToolTip.SetTip(MaximizeButton, label);
         AutomationProperties.SetName(MaximizeButton, label);
         MaximizeIcon.Data = Geometry.Parse(maximized

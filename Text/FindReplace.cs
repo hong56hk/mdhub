@@ -111,7 +111,7 @@ public static class FindReplace
         return matches.Count - 1;
     }
 
-    public static string CountLabel(int current, int total) => total == 0 ? "No results" : $"{(current < 0 ? "?" : (current + 1).ToString())} of {total}";
+    public static string CountLabel(int current, int total) => total == 0 ? Mdhub.Localization.Loc.T("NoResults") : Mdhub.Localization.Loc.F("FindCount", current < 0 ? "?" : (current + 1).ToString(), total);
 
     private static (int, int) Clamp(string text, (int Start, int End)? range)
     {

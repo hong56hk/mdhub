@@ -153,7 +153,7 @@ public partial class MdEditor
         }
         catch (Exception ex)
         {
-            MessageChanged?.Invoke($"Copy failed: {ex.Message}");
+            MessageChanged?.Invoke(Mdhub.Localization.Loc.F("CopyFailed", ex.Message));
             return false;
         }
     }

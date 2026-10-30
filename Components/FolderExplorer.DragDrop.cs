@@ -70,7 +70,7 @@ public partial class FolderExplorer
             data.Add(DataTransferItem.Create(FileDragFormat, new DraggedFile(this, path)));
             await DragDrop.DoDragDropAsync(press, data, DragDropEffects.Move);
         }
-        catch (Exception ex) { MessageChanged?.Invoke($"Unable to drag file: {ex.Message}"); }
+        catch (Exception ex) { MessageChanged?.Invoke(Mdhub.Localization.Loc.F("DragFailed", ex.Message)); }
         finally { _dragging = false; ClearDropTarget(); }
     }
 

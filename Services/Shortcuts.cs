@@ -33,6 +33,8 @@ public readonly record struct ShortcutGesture(string Key, ShortcutMods Mods, str
 // Handled says who acts on it: App (mdhub's key handlers) or TextBox (built into the editor, listed for reference).
 public sealed record Shortcut(string Id, ShortcutArea Area, string Label, IReadOnlyList<ShortcutGesture> Gestures, bool HandledByTextBox = false)
 {
+    // The label in the current UI language (the English Label is the fallback).
+    public string DisplayLabel => Mdhub.Localization.Loc.T("Sc." + Id);
     public string Format(bool mac) => string.Join(" / ", Gestures.Where(g => !g.Hidden).Select(g => g.Format(mac)));
 }
 
