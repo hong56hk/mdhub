@@ -15,7 +15,20 @@ public sealed class CurrentLineOverlay : Control
     private TextPresenter? _presenter;
     private ScrollViewer? _scroll;
 
-    public CurrentLineOverlay() => IsHitTestVisible = false;
+    public CurrentLineOverlay()
+    {
+        IsHitTestVisible = false;
+        AttachedToVisualTree += (_, _) => Mdhub.Services.EditorMode.Changed += InvalidateVisual; // item 66
+        DetachedFromVisualTree += (_, _) => Mdhub.Services.EditorMode.Changed -= InvalidateVisual;
+    }
+
+    // Item 66: the overwrite-mode block caret in overlay coordinates, or null in insert mode.
+    public Rect? OverwriteRect()
+    {
+        Hook();
+        if (_presenter is not MarkdownTextPresenter { OverwriteCaret: { } block } presenter || presenter.TranslatePoint(block.TopLeft, this) is not { } at) return null;
+        return new Rect(at, block.Size);
+    }
 
     public void Attach(TextBox? editor)
     {
@@ -70,6 +83,10 @@ public sealed class CurrentLineOverlay : Control
         var clip = new Rect(Bounds.Size);
         if (_scroll?.Presenter is Visual viewport && viewport.TranslatePoint(default, this) is { } origin)
             clip = clip.Intersect(new Rect(origin.X - 1000, origin.Y, viewport.Bounds.Width + 2000, viewport.Bounds.Height));
-        using (context.PushClip(clip)) context.FillRectangle(LineBrush, rect);
+        using (context.PushClip(clip))
+        {
+            context.FillRectangle(LineBrush, rect);
+            if (OverwriteRect() is { } block) context.FillRectangle(Mdhub.Services.ThemeService.Brush("Accent"), block);
+        }
     }
 }

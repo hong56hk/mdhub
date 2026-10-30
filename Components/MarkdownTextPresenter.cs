@@ -3,6 +3,8 @@ using Avalonia.Controls.Presenters;
 using Avalonia.Media;
 using Avalonia.Media.TextFormatting;
 using Avalonia.Utilities;
+using Avalonia.VisualTree;
+using Avalonia.Controls;
 using Mdhub.Text;
 
 namespace Mdhub.Components;
@@ -31,8 +33,25 @@ public sealed class MarkdownTextPresenter : TextPresenter
     public event EventHandler? SyntaxChanged;
 
     // Item 57: code spans and fenced code use the editor gear's code font (only when it differs from the body font).
-    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e) { base.OnAttachedToVisualTree(e); Mdhub.Services.EditorFonts.Changed += OnEditorFontsChanged; }
-    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) { base.OnDetachedFromVisualTree(e); Mdhub.Services.EditorFonts.Changed -= OnEditorFontsChanged; }
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e) { base.OnAttachedToVisualTree(e); Mdhub.Services.EditorFonts.Changed += OnEditorFontsChanged; Mdhub.Services.EditorMode.Changed += InvalidateVisual; }
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) { base.OnDetachedFromVisualTree(e); Mdhub.Services.EditorFonts.Changed -= OnEditorFontsChanged; Mdhub.Services.EditorMode.Changed -= InvalidateVisual; }
+    // Item 66: in overwrite mode the caret is a block as wide as the next character (a space's width at a line end),
+    // in presenter coordinates; CurrentLineOverlay paints it behind the text in the Accent color.
+    public Rect? OverwriteCaret
+    {
+        get
+        {
+            if (!Mdhub.Services.EditorMode.Overwrite || SelectionStart != SelectionEnd || this.FindAncestorOfType<TextBox>() is not { IsKeyboardFocusWithin: true }) return null;
+            var text = Text ?? "";
+            var index = Math.Clamp(CaretIndex, 0, text.Length);
+            var at = TextLayout.HitTestTextPosition(index);
+            var width = index < text.Length && text[index] is not ('\r' or '\n') ? TextLayout.HitTestTextPosition(index + (char.IsSurrogatePair(text, index) ? 2 : 1)).X - at.X : 0;
+            if (width <= 1 || at.Height <= 0) width = Math.Max(4, FontSize * 0.5);
+            return new Rect(at.X, at.Y, width, at.Height);
+        }
+    }
+
+
     private void OnEditorFontsChanged() { _codeProperties.Clear(); InvalidateTextLayout(); }
     private readonly Dictionary<TextRunProperties, TextRunProperties> _codeProperties = new(ReferenceEqualityComparer.Instance);
     private FontFamily? _codeKey;

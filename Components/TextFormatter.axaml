@@ -66,7 +66,6 @@
         </StackPanel>
       </ScrollViewer>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="12,0,0,0">
-        <!-- Room is left to the right of this button for the item 35 settings (gear) button. -->
         <Button x:Name="TogglePreviewButton" Classes="tool" Click="TogglePreview_Click" AutomationProperties.Name="{DynamicResource TogglePreview}">
           <Path x:Name="TogglePreviewIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round"
                 Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
@@ -80,6 +79,16 @@
         <Button x:Name="ExportPdfButton" Classes="tool export" Click="ExportPdf_Click" ToolTip.Tip="{DynamicResource ExportPdfTip}" AutomationProperties.Name="{DynamicResource ExportPdfTip}">
           <Path x:Name="ExportPdfIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                 Data="M 3.5,1 H 9.5 L 13,4.5 V 13 H 3.5 Z M 9.5,1 V 4.5 H 13 M 6,8 H 10.5 M 6,10.5 H 9" />
+        </Button>
+        <!-- Item 60: editor settings (item 57 fonts) and preview settings (item 35 typography), right after Export PDF.
+             The editor gear shows for text tabs, the preview gear only for Markdown; flyouts open below their button. -->
+        <Button x:Name="EditorSettingsButton" Classes="tool export" ToolTip.Tip="{DynamicResource EditorSettings}" AutomationProperties.Name="{DynamicResource EditorSettings}">
+          <Path x:Name="EditorSettingsIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                Data="{StaticResource EditorSettingsIconGeometry}" />
+        </Button>
+        <Button x:Name="PreviewSettingsButton" Classes="tool export" ToolTip.Tip="{DynamicResource PreviewSettings}" AutomationProperties.Name="{DynamicResource PreviewSettings}">
+          <Path x:Name="PreviewSettingsIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                Data="{StaticResource PreviewSettingsIconGeometry}" />
         </Button>
       </StackPanel>
     </Grid>

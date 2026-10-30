@@ -10,7 +10,13 @@ namespace Mdhub.Components;
 
 public partial class BottomStatusBar : UserControl
 {
-    public BottomStatusBar() => InitializeComponent();
+    public BottomStatusBar()
+    {
+        InitializeComponent();
+        UpdateMode();
+        AttachedToVisualTree += (_, _) => { Mdhub.Services.EditorMode.Changed += UpdateMode; Mdhub.Services.Shortcuts.Changed += UpdateMode; UpdateMode(); };
+        DetachedFromVisualTree += (_, _) => { Mdhub.Services.EditorMode.Changed -= UpdateMode; Mdhub.Services.Shortcuts.Changed -= UpdateMode; };
+    }
 
     // Item 40: the path shown in the status bar (null for untitled notes or while a message is shown).
     public string? CopyablePath { get; private set; }
@@ -85,11 +91,19 @@ public partial class BottomStatusBar : UserControl
     {
         CaretLabel.Text = position ?? "";
         CaretLabel.IsVisible = position is not null;
+        ModeLabel.IsVisible = position is not null;
     }
     public void UpdateStatistics(TextStatistics stats) =>
         SetCounts(() => Loc.F("Statistics", stats.Words, stats.Characters, stats.Lines));
     // Kept as a function so a language switch can re-render the counts.
     private Func<string>? _counts;
     private void SetCounts(Func<string> counts) { _counts = counts; Counts.Text = counts(); }
-    public void Relocalize() { if (_counts is not null) Counts.Text = _counts(); }
+    public void Relocalize() { if (_counts is not null) Counts.Text = _counts(); UpdateMode(); }
+    // Item 66: INS/OVR beside Ln/Col; a click toggles the mode (app-wide).
+    private void UpdateMode()
+    {
+        ModeLabel.Text = Loc.T(Mdhub.Services.EditorMode.Overwrite ? "ModeOverwrite" : "ModeInsert");
+        ToolTip.SetTip(ModeLabel, Loc.F("ModeToggleTip", Mdhub.Services.Shortcuts.Format("editor.toggleOverwrite", ShortcutKeys.IsMac)));
+    }
+    private void ModeLabel_Toggle(object? sender, PointerReleasedEventArgs? e) { if (e is null || e.InitialPressMouseButton == MouseButton.Left) Mdhub.Services.EditorMode.Toggle(); }
 }

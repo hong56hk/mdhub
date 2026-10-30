@@ -20,6 +20,7 @@ public partial class GlobalSearch : UserControl
     private readonly DispatcherTimer _debounce = new() { Interval = TimeSpan.FromMilliseconds(250) };
     private bool _replacing;
     private string _resultQuery = "";
+    private string? _resultRoot; // item 61: the folder the shown results belong to (null: none shown)
     private FindOptions _resultOptions;
     public WorkspaceSearchResult Result { get; private set; } = new([]);
     internal int SearchRuns { get; private set; } // searches actually started (tests)
@@ -50,7 +51,13 @@ public partial class GlobalSearch : UserControl
         GlobalReplaceSelected.Click += async (_, _) => await ReplaceAsync(false);
         GlobalReplaceAll.Click += async (_, _) => await ReplaceAsync(true);
         DetachedFromVisualTree += (_, _) => { _search?.Cancel(); _debounce.Stop(); };
+        AttachedToVisualTree += (_, _) => { Loc.Changed += UpdateSummary; UpdateSummary(); };
+        DetachedFromVisualTree += (_, _) => Loc.Changed -= UpdateSummary;
     }
+    // Item 61: results shown (or being searched) still match the folder, query and options, so returning to the
+    // search view keeps them, with their expanded groups and scroll position, instead of searching again.
+    internal bool IsCurrent => _root is not null && (_debounce.IsEnabled || _search is not null
+        || (_resultRoot == _root && _resultQuery == (GlobalQuery.Text ?? "") && _resultOptions == Options));
     public void SetFolder(string? root)
     {
         if (_root == root) return;
@@ -62,9 +69,7 @@ public partial class GlobalSearch : UserControl
         if (replace) GlobalExpandReplace.IsChecked = true;
         GlobalQuery.Focus();
         Dispatcher.UIThread.Post(() => { GlobalQuery.Focus(); GlobalQuery.SelectAll(); }, DispatcherPriority.Loaded);
-        Schedule();
-        AttachedToVisualTree += (_, _) => { Loc.Changed += UpdateSummary; UpdateSummary(); };
-        DetachedFromVisualTree += (_, _) => Loc.Changed -= UpdateSummary;
+        if (!IsCurrent) Schedule();
     }
     // The summary is kept as a function so a language switch re-renders it without searching again.
     private Func<string> _summary = () => "";
@@ -75,6 +80,7 @@ public partial class GlobalSearch : UserControl
         _search?.Cancel();
         _debounce.Stop();
         Result = new([]);
+        _resultRoot = null;
         GlobalResults.Items.Clear();
         UpdateButtons();
         if (_root is null) { SetSummary(() => Loc.T("GlobalOpenFolder")); return; }
@@ -131,6 +137,7 @@ public partial class GlobalSearch : UserControl
             Flush();
             _resultQuery = query;
             _resultOptions = options;
+            _resultRoot = root;
             if (result.Error is not null || streamed.Count != result.Files.Count)
             {
                 GlobalResults.Items.Clear();

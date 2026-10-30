@@ -54,7 +54,7 @@ internal static class PreviewToggleTests
                 Check(preview.IsVisible && bar.PreviewOn && Stroke() == on, $"{theme}: clicking again shows the preview and restores {on}");
             }
             ThemeService.Apply(AppTheme.Dark, persist: false); Pump();
-            foreach (var code in new[] { "en", "zh-Hant", "ja", "ko" })
+            foreach (var code in Loc.Languages.Select(l => l.Code))
             {
                 Loc.Set(code); Pump();
                 var tip = ToolTip.GetTip(button) as string;

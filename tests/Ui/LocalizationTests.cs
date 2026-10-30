@@ -13,7 +13,7 @@ using Mdhub.Localization;
 using Mdhub.Services;
 using Mdhub.Views;
 
-// Item 27: UI languages (English, Traditional Chinese, Japanese, Korean).
+// Item 27: UI languages (English, Traditional Chinese, Japanese, Korean); item 59 adds Simplified Chinese, German, French, Spanish.
 internal static class LocalizationTests
 {
     public static void Run()
@@ -37,7 +37,7 @@ internal static class LocalizationTests
             Pump();
 
             var lang = Language(w1);
-            Check(lang.Items.OfType<MenuItem>().Select(m => m.Header as string).SequenceEqual(["English", "繁體中文", "日本語", "한국어"]), "Settings > Language lists each language under its own name");
+            Check(lang.Items.OfType<MenuItem>().Select(m => m.Header as string).SequenceEqual(["English", "繁體中文", "日本語", "한국어", "简体中文", "Deutsch", "Français", "Español"]), "Settings > Language lists each language under its own name");
             Check(lang.Items.OfType<MenuItem>().Single(m => m.IsChecked).Tag as string == "en", "The current language is checked");
             Check(!Application.Current!.Resources.ContainsKey("ContentControlThemeFontFamily") || Loc.Current == "en", "English keeps the default font");
 

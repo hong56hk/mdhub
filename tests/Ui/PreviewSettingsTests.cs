@@ -54,11 +54,12 @@ internal static class PreviewSettingsTests
                 "Default preview renders as before (15/24 body, 14 px spacing, Consolas 13 code)");
 
             // ---- Gear button ----
-            var gear = md.FindControl<Button>("PreviewSettingsButton")!;
-            var icon = md.FindControl<Avalonia.Controls.Shapes.Path>("PreviewSettingsIcon")!;
+            // Item 60 moved the gear from the preview corner into the toolbar (tests/Ui/GearsTests.cs covers placement and visibility).
+            var formatter = w.GetVisualDescendants().OfType<TextFormatter>().First();
+            var gear = formatter.FindControl<Button>("PreviewSettingsButton")!;
+            var icon = formatter.FindControl<Avalonia.Controls.Shapes.Path>("PreviewSettingsIcon")!;
             Check(gear.IsVisible && gear.Flyout is Flyout && gear.Content == icon && icon.StrokeThickness <= 1.5 && icon.Fill is null, "Gear: a thin-stroke icon button that opens a flyout");
-            var gearAt = gear.TranslatePoint(new Point(gear.Bounds.Width, 0), md)!.Value;
-            Check(gearAt.X > md.Bounds.Width - 40 && gearAt.Y < 20, "Gear sits at the top-right of the preview");
+            Check(md.FindControl<Button>("PreviewSettingsButton") is null, "No gear is left in the preview corner");
             Check(ToolTip.GetTip(gear) as string == Loc.T("PreviewSettings") && AutomationProperties.GetName(gear) == Loc.T("PreviewSettings"), "Gear has a localized tooltip and name");
             Check(icon.Stroke is ISolidColorBrush stroke && gear.Foreground is ISolidColorBrush fg && stroke.Color == fg.Color, "Gear icon follows the theme's button foreground");
             ThemeService.Apply(AppTheme.Light, persist: false); Settle();
@@ -180,20 +181,20 @@ internal static class PreviewSettingsTests
             // ---- Item 56: bullet / ordered list item spacing ----
             PreviewSettings.Reset(persist: false); Settle();
             var dd = new PreviewSettingsData();
-            Check(dd.BulletSpacing == 8 && dd.OrderedSpacing == 8 && PreviewSettings.NumberSize == 15.5,
-                "Item 56 defaults: list item spacing 8 px (the old nested spacing), numbers 15.5 px at 15 px body (was 16.5)");
+            Check(dd.BulletSpacing == 0 && dd.OrderedSpacing == 8 && PreviewSettings.NumberSize == 15.5,
+                "Item 56 defaults: bullet spacing 0 px, ordered spacing 8 px, numbers 15.5 px at 15 px body (was 16.5)");
             double Gap(string kind)
             {
                 var list = content.Children.OfType<StackPanel>().First(s => PreviewTags.Kind(s) == kind);
                 var a = list.Children[0]; var b = list.Children[1];
                 return b.TranslatePoint(default, content)!.Value.Y - a.TranslatePoint(new Point(0, a.Bounds.Height), content)!.Value.Y;
             }
-            Check(Math.Abs(Gap("ul") - 8) < 0.01 && Math.Abs(Gap("ol") - 8) < 0.01, $"Default list item gaps measured from layout: ul {Gap("ul"):F2}, ol {Gap("ol"):F2}");
+            Check(Math.Abs(Gap("ul") - 0) < 0.01 && Math.Abs(Gap("ol") - 8) < 0.01, $"Default list item gaps measured from layout: ul {Gap("ul"):F2}, ol {Gap("ol"):F2}");
             flyout.ShowAt(gear); Settle();
             panel = (StackPanel)flyout.Content!;
             var bulletBox = Find<NumericUpDown>("BulletSpacingBox"); var orderedBox = Find<NumericUpDown>("OrderedSpacingBox");
             Check(bulletBox.Minimum == 0 && bulletBox.Maximum == 24 && bulletBox.Increment == 1 && orderedBox.Minimum == 0 && orderedBox.Maximum == 24 && orderedBox.Increment == 1
-                && bulletBox.Value == 8 && orderedBox.Value == 8, "Flyout has bullet and ordered spacing boxes (0-24 by 1, default 8)");
+                && bulletBox.Value == 0 && orderedBox.Value == 8, "Flyout has bullet and ordered spacing boxes (0-24 by 1, defaults 0 and 8)");
             bulletBox.Value = 3; orderedBox.Value = 17; Settle();
             Check(Math.Abs(Gap("ul") - 3) < 0.01 && Math.Abs(Gap("ol") - 17) < 0.01 && content.Spacing == 14,
                 $"Live: list gaps follow the settings independently (ul {Gap("ul"):F2}, ol {Gap("ol"):F2}), paragraph spacing unchanged");
@@ -210,8 +211,8 @@ internal static class PreviewSettingsTests
                 "Export CSS carries both list spacings and the 1 px smaller numbers");
             Find<Button>("ResetPreviewSettings").RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent)); Settle();
             panel = (StackPanel)flyout.Content!;
-            Check(PreviewSettings.IsDefault && Find<NumericUpDown>("BulletSpacingBox").Value == 8 && Find<NumericUpDown>("OrderedSpacingBox").Value == 8
-                && Math.Abs(Gap("ul") - 8) < 0.01 && Math.Abs(Gap("ol") - 8) < 0.01 && MarkdownExporter.Css().Contains("ul > li + li { margin-top: 8px; } ol > li + li { margin-top: 8px; }"),
+            Check(PreviewSettings.IsDefault && Find<NumericUpDown>("BulletSpacingBox").Value == 0 && Find<NumericUpDown>("OrderedSpacingBox").Value == 8
+                && Math.Abs(Gap("ul") - 0) < 0.01 && Math.Abs(Gap("ol") - 8) < 0.01 && MarkdownExporter.Css().Contains("ul > li + li { margin-top: 0px; } ol > li + li { margin-top: 8px; }"),
                 "Reset restores both list spacings (controls, preview, export)");
             Check(SessionStore.Load(sessionPath)!.Preview is null, "After the list-spacing reset the session stores no preview settings");
             flyout.Hide(); Settle();
@@ -228,7 +229,7 @@ internal static class PreviewSettingsTests
                 "Reset to defaults restores every value, the controls and the preview");
             Check(SessionStore.Load(sessionPath)!.Preview is null, "After reset the session stores no preview settings");
             Check(Loc.Languages.All(l => new[] { "PreviewSettings", "PreviewBodyFont", "PreviewCodeFont", "PreviewLineHeight", "PreviewParagraphSpacing", "PreviewResetDefaults", "PreviewDefaultFont", "PreviewBulletSpacing", "PreviewOrderedSpacing" }
-                .All(k => Loc.Table(l.Code).TryGetValue(k, out var v) && !string.IsNullOrWhiteSpace(v))), "Every flyout string exists in all 4 languages");
+                .All(k => Loc.Table(l.Code).TryGetValue(k, out var v) && !string.IsNullOrWhiteSpace(v))), $"Every flyout string exists in all {Loc.Languages.Count} languages");
             flyout.Hide();
         }
         finally

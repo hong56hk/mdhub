@@ -90,8 +90,8 @@ internal static class FormatIconTests
             }
             w.SetZoom(100, announce: false); Pump();
 
-            // Tooltips and accessibility names in all four languages.
-            foreach (var code in new[] { "en", "zh-Hant", "ja", "ko" })
+            // Tooltips and accessibility names in every UI language.
+            foreach (var code in Loc.Languages.Select(l => l.Code))
             {
                 Loc.Set(code); Pump();
                 var linkTip = ToolTip.GetTip(B("link")) as string;

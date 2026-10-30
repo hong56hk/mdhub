@@ -30,7 +30,6 @@ public partial class MdEditor : UserControl
         InitSelection();
         // Item 35: typography changes apply live to the open preview.
         PreviewContent.Spacing = Mdhub.Services.PreviewSettings.Current.ParagraphSpacing;
-        PreviewSettingsButton.Flyout = PreviewSettingsFlyout.Create();
         AttachedToVisualTree += (_, _) => Mdhub.Services.PreviewSettings.Changed += OnPreviewSettingsChanged;
         DetachedFromVisualTree += (_, _) => Mdhub.Services.PreviewSettings.Changed -= OnPreviewSettingsChanged;
     }

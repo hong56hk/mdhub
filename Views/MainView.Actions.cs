@@ -104,7 +104,16 @@ public partial class MainView
     {
         RecentService.AddFolder(path);
         await LoadRootAsync(path);
+        await RestoreFolderTabsAsync(path);
         if (!Sidebar.IsVisible) ToggleFolders_Click(null, new RoutedEventArgs());
+    }
+
+    // Item 64: reopen the folder's saved tabs (existing files only, silently) when nothing is open in this window yet.
+    private async Task RestoreFolderTabsAsync(string folder)
+    {
+        if (!SessionManager.Enabled || _documents.Any(d => d.Path is not null || d.IsDirty)) return;
+        if (FolderTabsStore.Recall(FolderTabsStore.Load(FolderTabsStore.PathFor(SessionManager.SessionPath)), folder, File.Exists) is not { Tabs.Count: > 0 } saved) return;
+        await RestoreSessionAsync(new WindowSession { Tabs = saved.Tabs, ActiveTab = saved.ActiveTab }, null);
     }
 
     private static bool SameFolder(string a, string b)
@@ -228,6 +237,7 @@ public partial class MainView
             // Formatting and insert time act on the focused editor only; go to line / preview work anywhere but the find fields.
             "editor.bold" or "editor.italic" or "editor.link" or "editor.quote" when EditorFocused && _active!.IsMarkdown => EditorCommand(id),
             "editor.insertTime" when EditorFocused => EditorCommand(id),
+            "editor.toggleOverwrite" when _active is { IsViewOnly: false } && !TextEditor.IsFindFocused => () => { Mdhub.Services.EditorMode.Toggle(); return Task.CompletedTask; },
             "editor.goToLine" or "view.previewCaret" when _active is { IsViewOnly: false } && !TextEditor.IsFindFocused => EditorCommand(id),
             _ => null
         };

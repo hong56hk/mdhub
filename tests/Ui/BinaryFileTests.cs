@@ -169,7 +169,7 @@ internal static class BinaryFileTests
 
             // --- Localization ---
             string[] keys = ["BinaryNotDisplayed", "OpenWithDefaultApp", "OpenAnywayAsText", "LargeFileConfirm", "LargeFileTitle", "OpenAnyway", "RunProgramTitle", "RunProgramConfirm", "RunProgram", "KindBinary", "ReadOnly", "OpenedWithDefaultApp", "UnableToOpenDefaultApp", "OpenedReadOnly"];
-            foreach (var code in new[] { "zh-Hant", "ja", "ko" })
+            foreach (var code in Loc.Languages.Select(l => l.Code).Where(c => c != Loc.English))
             {
                 var table = Loc.Table(code);
                 Check(keys.All(k => table.TryGetValue(k, out var s) && !string.IsNullOrWhiteSpace(s) && s != Loc.Table("en")[k]), $"{code}: all item 52 strings are translated");

@@ -83,7 +83,7 @@ internal static class ExportTests
             Check(g.StrokeContains(pen, new Point(1.5, 7)) && g.StrokeContains(pen, new Point(14.5, 7)) && g.StrokeContains(pen, new Point(8, 7)), "HTML icon is '</>'");
             g = pdfButton.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().Single().Data!;
             Check(g.StrokeContains(pen, new Point(9.5, 3)) && g.StrokeContains(pen, new Point(11, 4.5)) && g.StrokeContains(pen, new Point(3.5, 12)), "PDF icon is a page with a folded corner");
-            foreach (var (code, _) in new[] { ("en", 0), ("zh-Hant", 0), ("ja", 0), ("ko", 0) })
+            foreach (var code in Loc.Languages.Select(l => l.Code))
             {
                 Loc.Set(code); Pump();
                 var table = Loc.Table(code);

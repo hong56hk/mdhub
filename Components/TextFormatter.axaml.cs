@@ -12,6 +12,8 @@ public partial class TextFormatter : UserControl
     {
         InitializeComponent();
         UpdateLanguage();
+        EditorSettingsButton.Flyout = EditorFontsFlyout.Create();
+        PreviewSettingsButton.Flyout = PreviewSettingsFlyout.Create();
         // The tooltip names the live (possibly customized) toggle-preview shortcut.
         AttachedToVisualTree += (_, _) => { Mdhub.Localization.Loc.Changed += UpdateLanguage; Mdhub.Services.Shortcuts.Changed += UpdateLanguage; UpdateLanguage(); };
         DetachedFromVisualTree += (_, _) => { Mdhub.Localization.Loc.Changed -= UpdateLanguage; Mdhub.Services.Shortcuts.Changed -= UpdateLanguage; };
@@ -28,6 +30,12 @@ public partial class TextFormatter : UserControl
         TogglePreviewButton.IsEnabled = enabled;
         ExportHtmlButton.IsEnabled = enabled;
         ExportPdfButton.IsEnabled = enabled;
+    }
+    // Item 60: the editor gear is for any text tab, the preview gear only for Markdown; both hide for image, binary and other tabs.
+    public void SetSettingsVisibility(bool text, bool markdown)
+    {
+        EditorSettingsButton.IsVisible = text;
+        PreviewSettingsButton.IsVisible = text && markdown;
     }
     // Item 48: on = the preview pane is showing.
     public bool PreviewOn => TogglePreviewButton.Classes.Contains("on");
