@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.QuickOpen"
+             HorizontalAlignment="Center" VerticalAlignment="Top" IsVisible="False" Width="600" MaxWidth="600">
+  <UserControl.Styles>
+    <Style Selector="ListBox#QuickOpenList">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="ListBox#QuickOpenList ListBoxItem">
+      <Setter Property="Padding" Value="8,3" />
+      <Setter Property="MinHeight" Value="24" />
+      <Setter Property="CornerRadius" Value="3" />
+    </Style>
+    <Style Selector="ListBox#QuickOpenList ListBoxItem:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBackground}" />
+    </Style>
+    <Style Selector="ListBox#QuickOpenList ListBoxItem:selected /template/ ContentPresenter, ListBox#QuickOpenList ListBoxItem:selected:focus /template/ ContentPresenter, ListBox#QuickOpenList ListBoxItem:selected:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoft}" />
+    </Style>
+    <Style Selector="TextBox#QuickOpenInput">
+      <Setter Property="Width" Value="NaN" />
+    </Style>
+  </UserControl.Styles>
+  <Border Background="{DynamicResource FloatingBackground}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" CornerRadius="0,0,6,6" Padding="6" BoxShadow="0 2 8 0 #66000000">
+    <DockPanel>
+      <TextBox x:Name="QuickOpenInput" DockPanel.Dock="Top" Classes="findField" Watermark="{DynamicResource QuickOpenWatermark}" AutomationProperties.Name="{DynamicResource QuickOpenName}" />
+      <TextBlock x:Name="QuickOpenHeader" DockPanel.Dock="Top" Margin="8,6,8,2" FontSize="11" Foreground="{DynamicResource TextMuted}" IsVisible="False" />
+      <TextBlock x:Name="QuickOpenMessage" DockPanel.Dock="Top" Margin="8,6" FontSize="12" Foreground="{DynamicResource TextMuted}" TextWrapping="Wrap" IsVisible="False" />
+      <ListBox x:Name="QuickOpenList" Margin="0,4,0,0" MaxHeight="360" SelectionMode="Single" Focusable="False" AutomationProperties.Name="{DynamicResource QuickOpenResults}" />
+    </DockPanel>
+  </Border>
+</UserControl>

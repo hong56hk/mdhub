@@ -14,6 +14,72 @@ Require(list.Replacement == "- one\n- two" && list.End == 7, "List formatting ex
 var heading = MarkdownFormatting.Apply("hello world", 7, 7, "h2");
 Require(heading.Replacement == "## hello world", "Heading applies to the current line");
 {
+    // Item 28: Quick Open fuzzy ranking, ":line" parsing and the file index.
+    string S(string p) => p.Replace('/', Path.DirectorySeparatorChar);
+    string[] files = [S("Components/MdEditor.axaml.cs"), S("Components/MdEditor.axaml"), S("Services/Compiler.cs"), S("docs/readme.md"), S("Models/Mdhub.cs"),
+        S("src/comp/md.txt"), S("Views/MainView.axaml.cs"), S("tests/Ui/Program.cs"), S("Program.cs"), S("abc/xyz/map.md"), S("README.md")];
+    List<string> Top(string q, params string[] recent) => QuickOpenRanker.Rank(files, QuickOpenRanker.Parse(q).Pattern, recent).Select(i => i.RelativePath.Replace('\\', '/')).ToList();
+    var comp = Top("comp/md");
+    Require(comp.Count >= 2 && comp.Take(3).Contains("Components/MdEditor.axaml.cs") && comp.Contains("src/comp/md.txt"), $"'comp/md' matches Components/MdEditor ({string.Join(", ", comp)})");
+    Require(comp[0] == "src/comp/md.txt", "Contiguous path segments outrank scattered ones");
+    Require(Top("comp\\md").SequenceEqual(comp), "Backslash and slash match each other");
+    var prog = Top("program");
+    Require(prog.Count == 2 && prog[0] == "Program.cs" && prog[1] == "tests/Ui/Program.cs", $"Shorter path wins on equal name score ({string.Join(", ", prog)})");
+    var md = Top("md");
+    Require(md.IndexOf("Components/MdEditor.axaml.cs") < md.IndexOf("docs/readme.md") && md.IndexOf("Models/Mdhub.cs") < md.IndexOf("abc/xyz/map.md"), $"Name start beats a scattered match ({string.Join(", ", md)})");
+    var mv = Top("mv");
+    Require(mv.Count > 0 && mv[0] == "Views/MainView.axaml.cs", $"Camel-case word starts score (mv -> MainView) ({string.Join(", ", mv)})");
+    var nameVsPath = Top("comp");
+    Require(nameVsPath[0] == "Services/Compiler.cs" && nameVsPath.Contains("Components/MdEditor.axaml"), $"File-name matches rank above folder-only matches ({string.Join(", ", nameVsPath)})");
+    var withRecent = Top("mdhub", S("docs/readme.md"));
+    Require(withRecent.SequenceEqual(["Models/Mdhub.cs"]), "Non-matching recents are not listed for a query");
+    var tied = QuickOpenRanker.Rank([S("a/readme.md"), S("b/readme.md")], "readme", [S("b/readme.md")]);
+    Require(tied[0].RelativePath == S("b/readme.md") && tied[0].Recent, "Recent file wins a tie");
+    Require(Top("zzz").Count == 0 && Top("").Count == 0, "No match and empty query without recents give nothing");
+    var empty = QuickOpenRanker.Rank(files, "", [S("docs/readme.md"), S("Program.cs")]);
+    Require(empty.Select(i => i.RelativePath).SequenceEqual([S("docs/readme.md"), S("Program.cs")]) && empty.All(i => i.Recent && i.Hits.Length == 0), "Empty query lists recents in order");
+    Require(Top("m d").SequenceEqual(Top("md")), "Spaces in the query are ignored");
+    var hit = QuickOpenRanker.Rank(files, "mdedit", []).First();
+    Require(hit.Name == "MdEditor.axaml.cs" || hit.Name == "MdEditor.axaml", "Name/Folder split");
+    Require(new string(hit.Hits.Select(i => hit.RelativePath[i]).ToArray()).Equals("MdEdit", StringComparison.OrdinalIgnoreCase) && hit.Hits.All(i => i >= hit.NameStart), "Hits point at the matched name letters");
+    var pathHit = QuickOpenRanker.Rank(files, "comp/md", []).First(i => i.RelativePath == S("Components/MdEditor.axaml.cs"));
+    Require(pathHit.Hits.Length == 7 && pathHit.Hits.Any(i => i < pathHit.NameStart) && pathHit.Folder == "Components", "Path hits span folder and name");
+    var many = Enumerable.Range(0, 5000).Select(i => S($"d{i % 50}/file{i}.md")).ToList();
+    Require(QuickOpenRanker.Rank(many, "file", []).Count == QuickOpenRanker.MaxResults, $"Results are capped at {QuickOpenRanker.MaxResults}");
+    Require(QuickOpenRanker.Parse("readme:12") == ("readme", 12) && QuickOpenRanker.Parse("readme.md:7:3") == ("readme.md", 7) && QuickOpenRanker.Parse(":40") == ("", 40)
+        && QuickOpenRanker.Parse("readme") == ("readme", null) && QuickOpenRanker.Parse("a:b") == ("a:b", null) && QuickOpenRanker.Parse(" x : ") == ("x :", null), "\":line\" suffix parses");
+    Require(FuzzyMatch.Match("abc", "xaxbxc") is { } m1 && FuzzyMatch.Match("abc", "abcxxx") is { } m2 && m2.Score > m1.Score, "Consecutive letters score higher");
+    Require(FuzzyMatch.Match("fb", "FooBar") is { } fb && FuzzyMatch.Match("fb", "foobxr") is { } fx && fb.Score > fx.Score, "Word starts score higher");
+    Require(FuzzyMatch.Match("ba", "ab") is null && FuzzyMatch.Match("", "x") is { Score: 0 }, "Order matters; empty pattern matches with score 0");
+
+    var qroot = Path.Combine(Path.GetTempPath(), $"mdhub-qo-{Guid.NewGuid():N}");
+    foreach (var f in new[] { ".git/HEAD", "bin/Debug/app.dll", "obj/x.cs", "node_modules/p/index.js", "a/b/c/deep.md", "top.txt", ".hidden" })
+    {
+        var full = Path.Combine(qroot, S(f));
+        Directory.CreateDirectory(Path.GetDirectoryName(full)!);
+        File.WriteAllText(full, "x");
+    }
+    File.SetAttributes(Path.Combine(qroot, ".hidden"), FileAttributes.Hidden);
+    var listed = QuickOpenIndex.Enumerate(qroot, 1000, out var truncated).Select(p => p.Replace('\\', '/')).OrderBy(p => p, StringComparer.Ordinal).ToList();
+    Require(!truncated && listed.SequenceEqual([".git/HEAD", ".hidden", "a/b/c/deep.md", "bin/Debug/app.dll", "node_modules/p/index.js", "obj/x.cs", "top.txt"]), $"Index lists every file with no exclusions ({string.Join(", ", listed)})");
+    QuickOpenIndex.Enumerate(qroot, 3, out truncated);
+    Require(truncated, "Index reports truncation at its cap");
+    using (var index = new QuickOpenIndex(qroot))
+    {
+        var first = index.GetFilesAsync().Result;
+        Require(first.Count == 7 && ReferenceEquals(first, index.GetFilesAsync().Result), "Index is cached");
+        var changed = new ManualResetEventSlim();
+        index.Changed += changed.Set;
+        File.WriteAllText(Path.Combine(qroot, "new.md"), "x");
+        Require(changed.Wait(5000), "Watcher notices a new file");
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        IReadOnlyList<string> next;
+        do next = index.GetFilesAsync().Result; while (!next.Contains("new.md") && DateTime.UtcNow < deadline && Thread.Yield());
+        Require(next.Contains("new.md") && next.Count == 8, "Index rebuilds after a change");
+    }
+    Directory.Delete(qroot, true);
+}
+{
     // Item 27: localization tables, language detection and persistence.
     var tables = new[] { ("zh-Hant", Loc.ZhHant), ("ja", Loc.Ja), ("ko", Loc.Ko) };
     foreach (var (code, table) in tables)
@@ -354,7 +420,7 @@ try
         Require(Shortcuts.Get("edit.undo").HandledByTextBox && !Shortcuts.Get("file.save").HandledByTextBox, "Entries record whether the editor handles them itself");
     }    {
         Require(new[] { ("editor.bold", "Ctrl+B", "Cmd+B"), ("editor.italic", "Ctrl+I", "Cmd+I"), ("editor.link", "Ctrl+L", "Cmd+L"), ("editor.quote", "Ctrl+\"", "Cmd+\""),
-            ("editor.insertTime", "Ctrl+;", "Cmd+;"), ("editor.goToLine", "Ctrl+G", "Cmd+G"), ("view.previewCaret", "Ctrl+Shift+G", "Cmd+Shift+G"), ("find.replace", "Ctrl+H", "Cmd+H") }
+            ("editor.insertTime", "Ctrl+;", "Cmd+;"), ("editor.goToLine", "Ctrl+G", "Cmd+G"), ("view.previewCaret", "Ctrl+Shift+G", "Cmd+Shift+G"), ("file.quickOpen", "Ctrl+P", "Cmd+P"), ("find.replace", "Ctrl+H", "Cmd+H") }
             .All(x => Shortcuts.Format(x.Item1, false) == x.Item2 && Shortcuts.Format(x.Item1, true) == x.Item3), "Item 18 shortcuts are in the table with Windows and macOS text");
         var quote = Shortcuts.Get("editor.quote");
         Require(quote.Gestures.Count == 2 && quote.Gestures.All(g => g.Key == "OemQuotes") && quote.Gestures.Count(g => g.Hidden) == 1, "Block quote accepts Ctrl+' and Ctrl+Shift+' but shows one gesture");

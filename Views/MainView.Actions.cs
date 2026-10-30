@@ -54,6 +54,7 @@ public partial class MainView
     {
         await FolderExplorer.LoadRootAsync(path);
         GlobalSearch.SetFolder(path);
+        SetQuickOpenRoot(FolderExplorer.OpenedFolder ?? path);
     }
 
     private async Task OpenFolderAsync()
@@ -152,6 +153,12 @@ public partial class MainView
     internal bool HandleSidebarShortcut(KeyEventArgs e)
     {
         if (e.Handled || _busy || FolderExplorer.IsRenaming) return false;
+        if (ShortcutKeys.Match(e, s => s.Id == "file.quickOpen") is not null)
+        {
+            e.Handled = true;
+            OpenQuickOpen();
+            return true;
+        }
         if (ShortcutKeys.Match(e, s => s.Id is "sidebar.explorer" or "sidebar.search" or "sidebar.replace") is not { } sidebar) return false;
         e.Handled = true;
         ShowSidebar(sidebar != "sidebar.explorer", sidebar == "sidebar.replace");
@@ -221,6 +228,7 @@ public partial class MainView
     // Menu items carrying one of these ids (not focus-scoped: the menu has focus when clicked).
     private async void RunMenuCommand(string id)
     {
+        if (id == "file.quickOpen") { if (!_busy) OpenQuickOpen(); return; }
         if (_busy || _active is null || _active.IsImage || EditorCommand(id) is not { } action) return;
         if (id == "editor.goToLine") await RunAsync(action); else await action();
     }
@@ -255,6 +263,15 @@ public partial class MainView
         var count = Mdhub.Text.EditorCommands.LineCount(text);
         var current = Mdhub.Text.EditorCommands.LineCount(text[..Math.Clamp(editor.CaretIndex, 0, text.Length)]);
         if (await DialogService.PromptLineAsync(Host, count, current) is not { } line || document != _active) return;
+        JumpToLine(document, line);
+    }
+
+    // Caret to the start of a 1-based line (clamped to the document), scrolled into view in source and preview.
+    private void JumpToLine(Mdhub.Models.NoteDocument document, int line)
+    {
+        var editor = document.Editor;
+        var text = editor.Text ?? "";
+        line = Math.Clamp(line, 1, Mdhub.Text.EditorCommands.LineCount(text));
         var start = Mdhub.Text.EditorCommands.LineStart(text, line);
         editor.Focus();
         editor.SelectionStart = editor.SelectionEnd = start;

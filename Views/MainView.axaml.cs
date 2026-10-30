@@ -32,6 +32,7 @@ public partial class MainView : UserControl
         // Code-set status texts follow a language switch (XAML texts use DynamicResource).
         AttachedToVisualTree += (_, _) => Loc.Changed += OnLanguageChanged;
         DetachedFromVisualTree += (_, _) => Loc.Changed -= OnLanguageChanged;
+        WireQuickOpen();
         FileTabs.DocumentSelected += SelectDocument;
         FileTabs.NewRequested += () => RequestAction(WorkspaceAction.New);
         FileTabs.CloseRequested += async document => await RunAsync(() => CloseDocumentAsync(document));

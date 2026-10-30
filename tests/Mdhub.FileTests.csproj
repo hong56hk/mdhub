@@ -8,6 +8,8 @@
   <ItemGroup>
     <Compile Include="../Services/TextFileStore.cs" Link="TextFileStore.cs" />
     <Compile Include="../Text/TextStatistics.cs" Link="TextStatistics.cs" />
+    <Compile Include="../Text/FuzzyMatch.cs" Link="FuzzyMatch.cs" />
+    <Compile Include="../Services/QuickOpenIndex.cs" Link="QuickOpenIndex.cs" />
     <Compile Include="../Text/MarkdownFormatting.cs" Link="MarkdownFormatting.cs" />
     <Compile Include="../Text/ImageAssets.cs" Link="ImageAssets.cs" />
     <Compile Include="../Text/FindReplace.cs" Link="FindReplace.cs" />

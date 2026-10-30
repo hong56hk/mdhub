@@ -36,6 +36,7 @@
       <MenuItem Header="{DynamicResource MenuOpenFolder}" Click="OpenFolder_Click" c:ShortcutKeys.Id="file.openFolder" />
       <!-- Filled from RecentService: files, folders, then Clear Recently Opened. -->
       <MenuItem x:Name="OpenRecentMenu" Header="{DynamicResource MenuOpenRecent}" />
+      <MenuItem Header="{DynamicResource MenuQuickOpen}" Click="Command_Click" c:ShortcutKeys.Id="file.quickOpen" />
       <MenuItem Header="{DynamicResource MenuSave}" Click="Save_Click" c:ShortcutKeys.Id="file.save" />
       <MenuItem Header="{DynamicResource MenuSaveAs}" Click="SaveAs_Click" c:ShortcutKeys.Id="file.saveAs" />
       <MenuItem Header="{DynamicResource MenuCloseTab}" Click="CloseTab_Click" c:ShortcutKeys.Id="file.closeTab" />

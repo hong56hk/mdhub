@@ -51,6 +51,7 @@ public static class Shortcuts
     [
         S("file.new", ShortcutArea.File, "New note", C("N")),
         S("file.open", ShortcutArea.File, "Open file", C("O")),
+        S("file.quickOpen", ShortcutArea.File, "Go to file", C("P")),
         S("file.openFolder", ShortcutArea.File, "Open folder", CS("O"), CS("N")),
         S("file.save", ShortcutArea.File, "Save", C("S")),
         S("file.saveAs", ShortcutArea.File, "Save as", CS("S")),
