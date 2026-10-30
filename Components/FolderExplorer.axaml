@@ -8,6 +8,14 @@
     <Style Selector="TreeViewItem /template/ Panel#PART_ExpandCollapseChevronContainer">
       <Setter Property="MinWidth" Value="12" />
     </Style>
+    <!-- VS Code: a file has no chevron, so its icon sits in the chevron's slot. The slot collapses to just the Fluent
+         chevron margin (12px left), so the header (icon first) starts exactly where a folder's chevron does.
+         :empty makes this a trigger so it beats the Fluent theme's own ":empty" slot width. -->
+    <Style Selector="TreeViewItem.file:empty /template/ Panel#PART_ExpandCollapseChevronContainer">
+      <Setter Property="Width" Value="0" />
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="Margin" Value="12,0,0,0" />
+    </Style>
     <!-- VS Code row states. A 1px border is always reserved (transparent) so rows never shift when focus moves;
          the focused-selection colours apply while focus is anywhere inside the tree (rename box included). -->
     <Style Selector="TreeView#FolderTree TreeViewItem">

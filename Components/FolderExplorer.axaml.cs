@@ -230,6 +230,8 @@ public partial class FolderExplorer : UserControl
     {
         var item = new ExplorerTreeViewItem { Header = (entry.IsDirectory ? "" : "▤  ") + Path.GetFileName(entry.Path), Tag = entry };
         ToolTip.SetTip(item, TipFor(entry));
+        // VS Code: a file's icon takes the chevron's slot (see the TreeViewItem.file style).
+        if (!entry.IsDirectory) item.Classes.Add("file");
         if (!entry.IsDirectory && !entry.IsSupported)
         {
             item.Opacity = 0.4;

@@ -31,6 +31,7 @@ internal static class ExplorerLayoutTests
         {
             var sub = Directory.CreateDirectory(Path.Combine(root, "Alpha")).FullName;
             Directory.CreateDirectory(Path.Combine(sub, "Nested"));
+            Directory.CreateDirectory(Path.Combine(sub, "Nested", "Deeper"));
             File.WriteAllText(Path.Combine(sub, "inner.md"), "x");
             File.WriteAllText(Path.Combine(sub, "Nested", "deep.md"), "x");
             Directory.CreateDirectory(Path.Combine(root, "Empty"));
@@ -53,13 +54,20 @@ internal static class ExplorerLayoutTests
             var alpha = Node(sub); var empty = Node(Path.Combine(root, "Empty")); var top = Node(Path.Combine(root, "top.md"));
             var nested = Node(Path.Combine(sub, "Nested")); var inner = Node(Path.Combine(sub, "inner.md")); var deep = Node(Path.Combine(sub, "Nested", "deep.md"));
             Console.WriteLine($"INFO x: level0 {HeaderX(alpha)}/{HeaderX(top)}, level1 {HeaderX(nested)}/{HeaderX(inner)}, level2 {HeaderX(deep)}");
-            Check(Same(HeaderX(alpha), HeaderX(top)) && Same(HeaderX(empty), HeaderX(top)) && Same(TextX(alpha), TextX(top)), "level 0: folders and files start at the same x");
-            Check(Same(HeaderX(nested), HeaderX(inner)) && Same(TextX(nested), TextX(inner)), "level 1: folder and file start at the same x");
+            // Item 31: a file's icon takes the chevron's slot, so it starts exactly where a sibling folder's chevron does.
+            var deeper = Node(Path.Combine(sub, "Nested", "Deeper"));
+            double ChevronX(TreeViewItem i) => X(Part(i, "PART_ExpandCollapseChevron"));
+            foreach (var (file, folder, depth) in new[] { (top, alpha, 0), (top, empty, 0), (inner, nested, 1), (deep, deeper, 2) })
+            {
+                Console.WriteLine($"INFO depth {depth}: file icon {TextX(file)} folder chevron {ChevronX(folder)}");
+                Check(Part(folder, "PART_ExpandCollapseChevron").IsVisible && Same(TextX(file), ChevronX(folder)), $"depth {depth}: file icon x equals the folder chevron x");
+            }
+            Check(Same(TextX(alpha), TextX(empty)) && Same(ChevronX(alpha), ChevronX(empty)), "level 0: folders align with each other");
             var step1 = HeaderX(inner) - HeaderX(top); var step2 = HeaderX(deep) - HeaderX(inner);
             Check(step1 >= 8 && step1 <= 12 && Same(step1, step2), $"indent per level is 8-12px and constant (got {step1:0.#}, {step2:0.#})");
             var fileSlot = Part(top, "PART_ExpandCollapseChevronContainer"); var folderSlot = Part(alpha, "PART_ExpandCollapseChevronContainer");
-            Check(fileSlot.IsVisible && Same(fileSlot.Bounds.Width, folderSlot.Bounds.Width) && fileSlot.Bounds.Width > 0 && Same(X(fileSlot), X(folderSlot)),
-                "files reserve the chevron slot");
+            Check(Same(fileSlot.Bounds.Width, 0) && Same(X(fileSlot), X(folderSlot)) && Same(folderSlot.Bounds.Width, 12) && !Part(top, "PART_ExpandCollapseChevron").IsVisible,
+                "a file row has no chevron; its slot collapses so the icon takes the 12px chevron slot");
             foreach (var (row, sibling, level) in new[] { (top, alpha, 0), (inner, nested, 1), (deep, deep, 2), (nested, inner, 1) })
             {
                 // Item 30: only the name becomes the box; the icon, font, text x and row height stay put.
@@ -78,7 +86,7 @@ internal static class ExplorerLayoutTests
                 var presenter = box.GetVisualDescendants().OfType<TextPresenter>().First();
                 var boxText = X(presenter);
                 Console.WriteLine($"INFO rename level {level}: icon {iconX} name {nameX} box text {boxText}");
-                Check(Same(boxText, nameX) && Same(iconX, TextX(sibling)), $"inline rename text starts exactly where the name was (level {level}, {kind})");
+                Check(Same(boxText, nameX) && Same(iconX, TextX(row)), $"inline rename text starts exactly where the name was (level {level}, {kind})");
                 Check(box.Text == entryName && box.FontFamily == family && box.FontSize == size && box.FontWeight == weight && Same(presenter.TextLayout.Height, lineHeight),
                     $"rename box uses the row font ({family} {size} {weight}) with the same line height (level {level}, {kind})");
                 Check(Same(Part(row, "PART_Header").Bounds.Height, rowHeight), $"row height is unchanged while renaming ({rowHeight:0.#}px, level {level}, {kind})");
@@ -183,9 +191,10 @@ internal static class ExplorerLayoutTests
                 // Inline rename keeps the focused look and its own box.
                 var explorer = window.GetVisualDescendants().OfType<FolderExplorer>().Single();
                 tree.SelectedItem = top; top.Focus(); Pump();
+                var headerBefore = HeaderPos(top).X;
                 explorer.BeginRename(topPath); Pump();
                 var box = top.GetVisualDescendants().OfType<TextBox>().First(b => b.Name == "ExplorerRenameBox");
-                Check(box.IsKeyboardFocusWithin && Bg(top) == C("ExplorerSelectionBackground") && HeaderPos(top).X == HeaderPos(folderRow).X, $"{theme}: the row keeps the focused selection while renaming and does not move");
+                Check(box.IsKeyboardFocusWithin && Bg(top) == C("ExplorerSelectionBackground") && HeaderPos(top).X == headerBefore, $"{theme}: the row keeps the focused selection while renaming and does not move");
                 Check(box.Background is ISolidColorBrush bb && bb.Color != C("ExplorerSelectionBackground") && bb.Color.A > 0, $"{theme}: the rename box keeps its own opaque background");
                 box.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Avalonia.Input.Key.Escape }); Pump();
             }
