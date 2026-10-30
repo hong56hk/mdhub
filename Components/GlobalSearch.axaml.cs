@@ -116,6 +116,12 @@ public partial class GlobalSearch : UserControl
                     label.Inlines.Add(new Run(hit.Preview.Substring(offset, length)) { Foreground = Mdhub.Services.ThemeService.Brush("SearchMatchForeground"), Background = Mdhub.Services.ThemeService.Brush("SearchMatchBackground") });
                     label.Inlines.Add(new Run(hit.Preview[(offset + length)..]));
                     var row = new TreeViewItem { Header = label, Tag = hit };
+                    // Item 43: match rows sit directly under the file name. The template indents each level by
+                    // the tree indent; give the row its file group's indent instead (a local value beats the template's).
+                    row.TemplateApplied += (_, e) =>
+                    {
+                        if (e.NameScope.Find<Control>("PART_Header") is { } header) header.Margin = new Avalonia.Thickness(0);
+                    };
                     ToolTip.SetTip(row, hit.Preview);
                     group.Items.Add(row);
                 }
