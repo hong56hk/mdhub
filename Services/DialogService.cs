@@ -13,8 +13,8 @@ public static class DialogService
         var dialog = new Window { Title = title, Width = 480, SizeToContent = SizeToContent.Height, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
         var input = new TextBox { Name = "ItemName", Text = initialName, PlaceholderText = Loc.T("DialogName") };
         var error = new TextBlock { Foreground = ThemeService.Brush("DialogErrorForeground"), TextWrapping = TextWrapping.Wrap, IsVisible = false };
-        var create = new Button { Content = Loc.T("Create"), IsDefault = true, MinWidth = 80 };
-        var cancel = new Button { Content = Loc.T("Cancel"), IsCancel = true, MinWidth = 80 };
+        var create = new Button { Content = Loc.T("Create"), IsDefault = true, MinWidth = 80, Classes = { "textAction" } };
+        var cancel = new Button { Content = Loc.T("Cancel"), IsCancel = true, MinWidth = 80, Classes = { "textAction" } };
         create.Click += (_, _) =>
         {
             var name = input.Text ?? "";
@@ -57,8 +57,8 @@ public static class DialogService
         var input = new TextBox { Name = "LineNumber", Text = currentLine.ToString(), PlaceholderText = Loc.T("LineNumber") };
         input.AddHandler(Avalonia.Input.InputElement.TextInputEvent, (_, e) => { if (e.Text is { } t && !t.All(char.IsAsciiDigit)) e.Handled = true; }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         input.TextChanged += (_, _) => { if (input.Text is { } t && !t.All(char.IsAsciiDigit)) input.Text = new string(t.Where(char.IsAsciiDigit).ToArray()); };
-        var go = new Button { Content = Loc.T("Go"), IsDefault = true, MinWidth = 70 };
-        var cancel = new Button { Content = Loc.T("Cancel"), IsCancel = true, MinWidth = 70 };
+        var go = new Button { Content = Loc.T("Go"), IsDefault = true, MinWidth = 70, Classes = { "textAction" } };
+        var cancel = new Button { Content = Loc.T("Cancel"), IsCancel = true, MinWidth = 70, Classes = { "textAction" } };
         go.Click += (_, _) => { if (Mdhub.Text.EditorCommands.ParseLine(input.Text, lineCount) is { } line) dialog.Close(line); else input.Focus(); };
         cancel.Click += (_, _) => dialog.Close(null);
         dialog.Opened += (_, _) => { input.Focus(); input.SelectAll(); };
@@ -75,36 +75,8 @@ public static class DialogService
         return dialog.ShowDialog<int?>(owner);
     }
 
-    // Read-only list of every shortcut, grouped by area, from the shortcut table.
-    public static Task ShowShortcutsAsync(Window owner)
-    {
-        var mac = OperatingSystem.IsMacOS();
-        var dialog = new Window { Title = Loc.T("ShortcutsTitle"), Width = 520, Height = 560, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-        var list = new StackPanel { Name = "ShortcutList", Spacing = 4, Margin = new Thickness(20, 16) };
-        // Areas in enum order (File, Edit, View, Find, Zoom, Editor), not first-appearance order in the table.
-        foreach (var group in Shortcuts.All.GroupBy(s => s.Area).OrderBy(g => g.Key))
-        {
-            list.Children.Add(new TextBlock { Text = Loc.T("Area" + group.Key), FontWeight = Avalonia.Media.FontWeight.SemiBold, FontSize = 15, Margin = new Thickness(0, 10, 0, 2), Classes = { "shortcut-area" } });
-            foreach (var s in group)
-            {
-                var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Classes = { "shortcut-row" }, Tag = s.Id };
-                row.Children.Add(new TextBlock { Text = s.DisplayLabel });
-                var keys = new TextBlock { Text = s.Format(mac), Foreground = ThemeService.Brush("ShortcutKeyForeground"), FontFamily = new Avalonia.Media.FontFamily("Consolas, Menlo, monospace") };
-                Grid.SetColumn(keys, 1);
-                row.Children.Add(keys);
-                list.Children.Add(row);
-            }
-        }
-        var close = new Button { Content = Loc.T("Close"), IsDefault = true, IsCancel = true, MinWidth = 80, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right, Margin = new Thickness(20, 0, 20, 16) };
-        close.Click += (_, _) => dialog.Close();
-        var root = new DockPanel();
-        DockPanel.SetDock(close, Dock.Bottom);
-        root.Children.Add(close);
-        root.Children.Add(new ScrollViewer { Content = list });
-        dialog.Content = root;
-        ApplyOwnerZoom(dialog, owner);
-        return dialog.ShowDialog(owner);
-    }
+    // Every shortcut, grouped by area; mdhub's own entries can be rebound (Components/ShortcutsDialog.cs).
+    public static Task ShowShortcutsAsync(Window owner) => Mdhub.Components.ShortcutsDialog.ShowAsync(owner);
 
     public static Task<string?> ShowAsync(Window owner, string title, string message, params string[] choices)
     {
@@ -112,7 +84,7 @@ public static class DialogService
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right };
         foreach (var choice in choices)
         {
-            var button = new Button { Content = Loc.T(choice), MinWidth = 80 };
+            var button = new Button { Content = Loc.T(choice), MinWidth = 80, Classes = { "textAction" } };
             button.Click += (_, _) => dialog.Close(choice);
             buttons.Children.Add(button);
         }

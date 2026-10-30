@@ -12,8 +12,9 @@ public partial class TextFormatter : UserControl
     {
         InitializeComponent();
         UpdateLanguage();
-        AttachedToVisualTree += (_, _) => { Mdhub.Localization.Loc.Changed += UpdateLanguage; UpdateLanguage(); };
-        DetachedFromVisualTree += (_, _) => Mdhub.Localization.Loc.Changed -= UpdateLanguage;
+        // The tooltip names the live (possibly customized) toggle-preview shortcut.
+        AttachedToVisualTree += (_, _) => { Mdhub.Localization.Loc.Changed += UpdateLanguage; Mdhub.Services.Shortcuts.Changed += UpdateLanguage; UpdateLanguage(); };
+        DetachedFromVisualTree += (_, _) => { Mdhub.Localization.Loc.Changed -= UpdateLanguage; Mdhub.Services.Shortcuts.Changed -= UpdateLanguage; };
     }
     private void UpdateLanguage()
     {

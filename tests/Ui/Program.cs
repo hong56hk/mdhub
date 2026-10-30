@@ -22,6 +22,7 @@ if (args.Contains("--selection-only")) { SelectionTests.Run(); return; }
 if (args.Contains("--quickopen-only")) { QuickOpenTests.Run(); return; }
 if (args.Contains("--syntax-only")) { SyntaxTests.Run(); return; }
 if (args.Contains("--search-only")) { WorkspaceSearchTests.Run(); return; }
+if (args.Contains("--shortcuts-only")) { ShortcutTests.Run(); return; }
 AppBuilder.Configure<App>().UseSkia().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).SetupWithoutStarting();
 var window = new MainWindow();
 window.Show();
@@ -1229,9 +1230,9 @@ finally
     Require(sdlg.Title == "Shortcuts" && rows.Count == Mdhub.Services.Shortcuts.All.Count && areas.SequenceEqual(["File", "Edit", "View", "Find", "Zoom", "Editor"]),
         "The Shortcut dialog lists every shortcut grouped by area");
     var saveRow = rows.First(r => Equals(r.Tag, "file.saveAs"));
-    Require(saveRow.Children.OfType<TextBlock>().Select(b => b.Text).SequenceEqual(["Save as", "Ctrl+Shift+S"]), "Dialog rows show the label and the gesture");
-    Require(!sdlg.GetVisualDescendants().OfType<TextBox>().Any(), "The Shortcut dialog is read-only");
-    Require(sdlg.Content is LayoutTransformControl { LayoutTransform: { } sz } && Math.Abs(sz.Value.M11 - 1.2) < 1e-9 && sdlg.Width == 624 && sdlg.Height == 672, "The Shortcut dialog follows the owner window's zoom");
+    Require(saveRow.Children.OfType<TextBlock>().Where(b => b.Name != "ShortcutCustomMark").Select(b => b.Text).SequenceEqual(["Save as", "Ctrl+Shift+S"]), "Dialog rows show the label and the gesture");
+    Require(!sdlg.GetVisualDescendants().OfType<TextBox>().Any(), "The Shortcut dialog has no text fields (keys are recorded, not typed)");
+    Require(sdlg.Content is LayoutTransformControl { LayoutTransform: { } sz } && Math.Abs(sz.Value.M11 - 1.2) < 1e-9 && sdlg.Width == 672 && sdlg.Height == 720, "The Shortcut dialog follows the owner window's zoom");
     sdlg.GetVisualDescendants().OfType<Button>().First(b => Equals(b.Content, "Close")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
     Require(sw.OwnedWindows.Count == 0, "Close dismisses the Shortcut dialog");
     sw.SetZoom(100, announce: false);
@@ -1410,7 +1411,7 @@ finally
     ew.SetZoom(100, announce: false);
     etops[3].Items.OfType<MenuItem>().First().RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Pump();
     var sd = ew.OwnedWindows.Single();
-    string RowText(string id) => string.Join("|", sd.GetVisualDescendants().OfType<Grid>().First(g => Equals(g.Tag, id)).Children.OfType<TextBlock>().Select(b => b.Text));
+    string RowText(string id) => string.Join("|", sd.GetVisualDescendants().OfType<Grid>().First(g => Equals(g.Tag, id)).Children.OfType<TextBlock>().Where(b => b.Name != "ShortcutCustomMark").Select(b => b.Text));
     Require(RowText("editor.quote") == "Block quote (Markdown)|Ctrl+\"" && RowText("editor.insertTime") == "Insert date and time|Ctrl+;" && RowText("editor.goToLine") == "Go to line|Ctrl+G"
         && RowText("view.previewCaret") == "Scroll preview to caret|Ctrl+Shift+G" && RowText("editor.bold") == "Bold (Markdown)|Ctrl+B", "The Shortcut dialog lists the new shortcuts");
     sd.Close(); Pump();

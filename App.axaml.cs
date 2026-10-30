@@ -12,6 +12,7 @@ public partial class App : Application
         AvaloniaXamlLoader.Load(this);
         Localization.LocResources.Install(this);
         Services.ThemeService.Apply(Services.ThemeService.Current, persist: false);
+        Services.ThemeService.HookTitleBars();
     }
 
     public override void OnFrameworkInitializationCompleted()
@@ -25,6 +26,7 @@ public partial class App : Application
             var saved = Services.SessionStore.Load(Services.SessionManager.SessionPath);
             Services.ThemeService.Apply(Services.ThemeService.Parse(saved?.Theme), persist: false);
             Services.RecentService.Load(saved);
+            Services.Shortcuts.Import(saved?.CustomShortcuts, Components.ShortcutKeys.IsKeyName);
             // A saved choice wins; otherwise the OS language when supported, else English (not saved until picked).
             Localization.Loc.Chosen = Localization.Loc.Normalize(saved?.Language);
             Localization.Loc.Set(Localization.Loc.Chosen ?? Localization.Loc.Detect(System.Globalization.CultureInfo.CurrentUICulture.Name));

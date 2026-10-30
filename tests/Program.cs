@@ -418,6 +418,39 @@ try
         Require(Shortcuts.Format("zoom.in", false) == "Ctrl+= / Ctrl+Shift+= / Ctrl+Num +" && Shortcuts.Format("zoom.reset", true) == "Cmd+0 / Cmd+Num 0", "Multiple gestures and key names are formatted");
         Require(Shortcuts.Format("find.previous", true) == "Shift+F3" && Shortcuts.Format("view.wordWrap", false) == "Alt+Z" && Shortcuts.Format("view.wordWrap", true) == "Option+Z", "Shift and Alt (Option on macOS) format");
         Require(Shortcuts.Get("edit.undo").HandledByTextBox && !Shortcuts.Get("file.save").HandledByTextBox, "Entries record whether the editor handles them itself");
+    }
+    {
+        // Item 32: custom bindings (UI-free part).
+        var changes = 0; void Count() => changes++;
+        Shortcuts.Changed += Count;
+        Shortcuts.ResetAll();
+        var ctrlK = ShortcutGesture.Cmd("K");
+        Require(Shortcuts.FindConflicts("file.save", ctrlK).Count == 0 && Shortcuts.Rebind("file.save", ctrlK) && Shortcuts.Format("file.save", false) == "Ctrl+K"
+            && Shortcuts.IsCustomized("file.save") && !Shortcuts.IsCustomized("file.open") && changes == 1, "Rebinding replaces an entry's gestures and marks it customized");
+        var ctrlF = ShortcutGesture.Cmd("F");
+        Require(Shortcuts.FindConflicts("file.save", ctrlF).Select(s => s.Id).SequenceEqual(["find.find"]) && !Shortcuts.Rebind("file.save", ctrlF)
+            && Shortcuts.Format("file.save", false) == "Ctrl+K" && Shortcuts.Format("find.find", false) == "Ctrl+F" && changes == 1, "A clashing gesture is detected and nothing changes without reassign");
+        Require(Shortcuts.Rebind("file.save", ctrlF, reassign: true) && Shortcuts.Format("file.save", false) == "Ctrl+F" && Shortcuts.Get("find.find").Gestures.Count == 0
+            && Shortcuts.IsCustomized("find.find") && !Shortcuts.Conflicts().Any(), "Reassign moves the gesture and leaves the other entry unassigned");
+        Require(!Shortcuts.Rebind("file.save", ShortcutGesture.Cmd("C"), reassign: true) && Shortcuts.Format("edit.copy", false) == "Ctrl+C" && !Shortcuts.Rebind("edit.copy", ShortcutGesture.Cmd("J"))
+            && Shortcuts.Format("file.save", false) == "Ctrl+F", "Gestures built into the editor are never taken or rebound");
+        Require(Shortcuts.Rebind("find.find", ctrlF, reassign: true) && !Shortcuts.IsCustomized("find.find") && Shortcuts.Get("file.save").Gestures.Count == 0,
+            "Binding an entry back to its default stores nothing for it");
+        Shortcuts.Reset("file.save");
+        Require(!Shortcuts.IsCustomized("file.save") && Shortcuts.Format("file.save", false) == "Ctrl+S" && !Shortcuts.AnyCustomized, "Reset restores one entry's default");
+        Require(Shortcuts.Serialize(new ShortcutGesture("F", ShortcutMods.Command | ShortcutMods.Shift)) == "Command+Shift+F" && Shortcuts.Parse("Command+Alt+K") == new ShortcutGesture("K", ShortcutMods.Command | ShortcutMods.Alt)
+            && Shortcuts.Parse("Hyper+K") is null && Shortcuts.Parse("") is null && Shortcuts.Parse("Command+Bogus", k => k != "Bogus") is null, "Gestures serialize as modifier names plus the key");
+        Shortcuts.Rebind("file.save", ctrlK); Shortcuts.Rebind("sidebar.search", new ShortcutGesture("F", ShortcutMods.Command | ShortcutMods.Alt));
+        var json = SessionStore.Serialize(new SessionData { CustomShortcuts = Shortcuts.Export() });
+        Shortcuts.ResetAll();
+        Require(!Shortcuts.AnyCustomized && Shortcuts.Format("sidebar.search", false) == "Ctrl+Shift+F", "Reset all restores every default");
+        Shortcuts.Import(SessionStore.Deserialize(json)!.CustomShortcuts);
+        Require(Shortcuts.Format("file.save", false) == "Ctrl+K" && Shortcuts.Format("sidebar.search", false) == "Ctrl+Alt+F" && Shortcuts.Export().Count == 2, "Custom bindings survive a session save and load");
+        Shortcuts.Import(new Dictionary<string, List<string>> { ["nope"] = ["Command+K"], ["edit.copy"] = ["Command+J"], ["file.open"] = ["Command+Bogus"], ["file.new"] = ["Command+F"], ["file.save"] = ["Command+K"] }, k => k != "Bogus");
+        Require(Shortcuts.Export().Keys.SequenceEqual(["file.save"]) && Shortcuts.Format("file.new", false) == "Ctrl+N", "Loading ignores unknown ids, editor gestures, bad keys and clashing bindings");
+        Require(SessionStore.Deserialize("{\"Version\":1,\"Windows\":[]}")!.CustomShortcuts is null, "Old session files load with default shortcuts");
+        Shortcuts.ResetAll();
+        Shortcuts.Changed -= Count;
     }    {
         Require(new[] { ("editor.bold", "Ctrl+B", "Cmd+B"), ("editor.italic", "Ctrl+I", "Cmd+I"), ("editor.link", "Ctrl+L", "Cmd+L"), ("editor.quote", "Ctrl+\"", "Cmd+\""),
             ("editor.insertTime", "Ctrl+;", "Cmd+;"), ("editor.goToLine", "Ctrl+G", "Cmd+G"), ("view.previewCaret", "Ctrl+Shift+G", "Cmd+Shift+G"), ("file.quickOpen", "Ctrl+P", "Cmd+P"), ("find.replace", "Ctrl+H", "Cmd+H") }

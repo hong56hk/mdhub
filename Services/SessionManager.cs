@@ -60,11 +60,11 @@ public static class SessionManager
     private static void Write(List<WindowSession> windows)
     {
         try { SessionStore.Save(SessionPath, new SessionData { Windows = windows.Where(w => !w.IsEmpty).ToList(), Theme = ThemeService.Current.ToString(), Language = Mdhub.Localization.Loc.Chosen,
-                RecentFiles = [.. RecentService.Files], RecentFolders = [.. RecentService.Folders] }); }
+                RecentFiles = [.. RecentService.Files], RecentFolders = [.. RecentService.Folders], CustomShortcuts = Shortcuts.AnyCustomized ? Shortcuts.Export() : null }); }
         catch (Exception) { /* A session that cannot be written must not block closing. */ }
     }
 
-    // Theme switches are saved right away with the open windows, so a crash keeps the choice.
+    // Theme, language and shortcut changes are saved right away with the open windows, so a crash keeps the choice.
     public static void SaveSettings()
     {
         if (!Enabled) return;

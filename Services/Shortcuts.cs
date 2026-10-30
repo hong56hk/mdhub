@@ -31,8 +31,13 @@ public readonly record struct ShortcutGesture(string Key, ShortcutMods Mods, str
 }
 
 // Handled says who acts on it: App (mdhub's key handlers) or TextBox (built into the editor, listed for reference).
-public sealed record Shortcut(string Id, ShortcutArea Area, string Label, IReadOnlyList<ShortcutGesture> Gestures, bool HandledByTextBox = false)
+// Defaults are the built-in gestures; Gestures are the live ones (a user's custom binding when there is one).
+public sealed record Shortcut(string Id, ShortcutArea Area, string Label, IReadOnlyList<ShortcutGesture> Defaults, bool HandledByTextBox = false)
 {
+    public IReadOnlyList<ShortcutGesture> Gestures => Shortcuts.GesturesFor(this);
+    // Only mdhub's own handlers read the live table; gestures built into the TextBox cannot be rebound.
+    public bool IsCustomizable => !HandledByTextBox;
+    public bool IsCustomized => Shortcuts.IsCustomized(Id);
     // The label in the current UI language (the English Label is the fallback).
     public string DisplayLabel => Mdhub.Localization.Loc.T("Sc." + Id);
     public string Format(bool mac) => string.Join(" / ", Gestures.Where(g => !g.Hidden).Select(g => g.Format(mac)));
@@ -90,6 +95,93 @@ public static class Shortcuts
         T("editor.docEnd", ShortcutArea.Editor, "Go to end of document", C("End")),
         T("editor.tab", ShortcutArea.Editor, "Insert tab", P("Tab")),
     ];
+
+    // ---- Custom bindings (item 32). A custom entry replaces all of an entry's default gestures; an empty list
+    // means "not assigned" (its gesture was reassigned to another entry).
+    private static readonly Dictionary<string, List<ShortcutGesture>> Custom = [];
+    public static event Action? Changed;
+
+    internal static IReadOnlyList<ShortcutGesture> GesturesFor(Shortcut s) => Custom.TryGetValue(s.Id, out var list) ? list : s.Defaults;
+    public static bool IsCustomized(string id) => Custom.ContainsKey(id);
+    public static bool AnyCustomized => Custom.Count > 0;
+
+    public static bool SameKeys(ShortcutGesture a, ShortcutGesture b) => a.Key == b.Key && a.Mods == b.Mods;
+
+    // Every other entry whose live gestures include this key combination.
+    public static IReadOnlyList<Shortcut> FindConflicts(string id, ShortcutGesture gesture) =>
+        All.Where(s => s.Id != id && s.Gestures.Any(g => SameKeys(g, gesture))).ToList();
+
+    // Binds the gesture to the entry. With conflicts nothing changes unless reassign is set, and a gesture the
+    // TextBox handles itself is never taken away. Returns false when nothing changed.
+    public static bool Rebind(string id, ShortcutGesture gesture, bool reassign = false)
+    {
+        var target = Get(id);
+        if (!target.IsCustomizable) return false;
+        gesture = gesture with { KeyLabel = null, Hidden = false };
+        var conflicts = FindConflicts(id, gesture);
+        if (conflicts.Count > 0 && (!reassign || conflicts.Any(c => !c.IsCustomizable))) return false;
+        foreach (var other in conflicts) Store(other, other.Gestures.Where(g => !SameKeys(g, gesture)).ToList());
+        Store(target, [gesture]);
+        Changed?.Invoke();
+        return true;
+    }
+
+    // Keeps the table minimal: an entry equal to its defaults is not stored as custom.
+    private static void Store(Shortcut s, List<ShortcutGesture> gestures)
+    {
+        if (gestures.Count == s.Defaults.Count && gestures.Zip(s.Defaults).All(p => SameKeys(p.First, p.Second))) Custom.Remove(s.Id);
+        else Custom[s.Id] = gestures.Select(g => s.Defaults.FirstOrDefault(d => SameKeys(d, g)) is { Key: not null } d ? d : g).ToList();
+    }
+
+    public static void Reset(string id)
+    {
+        if (Custom.Remove(id)) Changed?.Invoke();
+    }
+
+    public static void ResetAll()
+    {
+        if (Custom.Count == 0) return;
+        Custom.Clear();
+        Changed?.Invoke();
+    }
+
+    // Persisted as id -> ["Command+Shift+F", ...] (modifier names, then the Avalonia Key name).
+    public static string Serialize(ShortcutGesture g) =>
+        string.Join("+", Enum.GetValues<ShortcutMods>().Where(m => m != ShortcutMods.None && g.Mods.HasFlag(m)).Select(m => m.ToString()).Append(g.Key));
+
+    public static ShortcutGesture? Parse(string? text, Func<string, bool>? isKey = null)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return null;
+        var parts = text.Split('+');
+        var mods = ShortcutMods.None;
+        foreach (var part in parts[..^1])
+        {
+            if (!Enum.TryParse<ShortcutMods>(part, out var m) || m == ShortcutMods.None || !Enum.IsDefined(m)) return null;
+            mods |= m;
+        }
+        var key = parts[^1];
+        if (key.Length == 0 || (isKey is not null && !isKey(key))) return null;
+        return new ShortcutGesture(key, mods);
+    }
+
+    public static Dictionary<string, List<string>> Export() => Custom.ToDictionary(p => p.Key, p => p.Value.Select(Serialize).ToList());
+
+    // Replaces the custom table; unknown ids, rebinding a TextBox gesture and unparsable keys are ignored,
+    // and a saved binding that would now clash with another entry is dropped (that entry keeps its default).
+    public static void Import(IReadOnlyDictionary<string, List<string>>? saved, Func<string, bool>? isKey = null)
+    {
+        Custom.Clear();
+        foreach (var (id, texts) in saved ?? new Dictionary<string, List<string>>())
+        {
+            if (All.FirstOrDefault(s => s.Id == id) is not { IsCustomizable: true } s || texts is null) continue;
+            var gestures = texts.Select(t => Parse(t, isKey)).OfType<ShortcutGesture>().ToList();
+            if (gestures.Count != texts.Count) continue;
+            Store(s, gestures);
+        }
+        foreach (var id in Custom.Keys.ToList())
+            if (Custom[id].Any(g => All.Any(o => o.Id != id && o.Gestures.Any(x => SameKeys(x, g))))) Custom.Remove(id);
+        Changed?.Invoke();
+    }
 
     public static Shortcut Get(string id) => All.First(s => s.Id == id);
     public static string Format(string id, bool mac) => Get(id).Format(mac);
