@@ -83,6 +83,7 @@ public partial class MainView : UserControl
     {
         _sessionNote = null;
         _active = document;
+        FolderExplorer.MarkActive(document.Path);
         TextEditor.ShowDocument(document);
         MdEditor.ShowDocument(document.IsMarkdown ? document : null);
         UpdateContentLayout();

@@ -267,7 +267,7 @@ public partial class FolderExplorer : UserControl
 
     private void FolderTree_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (IsRenaming || FolderTree.SelectedItem is not TreeViewItem { Tag: FolderEntry entry } || entry.IsDirectory || !entry.IsSupported) return;
+        if (_marking || IsRenaming || FolderTree.SelectedItem is not TreeViewItem { Tag: FolderEntry entry } || entry.IsDirectory || !entry.IsSupported) return;
         FileRequested?.Invoke(entry.Path);
     }
     private void RefreshFolder_Click(object? sender, RoutedEventArgs e) => RefreshRequested?.Invoke();
@@ -303,6 +303,22 @@ public partial class FolderExplorer : UserControl
             item.IsExpanded = true;
             items = item.Items.OfType<TreeViewItem>();
         }
+    }
+
+    // Like VS Code, the selected row follows the active tab (only among rows already loaded; folders are not expanded).
+    // Selecting here does not raise FileRequested.
+    private bool _marking;
+    public void MarkActive(string? path)
+    {
+        if (path is null || IsRenaming) return;
+        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        if (FolderTree.SelectedItem is TreeViewItem { Tag: FolderEntry current } && string.Equals(current.Path, path, comparison)) return;
+        var item = TreeNodes(FolderTree.Items.OfType<TreeViewItem>()).FirstOrDefault(i => i.Tag is FolderEntry e && string.Equals(e.Path, path, comparison));
+        if (item is null) return;
+        _marking = true;
+        try { FolderTree.SelectedItem = item; }
+        finally { _marking = false; }
+        item.BringIntoView();
     }
 
     // Keyboard focus for Ctrl+Shift+E: the selected item, else the tree itself.

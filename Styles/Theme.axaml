@@ -50,6 +50,11 @@
       <SolidColorBrush x:Key="SyntaxUnorderedList" Color="#8FD6A0" />
       <SolidColorBrush x:Key="PreviewHighlight" Color="#5C4F8FE8" />
       <SolidColorBrush x:Key="PreviewSelectionBackground" Color="#99306FB8" />
+        <!-- Explorer rows, VS Code Dark Modern: focused selection, selection while focus is elsewhere, hover. -->
+        <SolidColorBrush x:Key="ExplorerSelectionBackground" Color="#04395E" />
+        <SolidColorBrush x:Key="ExplorerSelectionBorder" Color="#0078D4" />
+        <SolidColorBrush x:Key="ExplorerSelectionInactiveBackground" Color="#37373D" />
+        <SolidColorBrush x:Key="ExplorerHoverBackground" Color="#2A2D2E" />
       <SolidColorBrush x:Key="SearchLineNumberForeground" Color="#8993A4" />
       <SolidColorBrush x:Key="SearchMatchForeground" Color="#FFD580" />
       <SolidColorBrush x:Key="SearchMatchBackground" Color="#55452A" />
@@ -110,6 +115,11 @@
       <SolidColorBrush x:Key="SyntaxUnorderedList" Color="#23804A" />
       <SolidColorBrush x:Key="PreviewHighlight" Color="#404F8FE8" />
       <SolidColorBrush x:Key="PreviewSelectionBackground" Color="#99ADD6FF" />
+        <!-- Explorer rows, VS Code Light Modern: focused selection, selection while focus is elsewhere, hover. -->
+        <SolidColorBrush x:Key="ExplorerSelectionBackground" Color="#CCE8FF" />
+        <SolidColorBrush x:Key="ExplorerSelectionBorder" Color="#0078D4" />
+        <SolidColorBrush x:Key="ExplorerSelectionInactiveBackground" Color="#E4E6F1" />
+        <SolidColorBrush x:Key="ExplorerHoverBackground" Color="#E8E8E8" />
       <SolidColorBrush x:Key="SearchLineNumberForeground" Color="#5F6875" />
       <SolidColorBrush x:Key="SearchMatchForeground" Color="#6B4100" />
       <SolidColorBrush x:Key="SearchMatchBackground" Color="#FFE3A3" />

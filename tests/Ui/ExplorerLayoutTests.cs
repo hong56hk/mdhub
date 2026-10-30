@@ -4,6 +4,7 @@ using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -70,10 +71,95 @@ internal static class ExplorerLayoutTests
                 Check(Same(boxText, before) && Same(boxText, TextX(sibling)), $"inline rename text lines up with the row and its level (level {level}, {((FolderEntry)row.Tag!).IsDirectory switch { true => "folder", _ => "file" }})");
                 box.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Escape }); Pump();
             }
+            FocusColors(window, tree, top, Node(Path.Combine(sub, "inner.md")), Node(Path.Combine(sub, "Nested")), Node(Path.Combine(root, "Empty")), Pump);
             foreach (var d in window.GetVisualDescendants().OfType<ListBox>().First(c => c.Name == "Tabs").Items.OfType<Mdhub.Models.NoteDocument>()) d.SavedText = d.Text;
         }
         finally { window.Close(); Directory.Delete(root, true); }
     }
+    // Item 29: VS Code explorer row colours follow focus (focused selection with a border, inactive selection, hover).
+    private static void FocusColors(Window window, TreeView tree, TreeViewItem top, TreeViewItem inner, TreeViewItem hoverRow, TreeViewItem folderRow, Action pump)
+    {
+        void Pump() { for (var k = 0; k < 4; k++) pump(); }
+        var view = window.GetVisualDescendants().OfType<Mdhub.Views.MainView>().Single();
+        var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+        void Open(string p) { var t = (Task)typeof(Mdhub.Views.MainView).GetMethod("OpenPathAsync", flags)!.Invoke(view, [p])!; var end = DateTime.UtcNow.AddSeconds(10); while (!t.IsCompleted && DateTime.UtcNow < end) pump(); Pump(); }
+        var tabs = window.GetVisualDescendants().OfType<ListBox>().First(c => c.Name == "Tabs");
+        TextBox Editor() => view.FindControl<TextEditor>("TextEditor")!.GetVisualDescendants().OfType<TextBox>().First(b => b.IsEffectivelyVisible && b.Name != "FindBox" && b.Name != "ReplaceBox" && b.AcceptsReturn);
+        Border Root(TreeViewItem i) => i.GetVisualDescendants().OfType<Border>().First(b => b.Name == "PART_LayoutRoot");
+        Color? Bg(TreeViewItem i) => (Root(i).Background as ISolidColorBrush)?.Color;
+        Color? Line(TreeViewItem i) => (Root(i).BorderBrush as ISolidColorBrush)?.Color;
+        Point At(Control c) => c.TranslatePoint(new Point(20, c.Bounds.Height / 2), window)!.Value;
+        Point HeaderPos(TreeViewItem i) => i.GetVisualDescendants().OfType<Control>().First(c => c.Name == "PART_HeaderPresenter").TranslatePoint(default, tree)!.Value;
+        void Key(Key k, RawInputModifiers m) { window.KeyPress(k, m, PhysicalKey.None, null); window.KeyRelease(k, m, PhysicalKey.None, null); Pump(); }
+        void Click(Point p) { window.MouseDown(p, MouseButton.Left); window.MouseUp(p, MouseButton.Left); Pump(); }
+        var parkPoint = new Point(window.Bounds.Width - 5, window.Bounds.Height - 5);
+        var topPath = ((FolderEntry)top.Tag!).Path; var innerPath = ((FolderEntry)inner.Tag!).Path;
+        try
+        {
+            foreach (var theme in new[] { AppTheme.Dark, AppTheme.Light })
+            {
+                ThemeService.Apply(theme, persist: false); Pump();
+                var dark = theme == AppTheme.Dark;
+                Color C(string key) => ThemeService.Lookup(key, theme);
+                Check(C("ExplorerSelectionBackground") == Color.Parse(dark ? "#04395E" : "#CCE8FF") && C("ExplorerSelectionBorder") == Color.Parse("#0078D4")
+                    && C("ExplorerSelectionInactiveBackground") == Color.Parse(dark ? "#37373D" : "#E4E6F1") && C("ExplorerHoverBackground") == Color.Parse(dark ? "#2A2D2E" : "#E8E8E8"),
+                    $"{theme}: explorer row colours are Theme.axaml resources with the VS Code values");
+                window.MouseMove(parkPoint); Open(topPath); Open(innerPath);
+
+                // Clicking a file opens it and (as before this item) hands focus to the editor: the row shows the inactive selection.
+                Click(At(Root(top)));
+                Check(top.IsSelected && !tree.IsKeyboardFocusWithin && Bg(top) == C("ExplorerSelectionInactiveBackground") && Line(top) is { A: 0 }, $"{theme}: clicking a file opens it in the editor and its row shows the inactive selection");
+                // Clicking a folder row keeps focus in the explorer.
+                Click(At(Root(folderRow)));
+                Check(tree.IsKeyboardFocusWithin && folderRow.IsSelected && Bg(folderRow) == C("ExplorerSelectionBackground") && Line(folderRow) == C("ExplorerSelectionBorder") && Root(folderRow).BorderThickness == new Thickness(1),
+                    $"{theme}: explorer focused, the selected row has the focused background and a 1px {C("ExplorerSelectionBorder")} border");
+                var focusedPos = HeaderPos(folderRow); var otherPos = HeaderPos(inner);
+                Check(Line(inner) is { A: 0 } && Root(inner).BorderThickness == new Thickness(1), $"{theme}: unselected rows reserve a transparent 1px border");
+
+                // Editor focused by a click: inactive selection, no border, nothing moves.
+                window.MouseMove(parkPoint);
+                Click(At(Editor()));
+                Check(Editor().IsKeyboardFocusWithin && !tree.IsKeyboardFocusWithin, $"{theme}: clicking the editor moves focus there");
+                var sel = (TreeViewItem)tree.SelectedItem!;
+                Check(Bg(sel) == C("ExplorerSelectionInactiveBackground") && Line(sel) is { A: 0 } && Root(sel).BorderThickness == new Thickness(1),
+                    $"{theme}: explorer unfocused, the selected row has the inactive background and a transparent border");
+                Check(HeaderPos(folderRow) == focusedPos && HeaderPos(inner) == otherPos, $"{theme}: rows do not shift when focus changes");
+
+                // Ctrl+Shift+E back to the explorer, then a tab switch back to the editor.
+                Key(Avalonia.Input.Key.E, RawInputModifiers.Control | RawInputModifiers.Shift);
+                sel = (TreeViewItem)tree.SelectedItem!;
+                Check(tree.IsKeyboardFocusWithin && Bg(sel) == C("ExplorerSelectionBackground") && Line(sel) == C("ExplorerSelectionBorder"), $"{theme}: Ctrl+Shift+E focuses the explorer and the selection turns focused at once");
+                var other = tabs.Items.OfType<Mdhub.Models.NoteDocument>().First(d => d.Path == innerPath);
+                Click(At(tabs.ContainerFromItem(other)!));
+                sel = (TreeViewItem)tree.SelectedItem!;
+                Check(!tree.IsKeyboardFocusWithin && Bg(sel) == C("ExplorerSelectionInactiveBackground") && Line(sel) is { A: 0 }, $"{theme}: switching tabs takes focus from the explorer and the selection turns inactive");
+                Check(sel == inner && Bg(folderRow) is null or { A: 0 }, $"{theme}: the inactive selection follows the active tab");
+                Click(At(tabs.ContainerFromItem(tabs.Items.OfType<Mdhub.Models.NoteDocument>().First(d => d.Path == topPath))!));
+                Check(tree.SelectedItem == top && Bg(top) == C("ExplorerSelectionInactiveBackground"), $"{theme}: switching back marks the other file");
+
+                // Keyboard focus into the tree without a click (Tab-like): focused again.
+                top.Focus(); Pump();
+                Check(Bg(top) == C("ExplorerSelectionBackground"), $"{theme}: focusing a row by keyboard shows the focused selection");
+
+                // Hover on an unselected row.
+                window.MouseMove(At(Root(hoverRow))); Pump();
+                Check(!hoverRow.IsSelected && Bg(hoverRow) == C("ExplorerHoverBackground") && Line(hoverRow) is { A: 0 }, $"{theme}: hovering an unselected row shows {C("ExplorerHoverBackground")} without a border");
+                window.MouseMove(parkPoint); Pump();
+                Check(Bg(hoverRow) is null or { A: 0 }, $"{theme}: hover clears when the pointer leaves");
+
+                // Inline rename keeps the focused look and its own box.
+                var explorer = window.GetVisualDescendants().OfType<FolderExplorer>().Single();
+                tree.SelectedItem = top; top.Focus(); Pump();
+                explorer.BeginRename(topPath); Pump();
+                var box = top.GetVisualDescendants().OfType<TextBox>().First(b => b.Name == "ExplorerRenameBox");
+                Check(box.IsKeyboardFocusWithin && Bg(top) == C("ExplorerSelectionBackground") && HeaderPos(top).X == HeaderPos(folderRow).X, $"{theme}: the row keeps the focused selection while renaming and does not move");
+                Check(box.Background is ISolidColorBrush bb && bb.Color != C("ExplorerSelectionBackground") && bb.Color.A > 0, $"{theme}: the rename box keeps its own opaque background");
+                box.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Avalonia.Input.Key.Escape }); Pump();
+            }
+        }
+        finally { ThemeService.Apply(AppTheme.Dark, persist: false); window.MouseMove(parkPoint); }
+    }
+
     private static void Check(bool value, string message)
     {
         if (!value) throw new Exception(message);

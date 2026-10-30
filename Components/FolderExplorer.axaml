@@ -8,6 +8,25 @@
     <Style Selector="TreeViewItem /template/ Panel#PART_ExpandCollapseChevronContainer">
       <Setter Property="MinWidth" Value="12" />
     </Style>
+    <!-- VS Code row states. A 1px border is always reserved (transparent) so rows never shift when focus moves;
+         the focused-selection colours apply while focus is anywhere inside the tree (rename box included). -->
+    <Style Selector="TreeView#FolderTree TreeViewItem">
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="TreeView#FolderTree TreeViewItem /template/ Border#PART_LayoutRoot:pointerover, TreeView#FolderTree TreeViewItem:pressed /template/ Border#PART_LayoutRoot:pointerover">
+      <Setter Property="Background" Value="{DynamicResource ExplorerHoverBackground}" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="TreeView#FolderTree TreeViewItem:selected /template/ Border#PART_LayoutRoot, TreeView#FolderTree TreeViewItem:selected /template/ Border#PART_LayoutRoot:pointerover, TreeView#FolderTree TreeViewItem:pressed:selected /template/ Border#PART_LayoutRoot:pointerover">
+      <Setter Property="Background" Value="{DynamicResource ExplorerSelectionInactiveBackground}" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="TreeView#FolderTree:focus-within TreeViewItem:selected /template/ Border#PART_LayoutRoot, TreeView#FolderTree:focus-within TreeViewItem:selected /template/ Border#PART_LayoutRoot:pointerover, TreeView#FolderTree:focus-within TreeViewItem:pressed:selected /template/ Border#PART_LayoutRoot:pointerover">
+      <Setter Property="Background" Value="{DynamicResource ExplorerSelectionBackground}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ExplorerSelectionBorder}" />
+    </Style>
     <Style Selector="TreeViewItem.dropTarget">
       <Setter Property="Background" Value="{DynamicResource DropTargetBackground}" />
     </Style>

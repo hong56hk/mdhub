@@ -139,9 +139,9 @@ var creationFixture = Path.Combine(fixture, "Projects", "creation-" + Guid.NewGu
 Directory.CreateDirectory(creationFixture);
 var seed = Path.Combine(creationFixture, "seed.md");
 File.WriteAllText(seed, "Seed note");
-Await(explorer.RevealCreatedAsync(seed));
+tabs.SelectedItem = opened; Pump(); // The explorer row follows the active tab (item 29), so select the seed afterwards.
+Await(explorer.RevealCreatedAsync(seed)); // Explorer selection must win over the active root-level file.
 Pump();
-tabs.SelectedItem = opened; // Explorer selection must win over the active root-level file.
 Find<Button>("NewFileButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 EnterName("sibling.md");
 var sibling = (NoteDocument)tabs.SelectedItem!;
