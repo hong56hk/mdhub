@@ -112,7 +112,7 @@ internal static class GearsTests
                     $"{language.Code}: tooltips and names '{es}' / '{ps}'");
             }
             Loc.Set("en"); Settle();
-            Check(Loc.T("EditorSettings") == "Editor settings" && Loc.T("PreviewSettings") == "Preview settings" && Loc.Languages.Count == 4, "English: 'Editor settings' and 'Preview settings' (4 languages present)");
+            Check(Loc.T("EditorSettings") == "Editor settings" && Loc.T("PreviewSettings") == "Preview settings" && Loc.Languages.Count == 8, "English: 'Editor settings' and 'Preview settings' (8 languages present)");
 
             // ---- Visibility per tab type ----
             (bool, bool) Shown(NoteDocument d) { Activate(d); return (editorGear.IsVisible, previewGear.IsVisible); }

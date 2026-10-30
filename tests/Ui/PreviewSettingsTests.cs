@@ -229,7 +229,7 @@ internal static class PreviewSettingsTests
                 "Reset to defaults restores every value, the controls and the preview");
             Check(SessionStore.Load(sessionPath)!.Preview is null, "After reset the session stores no preview settings");
             Check(Loc.Languages.All(l => new[] { "PreviewSettings", "PreviewBodyFont", "PreviewCodeFont", "PreviewLineHeight", "PreviewParagraphSpacing", "PreviewResetDefaults", "PreviewDefaultFont", "PreviewBulletSpacing", "PreviewOrderedSpacing" }
-                .All(k => Loc.Table(l.Code).TryGetValue(k, out var v) && !string.IsNullOrWhiteSpace(v))), "Every flyout string exists in all 4 languages");
+                .All(k => Loc.Table(l.Code).TryGetValue(k, out var v) && !string.IsNullOrWhiteSpace(v))), $"Every flyout string exists in all {Loc.Languages.Count} languages");
             flyout.Hide();
         }
         finally

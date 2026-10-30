@@ -165,7 +165,7 @@ internal static class FileViewTests
             var explorer = window.GetVisualDescendants().OfType<FolderExplorer>().Single();
             var refresh = explorer.RefreshAsync(); Wait(refresh); Dispatcher.UIThread.RunJobs();
             Check(statusText.Text == shown, "a folder refresh does not replace the status bar with Opened folder");
-            foreach (var code in new[] { "zh-Hant", "ja", "ko" })
+            foreach (var code in Mdhub.Localization.Loc.Languages.Select(l => l.Code).Where(c => c != Mdhub.Localization.Loc.English))
                 Check(Mdhub.Localization.Loc.Table(code) is { } table && table["PathCopied"] is { Length: > 0 } c && c != "Path copied" && table["CopyPathTip"] is { Length: > 0 }, $"Path copied is localized ({code})");
             var untitled = (NoteDocument)typeof(MainView).GetMethod("AddDocument", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(view, [null, "scratch", null, null])!;
             Dispatcher.UIThread.RunJobs();

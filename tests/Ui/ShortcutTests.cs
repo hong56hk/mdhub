@@ -185,7 +185,7 @@ internal static class ShortcutTests
             // ---- Localized in every language.
             var keys = new[] { "ShortcutEdit", "ShortcutReset", "ShortcutCustomized", "ShortcutRecording", "ShortcutConflict", "ShortcutConflictBuiltIn", "ShortcutReassign", "ShortcutResetAll", "ShortcutResetAllConfirm", "ResetAll", "ShortcutUnassigned", "ShortcutBuiltIn" };
             Check(Loc.Languages.All(l => keys.All(k => Loc.Table(l.Code).ContainsKey(k))) && Loc.Languages.Where(l => l.Code != Loc.English).All(l => keys.All(k => Loc.Table(l.Code)[k] != Loc.En[k])),
-                "Every new string is translated in all 4 languages");
+                $"Every new string is translated in all {Loc.Languages.Count} languages");
             Check(Loc.Languages.All(l => Loc.Table(l.Code)["ShortcutConflict"].Contains("{0}") && Loc.Table(l.Code)["ShortcutConflict"].Contains("{1}")), "Conflict messages keep both placeholders");
             close.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
             Check(w.OwnedWindows.Count == 0, "Close dismisses the Shortcuts dialog");
