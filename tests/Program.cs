@@ -580,7 +580,40 @@ try
         var codePlan = global::Mdhub.Rendering.PreviewEdit.PlanCode(fence, 5, 11, "let x;\nlet y;", any);
         Require(codePlan.Edit is { } ce && fence[..ce.Start] + ce.Replacement + fence[ce.End..] == "```\r\nlet x;\r\nlet y;\r\n```\r\n", "Code block edits keep the note's CRLF line breaks");
         Require(global::Mdhub.Rendering.PreviewEdit.PlanCode(fence, 5, 11, "let x;", any).NoChange && global::Mdhub.Rendering.PreviewEdit.PlanCode(fence, 5, 11, "```", _ => false).Error == global::Mdhub.Rendering.PreviewEdit.ChangesStructure, "Code edits that close the fence are rejected");
-    }    Console.WriteLine("All file tests passed.");
+    }
+    {
+        // Item 64: per-folder tab history (round trip, missing files, LRU cap, path normalization, active tab).
+        var store = Path.Combine(root, "appdata", "session-folder-tabs.json");
+        Require(FolderTabsStore.PathFor(Path.Combine(root, "appdata", "session.json")) == store, "Folder tabs live beside session.json in app data");
+        var folder = Directory.CreateDirectory(Path.Combine(root, "Tabbed")).FullName;
+        var t1 = Path.Combine(folder, "one.md"); var t2 = Path.Combine(folder, "two.md"); var t3 = Path.Combine(folder, "three.md");
+        foreach (var t in new[] { t1, t2, t3 }) File.WriteAllText(t, "x");
+        var now = new DateTime(2026, 10, 30, 12, 0, 0, DateTimeKind.Utc);
+        FolderTabsStore.Save(store, FolderTabsStore.Remember(null, folder, [t1, t2, t3], 1, now));
+        var back = FolderTabsStore.Recall(FolderTabsStore.Load(store), folder, File.Exists);
+        Require(back is { ActiveTab: 1 } && back.Tabs.SequenceEqual([t1, t2, t3]), "Folder tabs round-trip with their order and the active tab");
+        Require(Directory.GetFiles(folder).Length == 3 && !Directory.GetFiles(folder, "*", SearchOption.AllDirectories).Any(f => f.EndsWith(".json")), "Nothing is written inside the folder");
+        Require(FolderTabsStore.Recall(FolderTabsStore.Load(store), folder + Path.DirectorySeparatorChar, File.Exists) is { ActiveTab: 1 }, "A trailing separator finds the same folder");
+        if (OperatingSystem.IsWindows())
+            Require(FolderTabsStore.Recall(FolderTabsStore.Load(store), folder.ToUpperInvariant(), File.Exists) is { ActiveTab: 1 } && FolderTabsStore.Key(folder.ToUpperInvariant()) == FolderTabsStore.Key(folder + "\\"), "Folder keys ignore case on Windows");
+        File.Delete(t2);
+        var pruned = FolderTabsStore.Recall(FolderTabsStore.Load(store), folder, File.Exists);
+        Require(pruned is { ActiveTab: 0 } && pruned.Tabs.SequenceEqual([t1, t3]), "A missing active file is skipped and the first tab becomes active");
+        Require(FolderTabsStore.Recall(FolderTabsStore.Load(store), folder, p => p != t1 && File.Exists(p)) is { ActiveTab: 0 } r1 && r1.Tabs.SequenceEqual([t3]), "Missing files are skipped silently");
+        var active3 = FolderTabsStore.Recall(FolderTabsStore.Remember(null, folder, [t1, t3], 1, now), folder, File.Exists);
+        Require(active3 is { ActiveTab: 1 } && active3.Tabs[1] == t3, "The active tab is kept by path");
+        Require(FolderTabsStore.Recall(FolderTabsStore.Load(store), Path.Combine(root, "Other"), File.Exists) is null, "An unknown folder has no saved tabs");
+        FolderTabsData? lru = null;
+        for (var i = 0; i < 55; i++) lru = FolderTabsStore.Remember(lru, Path.Combine(root, $"f{i}"), [], -1, now.AddMinutes(i));
+        lru = FolderTabsStore.Remember(lru, Path.Combine(root, "f6"), [], -1, now.AddMinutes(100)); // reopened: most recent again
+        lru = FolderTabsStore.Remember(lru, Path.Combine(root, "f55"), [], -1, now.AddMinutes(101));
+        Require(lru!.Folders.Count == FolderTabsStore.Capacity && lru.Folders.ContainsKey(FolderTabsStore.Key(Path.Combine(root, "f6"))) && !lru.Folders.ContainsKey(FolderTabsStore.Key(Path.Combine(root, "f5")))
+            && lru.Folders.ContainsKey(FolderTabsStore.Key(Path.Combine(root, "f8"))), "The history keeps the 50 most recently used folders");
+        Require(FolderTabsStore.Deserialize("{ nope") is null && FolderTabsStore.Deserialize("{\"Version\":9,\"Folders\":{}}") is null && FolderTabsStore.Load(Path.Combine(root, "none.json")) is null, "Corrupt, other-version or missing history loads as nothing");
+        FolderTabsStore.Record(store, new WindowSession { Folder = folder, Tabs = [t3, t1], ActiveTab = 0 });
+        Require(FolderTabsStore.Recall(FolderTabsStore.Load(store), folder, File.Exists) is { ActiveTab: 0 } rec && rec.Tabs.SequenceEqual([t3, t1]), "Record replaces the folder's tabs from a window session");
+    }
+    Console.WriteLine("All file tests passed.");
 }
 finally
 {

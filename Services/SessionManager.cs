@@ -31,7 +31,7 @@ public static class SessionManager
     // Called once a close has been accepted (after the unsaved prompt), so a cancelled close changes nothing.
     private static void Capture(MainWindow window)
     {
-        if (Entries.FirstOrDefault(e => e.Window == window) is { } entry) entry.Snapshot = window.CaptureSession();
+        if (Entries.FirstOrDefault(e => e.Window == window) is { } entry) FolderTabsStore.Record(FolderTabsStore.PathFor(SessionPath), entry.Snapshot = window.CaptureSession());
     }
 
     private static bool _shuttingDown;
@@ -53,7 +53,9 @@ public static class SessionManager
     public static void BeginShutdown()
     {
         if (!Enabled || Entries.Count == 0) return;
-        Write(Entries.Select(e => e.Window.CaptureSession()).ToList());
+        var windows = Entries.Select(e => e.Window.CaptureSession()).ToList();
+        foreach (var session in windows) FolderTabsStore.Record(FolderTabsStore.PathFor(SessionPath), session); // item 64
+        Write(windows);
         _shuttingDown = true;
     }
 
