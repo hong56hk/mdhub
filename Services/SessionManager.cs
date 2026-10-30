@@ -59,8 +59,15 @@ public static class SessionManager
 
     private static void Write(List<WindowSession> windows)
     {
-        try { SessionStore.Save(SessionPath, new SessionData { Windows = windows.Where(w => !w.IsEmpty).ToList() }); }
+        try { SessionStore.Save(SessionPath, new SessionData { Windows = windows.Where(w => !w.IsEmpty).ToList(), Theme = ThemeService.Current.ToString() }); }
         catch (Exception) { /* A session that cannot be written must not block closing. */ }
+    }
+
+    // Theme switches are saved right away with the open windows, so a crash keeps the choice.
+    public static void SaveSettings()
+    {
+        if (!Enabled) return;
+        Write(Entries.Count > 0 ? Entries.Select(e => e.Window.CaptureSession()).ToList() : SessionStore.Load(SessionPath)?.Windows ?? []);
     }
 
     public static void Reset() { Entries.Clear(); _shuttingDown = false; }

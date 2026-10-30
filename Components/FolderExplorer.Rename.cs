@@ -95,7 +95,7 @@ public partial class FolderExplorer
         if (error is null) { CancelRename(); if (keepFocus) FocusTree(); }
         else
         {
-            box.BorderBrush = Brushes.IndianRed;
+            box.BorderBrush = Mdhub.Services.ThemeService.Brush("RenameErrorBorder");
             box.Classes.Add("renameError");
             _renameErrorText = name;
             ToolTip.SetTip(box, error);

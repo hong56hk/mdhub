@@ -10,6 +10,6 @@
   </Style>
   <Style Selector="TextBlock.section">
     <Setter Property="FontSize" Value="11" />
-    <Setter Property="Foreground" Value="#969FAE" />
+    <Setter Property="Foreground" Value="{DynamicResource SectionForeground}" />
   </Style>
 </Styles>

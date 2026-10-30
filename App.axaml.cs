@@ -7,7 +7,11 @@ namespace Mdhub;
 public partial class App : Application
 {
     public const Avalonia.Controls.ShutdownMode ShutdownModeSetting = Avalonia.Controls.ShutdownMode.OnLastWindowClose;
-    public override void Initialize() => AvaloniaXamlLoader.Load(this);
+    public override void Initialize()
+    {
+        AvaloniaXamlLoader.Load(this);
+        Services.ThemeService.Apply(Services.ThemeService.Current, persist: false);
+    }
 
     public override void OnFrameworkInitializationCompleted()
     {
@@ -17,6 +21,7 @@ public partial class App : Application
             desktop.ShutdownMode = ShutdownModeSetting;
             // Reopen the last session's windows; a missing or unusable session starts as a single new window.
             Services.SessionManager.Enabled = true;
+            Services.ThemeService.Apply(Services.ThemeService.Parse(Services.SessionStore.Load(Services.SessionManager.SessionPath)?.Theme), persist: false);
             List<MainWindow> restored;
             try { restored = Services.SessionManager.Restore(); }
             catch (Exception) { restored = []; }

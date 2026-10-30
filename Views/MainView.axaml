@@ -5,11 +5,11 @@
   <UserControl.Styles>
     <Style Selector="Button.sidebarTab">
       <Setter Property="FontSize" Value="11" /><Setter Property="Padding" Value="8,6" />
-      <Setter Property="Background" Value="Transparent" /><Setter Property="Foreground" Value="#8993A4" />
+      <Setter Property="Background" Value="Transparent" /><Setter Property="Foreground" Value="{DynamicResource SidebarTabForeground}" />
       <Setter Property="BorderThickness" Value="0,0,0,2" /><Setter Property="BorderBrush" Value="Transparent" />
     </Style>
     <Style Selector="Button.sidebarTab.active">
-      <Setter Property="Foreground" Value="#DCE3EE" /><Setter Property="BorderBrush" Value="#82AAFF" />
+      <Setter Property="Foreground" Value="{DynamicResource TextStrong}" /><Setter Property="BorderBrush" Value="{DynamicResource AccentStrong}" />
     </Style>
   </UserControl.Styles>
   <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
@@ -17,7 +17,7 @@
     <components:FileTabs x:Name="FileTabs" Grid.Row="1" />
     <components:TextFormatter x:Name="TextFormatter" Grid.Row="2" />
     <Grid x:Name="Workspace" Grid.Row="3" ColumnDefinitions="240,4,*,4,*">
-      <Grid x:Name="Sidebar" RowDefinitions="Auto,*" Background="#17191D">
+      <Grid x:Name="Sidebar" RowDefinitions="Auto,*" Background="{DynamicResource AppBackground}">
         <StackPanel Orientation="Horizontal" Spacing="4" Margin="6,6,4,4">
           <Button x:Name="ExplorerTab" Content="EXPLORER" Classes="sidebarTab active" Click="ExplorerTab_Click" ToolTip.Tip="Explorer (Ctrl+Shift+E)" />
           <Button x:Name="SearchTab" Content="SEARCH" Classes="sidebarTab" Click="SearchTab_Click" ToolTip.Tip="Search (Ctrl+Shift+F)" />
@@ -25,9 +25,9 @@
         <components:FolderExplorer x:Name="FolderExplorer" Grid.Row="1" />
         <components:GlobalSearch x:Name="GlobalSearch" Grid.Row="1" IsVisible="False" />
       </Grid>
-      <GridSplitter x:Name="FolderSplitter" Grid.Column="1" Background="#30343B" ResizeDirection="Columns" />
+      <GridSplitter x:Name="FolderSplitter" Grid.Column="1" Background="{DynamicResource BorderSubtle}" ResizeDirection="Columns" />
       <components:TextEditor x:Name="TextEditor" Grid.Column="2" />
-      <GridSplitter x:Name="PreviewSplitter" Grid.Column="3" Background="#30343B" ResizeDirection="Columns" />
+      <GridSplitter x:Name="PreviewSplitter" Grid.Column="3" Background="{DynamicResource BorderSubtle}" ResizeDirection="Columns" />
       <components:MdEditor x:Name="MdEditor" Grid.Column="4" />
       <components:ImageViewer x:Name="ImageViewer" Grid.Column="2" Grid.ColumnSpan="3" IsVisible="False" />
     </Grid>

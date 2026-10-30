@@ -10,9 +10,9 @@ namespace Mdhub.Components;
 // Paints find matches over the editor text (all matches faint, the current one strong). Not hit-testable.
 public sealed class FindHighlightOverlay : Control
 {
-    private static readonly IBrush MatchBrush = new SolidColorBrush(Color.Parse("#4DD9A441"));
-    private static readonly IBrush CurrentBrush = new SolidColorBrush(Color.Parse("#99E8A33D"));
-    private static readonly IPen CurrentPen = new Pen(new SolidColorBrush(Color.Parse("#F0B45A")), 1);
+    private static readonly IBrush MatchBrush = Mdhub.Services.ThemeService.Brush("FindMatchBackground");
+    private static readonly IBrush CurrentBrush = Mdhub.Services.ThemeService.Brush("FindCurrentBackground");
+    private static readonly IPen CurrentPen = new Pen(Mdhub.Services.ThemeService.Brush("FindCurrentBorder"), 1);
     private TextBox? _editor;
     private TextPresenter? _presenter;
     private ScrollViewer? _scroll;

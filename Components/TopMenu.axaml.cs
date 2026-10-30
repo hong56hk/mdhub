@@ -19,6 +19,18 @@ public partial class TopMenu : UserControl
     {
         InitializeComponent();
         ShortcutKeys.ApplyGestures(MainMenu.Items.OfType<MenuItem>());
+        UpdateThemeChecks(Services.ThemeService.Current);
+        AttachedToVisualTree += (_, _) => { Services.ThemeService.Changed += UpdateThemeChecks; UpdateThemeChecks(Services.ThemeService.Current); };
+        DetachedFromVisualTree += (_, _) => Services.ThemeService.Changed -= UpdateThemeChecks;
+    }
+    private void UpdateThemeChecks(Services.AppTheme theme)
+    {
+        ThemeDarkMenuItem.IsChecked = theme == Services.AppTheme.Dark;
+        ThemeLightMenuItem.IsChecked = theme == Services.AppTheme.Light;
+    }
+    private void Theme_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: string name }) Services.ThemeService.Apply(Services.ThemeService.Parse(name));
     }
     private void Shortcuts_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.Shortcuts);
     public void UpdateWindowState(WindowState state)

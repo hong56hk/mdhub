@@ -162,6 +162,8 @@ try
             Require(Mdhub.Services.SessionStore.Deserialize(bad) is null, $"Corrupt or wrong-schema session is ignored: {bad}");
         Require(Mdhub.Services.SessionStore.Deserialize("{\"Version\":1,\"Windows\":[{\"Folder\":null,\"Tabs\":null}]}") is { Windows.Count: 1 } nulls && nulls.Windows[0].Tabs.Count == 0,
             "Null tab lists load as empty");
+        Require(Mdhub.Services.SessionStore.Deserialize("{\"Version\":1,\"Windows\":[]}")?.Theme == "Dark", "Old session without a theme loads as Dark");
+        Require(Mdhub.Services.SessionStore.Deserialize(Mdhub.Services.SessionStore.Serialize(new Mdhub.Services.SessionData { Theme = "Light" }))?.Theme == "Light", "Theme choice round-trips through the session file");
         Require(Mdhub.Services.SessionStore.Load(Path.Combine(sessionDir, "nope.json")) is null, "Missing session file loads as null");
         File.WriteAllText(sessionFile, "{ broken");
         Require(Mdhub.Services.SessionStore.Load(sessionFile) is null, "Corrupt session file loads as null");

@@ -34,10 +34,10 @@ public sealed class NoteDocument : INotifyPropertyChanged
 
     public NoteDocument()
     {
-        // Transparent so the current-line band behind the text shows; the editor pane is #202329 already.
+        // Transparent so the current-line band behind the text shows; the editor pane paints EditorBackground already.
         Editor.Resources["TextControlBackgroundFocused"] = Brushes.Transparent;
         Editor.Resources["TextControlBackgroundPointerOver"] = Brushes.Transparent;
-        Editor.Resources["TextControlBorderBrushFocused"] = Brush.Parse("#30343B");
+        Editor.Resources["TextControlBorderBrushFocused"] = Mdhub.Services.ThemeService.Brush("BorderSubtle");
         ScrollViewer.SetHorizontalScrollBarVisibility(Editor, ScrollBarVisibility.Auto);
         ScrollViewer.SetVerticalScrollBarVisibility(Editor, ScrollBarVisibility.Auto);
         // A horizontal scroll viewer gives the text unlimited width, so wrapping needs it disabled.

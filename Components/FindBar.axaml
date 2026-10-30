@@ -1,11 +1,11 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.FindBar"
              HorizontalAlignment="Right" VerticalAlignment="Top" IsVisible="False">
 
-  <Border Background="#252A32" BorderBrush="#3A4252" BorderThickness="1" CornerRadius="0,0,6,6" Padding="4,4,6,4" BoxShadow="0 2 8 0 #66000000">
+  <Border Background="{DynamicResource FloatingBackground}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" CornerRadius="0,0,6,6" Padding="4,4,6,4" BoxShadow="0 2 8 0 #66000000">
     <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
       <ToggleButton x:Name="ExpandReplaceToggle" Classes="findAction" Grid.RowSpan="2" VerticalAlignment="Stretch" Height="NaN" Width="18" MinWidth="18" Padding="1"
                     ToolTip.Tip="Toggle replace (Ctrl+H)" AutomationProperties.Name="Toggle replace">
-        <Path x:Name="ExpandIcon" Classes="findIcon" Data="M 6,4 L 10,8 6,12" Stroke="#AAB8CC" />
+        <Path x:Name="ExpandIcon" Classes="findIcon" Data="M 6,4 L 10,8 6,12" Stroke="{DynamicResource IconForeground}" />
       </ToggleButton>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" Margin="3,0,0,0">
         <TextBox x:Name="FindInput" Classes="findField" Watermark="Find" AutomationProperties.Name="Find">
@@ -19,7 +19,7 @@
             </StackPanel>
           </TextBox.InnerRightContent>
         </TextBox>
-        <TextBlock x:Name="FindCount" Text="No results" MinWidth="74" Margin="6,0,4,0" FontSize="12" Foreground="#AAB8CC" VerticalAlignment="Center" />
+        <TextBlock x:Name="FindCount" Text="No results" MinWidth="74" Margin="6,0,4,0" FontSize="12" Foreground="{DynamicResource IconForeground}" VerticalAlignment="Center" />
         <Button x:Name="FindPreviousButton" Classes="findAction" ToolTip.Tip="Previous match (Shift+Enter)" AutomationProperties.Name="Previous match">
           <Path Classes="findIcon" Data="M 8,13 L 8,3 M 4,7 L 8,3 12,7" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
         </Button>
@@ -27,7 +27,7 @@
           <Path Classes="findIcon" Data="M 8,3 L 8,13 M 4,9 L 8,13 12,9" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
         </Button>
         <ToggleButton x:Name="FindInSelectionToggle" Classes="findAction accent" ToolTip.Tip="Find in selection" AutomationProperties.Name="Find in selection">
-          <Path Classes="findIcon" Data="M 2.5,4 L 13.5,4 M 2.5,8 L 13.5,8 M 2.5,12 L 9,12" Stroke="#AAB8CC" />
+          <Path Classes="findIcon" Data="M 2.5,4 L 13.5,4 M 2.5,8 L 13.5,8 M 2.5,12 L 9,12" Stroke="{DynamicResource IconForeground}" />
         </ToggleButton>
         <Button x:Name="FindCloseButton" Classes="findAction" ToolTip.Tip="Close (Escape)" AutomationProperties.Name="Close find">
           <Path Classes="findIcon" Data="M 4.5,4.5 L 11.5,11.5 M 11.5,4.5 L 4.5,11.5" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />

@@ -1,9 +1,4 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:c="using:Mdhub.Components" x:Class="Mdhub.Components.TopMenu">
-  <UserControl.Resources>
-    <SolidColorBrush x:Key="MenuFlyoutItemKeyboardAcceleratorTextForeground" Color="#7D8796" />
-    <SolidColorBrush x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundPointerOver" Color="#7D8796" />
-    <SolidColorBrush x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundPressed" Color="#7D8796" />
-  </UserControl.Resources>
   <UserControl.Styles>
     <Style Selector="Button.caption">
       <Setter Property="Width" Value="46" />
@@ -12,25 +7,25 @@
       <Setter Property="CornerRadius" Value="0" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Foreground" Value="#D7DCE5" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
     </Style>
     <Style Selector="Button.caption:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="#30343B" />
+      <Setter Property="Background" Value="{DynamicResource HoverBackground}" />
     </Style>
     <Style Selector="Button.caption.close:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="#C42B1C" />
+      <Setter Property="Background" Value="{DynamicResource CaptionCloseHoverBackground}" />
     </Style>
     <!-- Dropdown items: 8px more room before the text, and a muted right-aligned shortcut. -->
     <Style Selector="MenuItem MenuItem">
       <Setter Property="Padding" Value="19,9,11,10" />
     </Style>
     <Style Selector="MenuItem /template/ TextBlock#PART_InputGestureText">
-      <Setter Property="Foreground" Value="#7D8796" />
+      <Setter Property="Foreground" Value="{DynamicResource AcceleratorForeground}" />
       <Setter Property="HorizontalAlignment" Value="Right" />
     </Style>
   </UserControl.Styles>
-  <Grid ColumnDefinitions="Auto,*,Auto" Height="32" Background="#17191D">
-  <Menu x:Name="MainMenu" Background="#17191D" VerticalAlignment="Center">
+  <Grid ColumnDefinitions="Auto,*,Auto" Height="32" Background="{DynamicResource AppBackground}">
+  <Menu x:Name="MainMenu" Background="{DynamicResource AppBackground}" VerticalAlignment="Center">
     <MenuItem Header="_File">
       <MenuItem Header="_New" Click="New_Click" c:ShortcutKeys.Id="file.new" />
       <MenuItem Header="_Open File…" Click="Open_Click" c:ShortcutKeys.Id="file.open" />
@@ -65,6 +60,10 @@
     </MenuItem>
     <MenuItem Header="_Settings">
       <MenuItem Header="Shortcut" Click="Shortcuts_Click" />
+      <MenuItem x:Name="ThemeMenu" Header="_Theme">
+        <MenuItem x:Name="ThemeDarkMenuItem" Header="Dark" ToggleType="Radio" GroupName="theme" Click="Theme_Click" Tag="Dark" />
+        <MenuItem x:Name="ThemeLightMenuItem" Header="Light" ToggleType="Radio" GroupName="theme" Click="Theme_Click" Tag="Light" />
+      </MenuItem>
     </MenuItem>
     <MenuItem Header="_Help">
       <MenuItem Header="Markdown Guide" Click="Guide_Click" />

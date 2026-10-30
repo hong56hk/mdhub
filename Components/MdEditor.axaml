@@ -1,5 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:c="using:Mdhub.Components" x:Class="Mdhub.Components.MdEditor">
-  <Grid x:Name="PreviewPanel" Background="#101318" MinWidth="180">
+  <Grid x:Name="PreviewPanel" Background="{DynamicResource PreviewBackground}" MinWidth="180">
     <ScrollViewer x:Name="PreviewScroll" HorizontalScrollBarVisibility="Disabled">
       <Panel x:Name="PreviewLayer">
         <c:PreviewBlockHighlight x:Name="PreviewBlockHighlights" IsHitTestVisible="False" />

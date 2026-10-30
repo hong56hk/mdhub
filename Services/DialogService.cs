@@ -11,7 +11,7 @@ public static class DialogService
     {
         var dialog = new Window { Title = title, Width = 480, SizeToContent = SizeToContent.Height, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
         var input = new TextBox { Name = "ItemName", Text = initialName, PlaceholderText = "Name" };
-        var error = new TextBlock { Foreground = Brush.Parse("#F29D9D"), TextWrapping = TextWrapping.Wrap, IsVisible = false };
+        var error = new TextBlock { Foreground = ThemeService.Brush("DialogErrorForeground"), TextWrapping = TextWrapping.Wrap, IsVisible = false };
         var create = new Button { Content = "Create", IsDefault = true, MinWidth = 80 };
         var cancel = new Button { Content = "Cancel", IsCancel = true, MinWidth = 80 };
         create.Click += (_, _) =>
@@ -66,7 +66,7 @@ public static class DialogService
             Margin = new Thickness(16), Spacing = 10,
             Children =
             {
-                new TextBlock { Name = "LineHint", Text = $"Line number (1 to {lineCount})", Foreground = Brush.Parse("#A9B1BC") }, input,
+                new TextBlock { Name = "LineHint", Text = $"Line number (1 to {lineCount})", Foreground = ThemeService.Brush("DialogHintForeground") }, input,
                 new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, Children = { go, cancel } }
             }
         };
@@ -88,7 +88,7 @@ public static class DialogService
             {
                 var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Classes = { "shortcut-row" }, Tag = s.Id };
                 row.Children.Add(new TextBlock { Text = s.Label });
-                var keys = new TextBlock { Text = s.Format(mac), Foreground = Avalonia.Media.Brush.Parse("#9AA4B2"), FontFamily = new Avalonia.Media.FontFamily("Consolas, Menlo, monospace") };
+                var keys = new TextBlock { Text = s.Format(mac), Foreground = ThemeService.Brush("ShortcutKeyForeground"), FontFamily = new Avalonia.Media.FontFamily("Consolas, Menlo, monospace") };
                 Grid.SetColumn(keys, 1);
                 row.Children.Add(keys);
                 list.Children.Add(row);

@@ -113,12 +113,12 @@ public static class MarkdownPreview
                     }
                     if (_result is { } fenceResult && code is FencedCodeBlock && code.Lines.Count > 0 && codeBlockId >= 0 && ContiguousLines(fenceResult.Map.Source, lines, code.Lines.Count) is { } fenceContent)
                         fenceResult.CodeContent[codeBlockId] = fenceContent;
-                    yield return new Border { Background = Brush.Parse("#1B2028"), CornerRadius = new CornerRadius(5), Padding = new Thickness(14), Child = codeText };
+                    yield return new Border { Background = Mdhub.Services.ThemeService.Brush("CodeBlockBackground"), CornerRadius = new CornerRadius(5), Padding = new Thickness(14), Child = codeText };
                     break;
                 case QuoteBlock quote:
                     yield return new Border
                     {
-                        BorderBrush = Brush.Parse("#7295D4"), BorderThickness = new Thickness(3, 0, 0, 0), Padding = new Thickness(14, 4),
+                        BorderBrush = Mdhub.Services.ThemeService.Brush("QuoteBorder"), BorderThickness = new Thickness(3, 0, 0, 0), Padding = new Thickness(14, 4),
                         Child = Stack(Render(quote))
                     };
                     break;
@@ -151,8 +151,8 @@ public static class MarkdownPreview
                         {
                             var border = new Border
                             {
-                                BorderBrush = Brush.Parse("#363D48"), BorderThickness = new Thickness(0.5), Padding = new Thickness(10),
-                                Background = row.IsHeader ? Brush.Parse("#242B36") : Brushes.Transparent,
+                                BorderBrush = Mdhub.Services.ThemeService.Brush("TableBorder"), BorderThickness = new Thickness(0.5), Padding = new Thickness(10),
+                                Background = row.IsHeader ? Mdhub.Services.ThemeService.Brush("TableHeaderBackground") : Brushes.Transparent,
                                 Child = Stack(Render(cell))
                             };
                             Grid.SetRow(border, rowIndex); Grid.SetColumn(border, col++);
@@ -164,7 +164,7 @@ public static class MarkdownPreview
                     yield return grid;
                     break;
                 case ThematicBreakBlock:
-                    yield return Mapped(new Border { Height = 1, Background = Brush.Parse("#363D48"), Margin = new Thickness(0, 8) }, block);
+                    yield return Mapped(new Border { Height = 1, Background = Mdhub.Services.ThemeService.Brush("RuleForeground"), Margin = new Thickness(0, 8) }, block);
                     break;
                 case HtmlBlock html:
                     yield return Mapped(new SelectableTextBlock { Text = html.Lines.ToString(), TextWrapping = TextWrapping.Wrap }, html);
@@ -258,7 +258,7 @@ public static class MarkdownPreview
                     MapRun(target, literalRun, LocateIn(literal.Span, literalRun.Text));
                     break;
                 case CodeInline code:
-                    var codeRun = new Run(code.Content) { FontFamily = new FontFamily("Consolas, Menlo, monospace"), Background = Brush.Parse("#29313C"), Foreground = Brush.Parse("#B8CFF4") };
+                    var codeRun = new Run(code.Content) { FontFamily = new FontFamily("Consolas, Menlo, monospace"), Background = Mdhub.Services.ThemeService.Brush("InlineCodeBackground"), Foreground = Mdhub.Services.ThemeService.Brush("InlineCodeForeground") };
                     target.Add(codeRun);
                     if (_result is { } r && code.Content.Length > 0 && code.Span.Start >= 0 && code.Span.End < r.Map.Source.Length)
                     {
@@ -278,13 +278,13 @@ public static class MarkdownPreview
                     target.Add(new InlineUIContainer(inlineImage));
                     break;
                 case LinkInline link:
-                    var linkSpan = new Span { Foreground = Brush.Parse("#8DADE8") };
+                    var linkSpan = new Span { Foreground = Mdhub.Services.ThemeService.Brush("LinkForeground") };
                     if (link.IsImage) linkSpan.Inlines.Add(new Run("[Image: "));
                     AddInlines(linkSpan.Inlines, link);
                     if (link.IsImage) linkSpan.Inlines.Add(new Run("]"));
                     target.Add(linkSpan);
                     break;
-                case AutolinkInline auto: target.Add(new Run(auto.Url) { Foreground = Brush.Parse("#8DADE8") }); break;
+                case AutolinkInline auto: target.Add(new Run(auto.Url) { Foreground = Mdhub.Services.ThemeService.Brush("LinkForeground") }); break;
                 case HtmlInline html: target.Add(new Run(html.Tag)); break;
                 case ContainerInline nested: AddInlines(target, nested); break;
             }

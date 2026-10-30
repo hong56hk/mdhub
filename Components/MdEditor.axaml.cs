@@ -49,7 +49,7 @@ public partial class MdEditor : UserControl
 
     // ---- Selection highlight: the editor selection is mirrored in the preview (debounced). ----
     internal static TimeSpan SelectionDelay { get; set; } = TimeSpan.FromMilliseconds(120);
-    internal static readonly IBrush HighlightBrush = new SolidColorBrush(Color.Parse("#5C4F8FE8"));
+    internal static readonly IBrush HighlightBrush = Mdhub.Services.ThemeService.Brush("PreviewHighlight");
     private readonly DispatcherTimer _selectionTimer = new();
     private PreviewRender? _render;
     private readonly List<(InlineCollection Parent, int Index, Run Original, Run[] Pieces)> _splits = [];
@@ -300,7 +300,7 @@ public partial class MdEditor : UserControl
             PreviewContent.Children.Clear();
             if (text.Length == 0)
             {
-                PreviewContent.Children.Add(new TextBlock { Text = "Your preview will appear here.", Foreground = Brush.Parse("#788393"), Margin = new Thickness(0, 12) });
+                PreviewContent.Children.Add(new TextBlock { Text = "Your preview will appear here.", Foreground = Mdhub.Services.ThemeService.Brush("PreviewPlaceholderForeground"), Margin = new Thickness(0, 12) });
             }
             else if (result.Markdown is not null)
             {

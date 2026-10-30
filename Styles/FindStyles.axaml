@@ -1,4 +1,4 @@
-﻿<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <!-- Shared by the find bar (Components/FindBar.axaml) and global search (Components/GlobalSearch.axaml). -->
     <Style Selector="Button.findAction, ToggleButton.findAction">
       <Setter Property="Width" Value="24" />
@@ -10,7 +10,7 @@
       <Setter Property="BorderBrush" Value="Transparent" />
       <Setter Property="CornerRadius" Value="4" />
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Foreground" Value="#AAB8CC" />
+      <Setter Property="Foreground" Value="{DynamicResource IconForeground}" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
@@ -25,23 +25,23 @@
       <Setter Property="BorderBrush" Value="Transparent" />
       <Setter Property="CornerRadius" Value="3" />
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Foreground" Value="#AAB8CC" />
+      <Setter Property="Foreground" Value="{DynamicResource IconForeground}" />
       <Setter Property="FontSize" Value="11" />
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
     <Style Selector="Button.findAction:pointerover /template/ ContentPresenter, ToggleButton.findAction:pointerover /template/ ContentPresenter, ToggleButton.fieldToggle:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="#303843" />
-      <Setter Property="Foreground" Value="#AAB8CC" />
+      <Setter Property="Background" Value="{DynamicResource HoverBackground}" />
+      <Setter Property="Foreground" Value="{DynamicResource IconForeground}" />
     </Style>
     <Style Selector="Button.findAction:pressed /template/ ContentPresenter, ToggleButton.findAction:pressed /template/ ContentPresenter, ToggleButton.fieldToggle:pressed /template/ ContentPresenter">
-      <Setter Property="Background" Value="#3A4657" />
+      <Setter Property="Background" Value="{DynamicResource PressedBackground}" />
     </Style>
     <Style Selector="ToggleButton.fieldToggle:checked /template/ ContentPresenter, ToggleButton.findAction.accent:checked /template/ ContentPresenter">
-      <Setter Property="Background" Value="#3D8DADE8" />
-      <Setter Property="BorderBrush" Value="#8DADE8" />
-      <Setter Property="Foreground" Value="#D7DCE5" />
+      <Setter Property="Background" Value="{DynamicResource AccentSoft}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
     </Style>
     <Style Selector="ToggleButton.findAction:checked:not(.accent) /template/ ContentPresenter">
       <Setter Property="Background" Value="Transparent" />
@@ -52,15 +52,15 @@
       <Setter Property="Padding" Value="8,0" />
       <Setter Property="FontSize" Value="12" />
       <Setter Property="CornerRadius" Value="4" />
-      <Setter Property="Background" Value="#2B313A" />
-      <Setter Property="Foreground" Value="#D7DCE5" />
+      <Setter Property="Background" Value="{DynamicResource ButtonBackground}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
     <Style Selector="Button.textAction:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="#303843" />
+      <Setter Property="Background" Value="{DynamicResource HoverBackground}" />
     </Style>
     <Style Selector="Button.textAction:pressed /template/ ContentPresenter">
-      <Setter Property="Background" Value="#3A4657" />
+      <Setter Property="Background" Value="{DynamicResource PressedBackground}" />
     </Style>
     <Style Selector="Path.findIcon">
       <Setter Property="Width" Value="16" />
@@ -77,21 +77,21 @@
       <Setter Property="FontSize" Value="13" />
       <Setter Property="Padding" Value="6,3,2,3" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
-      <Setter Property="Background" Value="#1B1E23" />
-      <Setter Property="Foreground" Value="#D7DCE5" />
-      <Setter Property="BorderBrush" Value="#30343B" />
+      <Setter Property="Background" Value="{DynamicResource InputBackground}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtle}" />
       <Setter Property="BorderThickness" Value="1" />
     </Style>
     <Style Selector="TextBox.findField:focus /template/ Border#PART_BorderElement, TextBox.findField:pointerover /template/ Border#PART_BorderElement">
-      <Setter Property="Background" Value="#1B1E23" />
-      <Setter Property="BorderBrush" Value="#8DADE8" />
+      <Setter Property="Background" Value="{DynamicResource InputBackground}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
       <Setter Property="BorderThickness" Value="1" />
     </Style>
     <Style Selector="TextBox.findField.invalid">
-      <Setter Property="BorderBrush" Value="#C42B1C" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Danger}" />
     </Style>
     <Style Selector="TextBox.findField.invalid:focus /template/ Border#PART_BorderElement, TextBox.findField.invalid:pointerover /template/ Border#PART_BorderElement">
-      <Setter Property="BorderBrush" Value="#C42B1C" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Danger}" />
     </Style>
 
 </Styles>

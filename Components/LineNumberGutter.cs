@@ -11,7 +11,7 @@ namespace Mdhub.Components;
 // so numbers follow scrolling, typing and word wrap without replacing the editor.
 public sealed class LineNumberGutter : Control
 {
-    private static readonly IBrush NumberBrush = Brush.Parse("#6B7280");
+    private static readonly IBrush NumberBrush = Mdhub.Services.ThemeService.Brush("GutterForeground");
     private const double LeftPadding = 10, RightPadding = 8;
     private TextBox? _editor;
     private TextPresenter? _presenter;

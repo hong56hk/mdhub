@@ -10,7 +10,7 @@ namespace Mdhub.Components;
 // Faint band behind the caret's logical line (all wrapped rows). Sits under the editor text; hidden with a selection.
 public sealed class CurrentLineOverlay : Control
 {
-    public static readonly IBrush LineBrush = new SolidColorBrush(Color.FromArgb(32, 211, 211, 211));
+    public static readonly IBrush LineBrush = Mdhub.Services.ThemeService.Brush("CurrentLineBackground");
     private TextBox? _editor;
     private TextPresenter? _presenter;
     private ScrollViewer? _scroll;

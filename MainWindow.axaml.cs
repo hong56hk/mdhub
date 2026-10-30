@@ -16,6 +16,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Services.ThemeService.Register(this);
         MainView.TitleChanged += title => Title = title;
         MainView.CloseRequested += Close;
         MainView.WindowActionRequested += HandleWindowAction;

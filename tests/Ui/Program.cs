@@ -15,6 +15,7 @@ if (args.Contains("--file-views")) { FileViewTests.Run(); return; }
 if (args.Contains("--image-layout")) { ImageLayoutTests.Run(); return; }
 if (args.Contains("--rename-only")) { RenameTests.Run(); return; }
 if (args.Contains("--layout-only")) { ExplorerLayoutTests.Run(); return; }
+if (args.Contains("--theme-only")) { ThemeTests.Run(); return; }
 if (args.Contains("--syntax-only")) { SyntaxTests.Run(); return; }
 if (args.Contains("--search-only")) { WorkspaceSearchTests.Run(); return; }
 AppBuilder.Configure<App>().UseSkia().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).SetupWithoutStarting();
@@ -1167,7 +1168,7 @@ finally
     var stops = smenu.Items.OfType<MenuItem>().ToList();
     Require(stops.Select(m => m.Header as string).SequenceEqual(["_File", "_Edit", "_View", "_Settings", "_Help"]), "Settings sits between View and Help");
     var settings = stops[3];
-    Require(settings.Items.OfType<MenuItem>().Select(m => m.Header as string).SequenceEqual(["Shortcut"]), "Settings contains one item, Shortcut");
+    Require(settings.Items.OfType<MenuItem>().Select(m => m.Header as string).SequenceEqual(["Shortcut", "_Theme"]), "Settings contains Shortcut and Theme");
     MenuItem Item(int top, string header) => stops[top].Items.OfType<MenuItem>().First(m => (m.Header as string)!.Replace("_", "") == header);
     var expected = new (int, string, string)[] { (0, "New", "Ctrl+N"), (0, "Open File…", "Ctrl+O"), (0, "Open Folder…", "Ctrl+Shift+O"), (0, "Save", "Ctrl+S"), (0, "Save As…", "Ctrl+Shift+S"),
         (0, "Close Tab", "Ctrl+W"), (1, "Undo", "Ctrl+Z"), (1, "Redo", "Ctrl+Y"), (1, "Cut", "Ctrl+X"), (1, "Copy", "Ctrl+C"), (1, "Paste", "Ctrl+V"), (1, "Select All", "Ctrl+A"), (2, "Toggle Word Wrap", "Alt+Z") };

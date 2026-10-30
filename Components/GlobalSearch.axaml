@@ -4,7 +4,7 @@
     <Grid ColumnDefinitions="Auto,*,Auto">
       <ToggleButton x:Name="GlobalExpandReplace" Classes="findAction" VerticalAlignment="Stretch" Height="NaN" Width="18" MinWidth="18" Padding="1"
                     ToolTip.Tip="Toggle replace (Ctrl+Shift+H)" AutomationProperties.Name="Toggle replace">
-        <Path x:Name="GlobalExpandIcon" Classes="findIcon" Data="M 6,4 L 10,8 6,12" Stroke="#AAB8CC" />
+        <Path x:Name="GlobalExpandIcon" Classes="findIcon" Data="M 6,4 L 10,8 6,12" Stroke="{DynamicResource IconForeground}" />
       </ToggleButton>
       <TextBox x:Name="GlobalQuery" Grid.Column="1" Classes="findField" Width="NaN" MinWidth="50" Margin="3,0,0,0" Watermark="Search in opened folder" AutomationProperties.Name="Search in folder">
         <TextBox.InnerRightContent>
@@ -32,7 +32,7 @@
         <Button x:Name="GlobalReplaceAll" Classes="textAction" Content="Replace all" ToolTip.Tip="Replace all in folder" IsEnabled="False" />
       </StackPanel>
     </StackPanel>
-    <TextBlock x:Name="GlobalSummary" Grid.Row="2" Margin="4,10,4,8" TextWrapping="Wrap" FontSize="12" Foreground="#AAB8CC" Text="Open a folder to search." />
+    <TextBlock x:Name="GlobalSummary" Grid.Row="2" Margin="4,10,4,8" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource IconForeground}" Text="Open a folder to search." />
     <TreeView x:Name="GlobalResults" Grid.Row="3" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
   </Grid>
 </UserControl>

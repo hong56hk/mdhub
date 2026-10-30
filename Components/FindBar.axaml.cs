@@ -196,7 +196,7 @@ public partial class FindBar : UserControl
     private void UpdateView()
     {
         FindCount.Text = string.IsNullOrEmpty(FindInput.Text) ? "No results" : FindReplace.CountLabel(_current, _matches.Count);
-        FindCount.Foreground = _matches.Count == 0 && !string.IsNullOrEmpty(FindInput.Text) ? Brush.Parse("#E8A08D") : Brush.Parse("#AAB8CC");
+        FindCount.Foreground = _matches.Count == 0 && !string.IsNullOrEmpty(FindInput.Text) ? Mdhub.Services.ThemeService.Brush("ErrorForeground") : Mdhub.Services.ThemeService.Brush("IconForeground");
         var any = _matches.Count > 0;
         FindPreviousButton.IsEnabled = FindNextButton.IsEnabled = any;
         ReplaceButton.IsEnabled = ReplaceAllButton.IsEnabled = any;

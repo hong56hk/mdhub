@@ -102,11 +102,11 @@ public partial class GlobalSearch : UserControl
                 foreach (var hit in file.Hits)
                 {
                     var label = new TextBlock { FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis };
-                    label.Inlines!.Add(new Run($"{hit.Line}: ") { Foreground = Brush.Parse("#8993A4") });
+                    label.Inlines!.Add(new Run($"{hit.Line}: ") { Foreground = Mdhub.Services.ThemeService.Brush("SearchLineNumberForeground") });
                     var offset = Math.Clamp(hit.Start - hit.PreviewStart, 0, hit.Preview.Length);
                     var length = Math.Min(hit.Length, hit.Preview.Length - offset);
                     label.Inlines.Add(new Run(hit.Preview[..offset]));
-                    label.Inlines.Add(new Run(hit.Preview.Substring(offset, length)) { Foreground = Brush.Parse("#FFD580"), Background = Brush.Parse("#55452A") });
+                    label.Inlines.Add(new Run(hit.Preview.Substring(offset, length)) { Foreground = Mdhub.Services.ThemeService.Brush("SearchMatchForeground"), Background = Mdhub.Services.ThemeService.Brush("SearchMatchBackground") });
                     label.Inlines.Add(new Run(hit.Preview[(offset + length)..]));
                     var row = new TreeViewItem { Header = label, Tag = hit };
                     ToolTip.SetTip(row, hit.Preview);

@@ -1,11 +1,11 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.BottomStatusBar">
-  <Border BorderBrush="#30343B" BorderThickness="0,1,0,0" Padding="12,7">
+  <Border BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="0,1,0,0" Padding="12,7">
     <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
-      <TextBlock x:Name="Counts" FontSize="11" Foreground="#B2BCCB" />
-      <TextBlock x:Name="Status" Grid.Column="1" Margin="20,0" FontSize="11" Foreground="#8893A3" TextTrimming="CharacterEllipsis" />
-      <TextBlock x:Name="CaretLabel" Grid.Column="2" Margin="0,0,16,0" FontSize="11" Foreground="#B2BCCB" IsVisible="False" />
-      <TextBlock x:Name="FileKindLabel" Grid.Column="3" Margin="0,0,16,0" FontSize="11" Foreground="#8893A3" Text="Markdown" />
-      <TextBlock x:Name="EncodingLabel" Grid.Column="4" FontSize="11" Foreground="#8DADE8" Text="UTF-8" />
+      <TextBlock x:Name="Counts" FontSize="11" Foreground="{DynamicResource TextSecondary}" />
+      <TextBlock x:Name="Status" Grid.Column="1" Margin="20,0" FontSize="11" Foreground="{DynamicResource TextMuted}" TextTrimming="CharacterEllipsis" />
+      <TextBlock x:Name="CaretLabel" Grid.Column="2" Margin="0,0,16,0" FontSize="11" Foreground="{DynamicResource TextSecondary}" IsVisible="False" />
+      <TextBlock x:Name="FileKindLabel" Grid.Column="3" Margin="0,0,16,0" FontSize="11" Foreground="{DynamicResource TextMuted}" Text="Markdown" />
+      <TextBlock x:Name="EncodingLabel" Grid.Column="4" FontSize="11" Foreground="{DynamicResource Accent}" Text="UTF-8" />
     </Grid>
   </Border>
 </UserControl>

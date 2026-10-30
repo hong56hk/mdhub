@@ -29,7 +29,7 @@ public partial class FolderExplorer : UserControl
             };
             return item;
         }
-        Separator Line() => new() { Background = Avalonia.Media.Brushes.LightGray, Foreground = Avalonia.Media.Brushes.LightGray };
+        Separator Line() => new() { Background = Mdhub.Services.ThemeService.Brush("SeparatorForeground"), Foreground = Mdhub.Services.ThemeService.Brush("SeparatorForeground") };
         return new ContextMenu
         {
             Items =
@@ -60,7 +60,7 @@ public partial class FolderExplorer : UserControl
             item.Click += (_, _) => action();
             return item;
         }
-        Separator Line() => new() { Background = Avalonia.Media.Brushes.LightGray, Foreground = Avalonia.Media.Brushes.LightGray };
+        Separator Line() => new() { Background = Mdhub.Services.ThemeService.Brush("SeparatorForeground"), Foreground = Mdhub.Services.ThemeService.Brush("SeparatorForeground") };
         void Create(bool isFolder) { FolderTree.SelectedItem = null; _createInRoot = true; NewItem(isFolder); }
         var newFile = Item("BackgroundNewFileMenuItem", "New file", () => Create(false));
         var newFolder = Item("BackgroundNewFolderMenuItem", "New folder", () => Create(true));

@@ -1,5 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.TextFormatter">
-  <Border BorderBrush="#30343B" BorderThickness="0,1" Padding="8,5" Background="#20242A">
+  <Border BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="0,1" Padding="8,5" Background="{DynamicResource ToolbarBackground}">
     <Grid ColumnDefinitions="*,Auto">
       <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
         <StackPanel x:Name="FormatBar" Orientation="Horizontal" Spacing="2">

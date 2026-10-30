@@ -11,9 +11,9 @@ public sealed class MarkdownTextPresenter : TextPresenter
 {
     public static readonly StyledProperty<bool> HighlightMarkdownProperty = AvaloniaProperty.Register<MarkdownTextPresenter, bool>(nameof(HighlightMarkdown));
     public bool HighlightMarkdown { get => GetValue(HighlightMarkdownProperty); set => SetValue(HighlightMarkdownProperty, value); }
-    public static readonly IBrush HeadingBrush = Brush.Parse("#C792EA");
-    public static readonly IBrush OrderedListBrush = Brush.Parse("#82AAFF");
-    public static readonly IBrush UnorderedListBrush = Brush.Parse("#8FD6A0");
+    public static readonly IBrush HeadingBrush = Mdhub.Services.ThemeService.Brush("SyntaxHeading");
+    public static readonly IBrush OrderedListBrush = Mdhub.Services.ThemeService.Brush("SyntaxOrderedList");
+    public static readonly IBrush UnorderedListBrush = Mdhub.Services.ThemeService.Brush("SyntaxUnorderedList");
     private string? _cachedText;
     private IReadOnlyList<MarkdownMarker> _markers = [];
 

@@ -9,7 +9,7 @@
       <Setter Property="MinWidth" Value="12" />
     </Style>
     <Style Selector="TreeViewItem.dropTarget">
-      <Setter Property="Background" Value="#394553" />
+      <Setter Property="Background" Value="{DynamicResource DropTargetBackground}" />
     </Style>
     <Style Selector="Button.explorerAction">
       <Setter Property="Width" Value="28" />
@@ -20,15 +20,15 @@
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="CornerRadius" Value="4" />
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Foreground" Value="#AAB8CC" />
+      <Setter Property="Foreground" Value="{DynamicResource IconForeground}" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
     <Style Selector="Button.explorerAction:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="#303843" />
+      <Setter Property="Background" Value="{DynamicResource HoverBackground}" />
     </Style>
     <Style Selector="Button.explorerAction:pressed /template/ ContentPresenter">
-      <Setter Property="Background" Value="#3A4657" />
+      <Setter Property="Background" Value="{DynamicResource PressedBackground}" />
     </Style>
     <Style Selector="Button.folderName">
       <Setter Property="Background" Value="Transparent" />
@@ -46,7 +46,7 @@
       <Setter Property="TextDecorations" Value="Underline" />
     </Style>
     <Style Selector="Button.folderName.dropTarget /template/ ContentPresenter">
-      <Setter Property="Background" Value="#394553" />
+      <Setter Property="Background" Value="{DynamicResource DropTargetBackground}" />
     </Style>
     <Style Selector="Path.explorerIcon">
       <Setter Property="Width" Value="16" />
@@ -57,10 +57,10 @@
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
   </UserControl.Styles>
-  <Grid x:Name="FolderPanel" RowDefinitions="Auto,*" Background="#17191D">
+  <Grid x:Name="FolderPanel" RowDefinitions="Auto,*" Background="{DynamicResource AppBackground}">
     <Grid ColumnDefinitions="*,Auto" Margin="14,4,6,8">
       <Button x:Name="FolderNameButton" Classes="folderName" Click="FolderName_Click" Cursor="Hand" ToolTip.Tip="Open a folder (Ctrl+Shift+O)" AutomationProperties.Name="Open folder">
-        <TextBlock x:Name="FolderName" Text="Open Folder" Foreground="#BEC6D3" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+        <TextBlock x:Name="FolderName" Text="Open Folder" Foreground="{DynamicResource FolderNameForeground}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
       </Button>
       <StackPanel x:Name="FolderActions" Grid.Column="1" Orientation="Horizontal" Spacing="2" IsEnabled="False">
         <Button x:Name="NewFileButton" Classes="explorerAction" Click="NewFile_Click" ToolTip.Tip="New file" AutomationProperties.Name="New file">
