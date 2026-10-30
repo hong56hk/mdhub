@@ -65,7 +65,8 @@ public static class SessionManager
                 RecentFiles = [.. RecentService.Files], RecentFolders = [.. RecentService.Folders], CustomShortcuts = Shortcuts.AnyCustomized ? Shortcuts.Export() : null,
                 Preview = PreviewSettings.IsDefault ? null : PreviewSettings.Current,
                 EditorFonts = EditorFonts.IsDefault ? null : EditorFonts.Current,
-                EditorColors = EditorColors.Export() }); }
+                EditorColors = EditorColors.Export(),
+                EditorBehavior = EditorBehavior.IsDefault ? null : EditorBehavior.Current }); }
         catch (Exception) { /* A session that cannot be written must not block closing. */ }
     }
 

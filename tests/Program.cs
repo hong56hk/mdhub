@@ -613,6 +613,17 @@ try
         FolderTabsStore.Record(store, new WindowSession { Folder = folder, Tabs = [t3, t1], ActiveTab = 0 });
         Require(FolderTabsStore.Recall(FolderTabsStore.Load(store), folder, File.Exists) is { ActiveTab: 0 } rec && rec.Tabs.SequenceEqual([t3, t1]), "Record replaces the folder's tabs from a window session");
     }
+    // Item 70: Tab / Shift+Tab rules and the session round-trip of the tab settings.
+    {
+        string Tab(string t, int s, int e, bool o, bool sp = true, int n = 4) => Mdhub.Text.TabEditing.Apply(t, s, e, o, sp, n) is { } x ? t[..x.Start] + x.Replacement + t[x.End..] : t;
+        Require(Tab("ab", 0, 0, false) == "    ab" && Tab("ab", 0, 0, false, sp: false) == "\tab" && Tab("ab", 1, 1, false, n: 2) == "a b", "Tab inserts spaces to the next stop or a tab");
+        Require(Tab("    a\n\tb", 0, 8, true) == "a\nb" && Tab("a\nb", 0, 3, false, n: 2) == "  a\n  b", "Shift+Tab and multi-line Tab follow the tab size");
+        Require(Mdhub.Text.TabEditing.Clamp(0) == 1 && Mdhub.Text.TabEditing.Clamp(99) == 8, "Tab size clamps to 1-8");
+        var tabSession = Path.Combine(root, "tabs-session.json");
+        SessionStore.Save(tabSession, new SessionData { EditorBehavior = new EditorBehaviorData { InsertSpaces = false, TabSize = 3 } });
+        Require(SessionStore.Load(tabSession)?.EditorBehavior is { InsertSpaces: false, TabSize: 3 }, "Tab settings round-trip through the session file");
+        Require(new EditorBehaviorData() is { InsertSpaces: true, TabSize: 4 }, "Tab settings default to spaces, size 4");
+    }
     Console.WriteLine("All file tests passed.");
 }
 finally

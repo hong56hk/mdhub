@@ -31,7 +31,7 @@ public static class EditorFontsFlyout
     public static ScrollViewer Build() => new()
     {
         Name = "EditorSettingsScroll", MaxHeight = 560, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-        Content = new StackPanel { Spacing = 6, Children = { BuildFonts(), BuildColors() } },
+        Content = new StackPanel { Spacing = 6, Children = { BuildFonts(), BuildTabs(), BuildColors() } },
     };
 
     private static TextBlock Label(string key) => new() { Text = Loc.T(key), Foreground = ThemeService.Brush("TextSecondary"), Margin = new Thickness(0, 4, 0, 0) };
@@ -53,6 +53,30 @@ public static class EditorFontsFlyout
         panel.Children.Add(Picker("EditorBodyFontBox", s.Body, (d, f) => d with { Body = f }));
         panel.Children.Add(Label("EditorCodeFont"));
         panel.Children.Add(Picker("EditorCodeFontBox", s.Code, (d, f) => d with { Code = f }));
+        return panel;
+    }
+
+    // Item 70: Tab behaviour: insert spaces (default on) and the tab size (1-8, default 4).
+    public static StackPanel BuildTabs()
+    {
+        var s = EditorBehavior.Current;
+        var panel = new StackPanel { Name = "EditorTabsPanel", Spacing = 6, Width = 280, Margin = new Thickness(0, 8, 0, 0) };
+        panel.Children.Add(new TextBlock { Text = Loc.T("EditorTabSettings"), FontWeight = FontWeight.SemiBold });
+        var spaces = new CheckBox { Name = "EditorInsertSpacesBox", Content = Loc.T("EditorInsertSpaces"), IsChecked = s.InsertSpaces };
+        spaces.IsCheckedChanged += (_, _) => EditorBehavior.Update(d => d with { InsertSpaces = spaces.IsChecked == true });
+        panel.Children.Add(spaces);
+        var size = new NumericUpDown
+        {
+            Name = "EditorTabSizeBox", Minimum = Mdhub.Text.TabEditing.MinSize, Maximum = Mdhub.Text.TabEditing.MaxSize, Increment = 1, FormatString = "0",
+            Value = s.TabSize, Width = 110, HorizontalAlignment = HorizontalAlignment.Left,
+        };
+        AutomationProperties.SetName(size, Loc.T("EditorTabSize"));
+        size.ValueChanged += (_, e) => { if (e.NewValue is decimal v) EditorBehavior.Update(d => d with { TabSize = (int)Math.Round(v) }); };
+        var row = new DockPanel { LastChildFill = false };
+        var label = new TextBlock { Text = Loc.T("EditorTabSize"), VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap, MaxWidth = 160 };
+        DockPanel.SetDock(label, Dock.Left); DockPanel.SetDock(size, Dock.Right);
+        row.Children.Add(label); row.Children.Add(size);
+        panel.Children.Add(row);
         return panel;
     }
 

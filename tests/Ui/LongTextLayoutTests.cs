@@ -94,6 +94,9 @@ internal static class LongTextLayoutTests
                     flyout.ShowAt(gear); Pump(); Pump(); Pump();
                     var content = (Control)flyout.Content!;
                     Check(flyout.IsOpen && content.IsEffectivelyVisible, $"{code}: {label} flyout opens");
+                    if (gearName == "EditorSettingsButton")
+                        Check(content.GetVisualDescendants().OfType<CheckBox>().Any(c => c.Name == "EditorInsertSpacesBox" && c.IsEffectivelyVisible)
+                            && content.GetVisualDescendants().OfType<NumericUpDown>().Any(c => c.Name == "EditorTabSizeBox" && c.IsEffectivelyVisible), $"{code}: editor settings show the tab settings (item 70)");
                     var clipped = ClippedIn(content);
                     Check(clipped.Count == 0, $"{code}: {label} flyout fits ({string.Join(" | ", clipped)})");
                     flyout.Hide(); Pump();

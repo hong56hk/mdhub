@@ -27,4 +27,27 @@ public sealed class MarkdownTextBox : TextBox
         }
         base.OnTextInput(e);
     }
+
+    // Item 70: Tab / Shift+Tab follow the editor gear (spaces or a tab, tab size); a multi-line selection indents or
+    // outdents every touched line. Each is one replacement, so one undo step.
+    protected override void OnKeyDown(Avalonia.Input.KeyEventArgs e)
+    {
+        if (e.Key == Avalonia.Input.Key.Tab && !IsReadOnly && AcceptsTab && (e.KeyModifiers is Avalonia.Input.KeyModifiers.None or Avalonia.Input.KeyModifiers.Shift))
+        {
+            var s = Mdhub.Services.EditorBehavior.Current;
+            if (Mdhub.Text.TabEditing.Apply(Text ?? "", SelectionStart, SelectionEnd, e.KeyModifiers == Avalonia.Input.KeyModifiers.Shift, s.InsertSpaces, s.TabSize) is { } edit)
+                ApplyEdit(edit);
+            e.Handled = true;
+            return;
+        }
+        base.OnKeyDown(e);
+    }
+
+    public void ApplyEdit(Mdhub.Text.CaretEdit edit)
+    {
+        SelectionStart = edit.Start; SelectionEnd = edit.End;
+        SelectedText = edit.Replacement;
+        SelectionStart = edit.SelectionStart; SelectionEnd = edit.SelectionEnd;
+        if (edit.SelectionStart == edit.SelectionEnd) CaretIndex = edit.SelectionEnd;
+    }
 }

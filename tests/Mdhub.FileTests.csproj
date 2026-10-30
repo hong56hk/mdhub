@@ -23,6 +23,7 @@
     <Compile Include="../Text/CaretLine.cs" Link="CaretLine.cs" />
     <Compile Include="../Services/Shortcuts.cs" Link="Shortcuts.cs" />
     <Compile Include="../Text/EditorCommands.cs" Link="EditorCommands.cs" />
+    <Compile Include="../Text/TabEditing.cs" Link="TabEditing.cs" />
     <Compile Include="../Rendering/PreviewEdit.cs" Link="PreviewEdit.cs" />
     <Compile Include="../Rendering/RichCopy.cs" Link="RichCopy.cs" />
     <Compile Include="../Text/CaretPosition.cs" Link="CaretPosition.cs" />

@@ -35,6 +35,15 @@ public sealed record SessionData
     public EditorFontsData? EditorFonts { get; init; }
     // Item 62: editor colour overrides per theme (colour id -> #AARRGGBB); null when none.
     public EditorColorsData? EditorColors { get; init; }
+    // Item 70: editor typing behaviour (tabs); null when all defaults.
+    public EditorBehaviorData? EditorBehavior { get; init; }
+}
+
+// Item 70: Tab inserts spaces (default) or a tab; TabSize (1-8) = spaces per Tab and the width of a tab character.
+public sealed record EditorBehaviorData
+{
+    public bool InsertSpaces { get; init; } = true;
+    public int TabSize { get; init; } = 4;
 }
 
 // UI-free session file handling: atomic save, tolerant load and validation against the file system.

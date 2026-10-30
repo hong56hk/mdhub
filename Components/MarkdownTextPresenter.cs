@@ -33,8 +33,8 @@ public sealed class MarkdownTextPresenter : TextPresenter
     public event EventHandler? SyntaxChanged;
 
     // Item 57: code spans and fenced code use the editor gear's code font (only when it differs from the body font).
-    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e) { base.OnAttachedToVisualTree(e); Mdhub.Services.EditorFonts.Changed += OnEditorFontsChanged; Mdhub.Services.EditorMode.Changed += InvalidateVisual; }
-    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) { base.OnDetachedFromVisualTree(e); Mdhub.Services.EditorFonts.Changed -= OnEditorFontsChanged; Mdhub.Services.EditorMode.Changed -= InvalidateVisual; }
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e) { base.OnAttachedToVisualTree(e); Mdhub.Services.EditorFonts.Changed += OnEditorFontsChanged; Mdhub.Services.EditorMode.Changed += InvalidateVisual; Mdhub.Services.EditorBehavior.Changed += InvalidateTextLayout; }
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) { base.OnDetachedFromVisualTree(e); Mdhub.Services.EditorFonts.Changed -= OnEditorFontsChanged; Mdhub.Services.EditorMode.Changed -= InvalidateVisual; Mdhub.Services.EditorBehavior.Changed -= InvalidateTextLayout; }
     // Item 66: in overwrite mode the caret is a block as wide as the next character (a space's width at a line end),
     // in presenter coordinates; CurrentLineOverlay paints it behind the text in the Accent color.
     public Rect? OverwriteCaret
@@ -120,10 +120,12 @@ public sealed class MarkdownTextPresenter : TextPresenter
     protected override TextLayout CreateTextLayout()
     {
         var original = base.CreateTextLayout();
-        if (!HighlightMarkdown || !string.IsNullOrEmpty(PreeditText)) return original;
+        if (!string.IsNullOrEmpty(PreeditText)) return original;
         var text = Text ?? "";
+        var tabbed = text.Contains('\t');
+        if (!HighlightMarkdown) return tabbed ? Tabbed(original, text, null) : original;
         if (_cachedText != text) { _cachedText = text; _syntax = _highlighter.Run(text); SyntaxChanged?.Invoke(this, EventArgs.Empty); }
-        if (_syntax.Spans.Count == 0 && (_syntax.Blocks.Count == 0 || !Mdhub.Services.EditorFonts.SeparateCodeFont)) return original;
+        if (_syntax.Spans.Count == 0 && (_syntax.Blocks.Count == 0 || !Mdhub.Services.EditorFonts.SeparateCodeFont)) return tabbed ? Tabbed(original, text, null) : original;
         var typeface = new Typeface(FontFamily, FontStyle, FontWeight, FontStretch);
         var styles = new List<ValueSpan<TextRunProperties>>(_syntax.Spans.Count + 2);
         var selStart = Math.Min(SelectionStart, SelectionEnd);
@@ -149,6 +151,7 @@ public sealed class MarkdownTextPresenter : TextPresenter
             styles.Add(new(start, end - start, props));
         }
         if (selection is not null && !selectionAdded) styles.Add(new(selStart, selEnd - selStart, selection));
+        if (tabbed) return Tabbed(original, text, WithCodeFont(styles, text.Length));
         try
         {
             return new TextLayout(text, typeface, FontSize, Foreground, TextAlignment, TextWrapping,
@@ -157,5 +160,59 @@ public sealed class MarkdownTextPresenter : TextPresenter
                 textStyleOverrides: WithCodeFont(styles, text.Length));
         }
         finally { original.Dispose(); }
+    }
+
+    // Item 70: a tab character is TabSize spaces wide (the gear's tab size). Same text, styles and wrapping as the
+    // regular layout, built through a paragraph whose incremental tab is TabSize space widths.
+    public double TabWidth
+    {
+        get
+        {
+            var typeface = new Typeface(FontFamily, FontStyle, FontWeight, FontStretch);
+            using var space = new TextLayout(" ", typeface, FontSize, null);
+            return space.WidthIncludingTrailingWhitespace * Mdhub.Services.EditorBehavior.Current.TabSize;
+        }
+    }
+
+    private TextLayout Tabbed(TextLayout original, string text, IReadOnlyList<ValueSpan<TextRunProperties>>? styles)
+    {
+        try
+        {
+            var typeface = new Typeface(FontFamily, FontStyle, FontWeight, FontStretch);
+            var props = new GenericTextRunProperties(typeface, FontSize, foregroundBrush: Foreground, fontFeatures: FontFeatures);
+            var paragraph = new TabParagraph(FlowDirection, TextAlignment, TextWrapping, LineHeight, LetterSpacing, props, TabWidth);
+            return new TextLayout(new TabSource(text, props, styles), paragraph, TextTrimming.None, original.MaxWidth, original.MaxHeight, 0);
+        }
+        finally { original.Dispose(); }
+    }
+
+    private sealed class TabParagraph(FlowDirection flow, TextAlignment alignment, TextWrapping wrapping, double lineHeight, double letterSpacing, TextRunProperties props, double tab) : TextParagraphProperties
+    {
+        public override FlowDirection FlowDirection => flow;
+        public override TextAlignment TextAlignment => alignment;
+        public override double LineHeight => lineHeight;
+        public override bool FirstLineInParagraph => true;
+        public override TextRunProperties DefaultTextRunProperties => props;
+        public override TextWrapping TextWrapping => wrapping;
+        public override double Indent => 0;
+        public override double DefaultIncrementalTab => tab;
+        public override double LetterSpacing => letterSpacing;
+    }
+
+    private sealed class TabSource(string text, TextRunProperties props, IReadOnlyList<ValueSpan<TextRunProperties>>? styles) : ITextSource
+    {
+        public TextRun? GetTextRun(int index)
+        {
+            if (index > text.Length) return null;
+            if (index == text.Length) return new TextEndOfParagraph();
+            var run = props; var length = text.Length - index;
+            if (styles is not null)
+                foreach (var s in styles)
+                {
+                    if (s.Start <= index && index < s.Start + s.Length) { run = s.Value; length = Math.Min(length, s.Start + s.Length - index); break; }
+                    if (s.Start > index) length = Math.Min(length, s.Start - index);
+                }
+            return new TextCharacters(text.AsMemory(index, length), run);
+        }
     }
 }

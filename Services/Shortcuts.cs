@@ -111,6 +111,7 @@ public static class Shortcuts
         T("editor.docStart", ShortcutArea.Editor, "Go to start of document", C("Home")),
         T("editor.docEnd", ShortcutArea.Editor, "Go to end of document", C("End")),
         T("editor.tab", ShortcutArea.Editor, "Insert tab", P("Tab")),
+        T("editor.outdent", ShortcutArea.Editor, "Outdent", new ShortcutGesture("Tab", ShortcutMods.Shift)),
         S("editor.toggleOverwrite", ShortcutArea.Editor, "Toggle insert/overwrite", P("Insert")), // item 66
     ];
 
