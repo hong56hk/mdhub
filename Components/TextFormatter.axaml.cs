@@ -18,6 +18,8 @@ public partial class TextFormatter : UserControl
     }
     private void UpdateLanguage()
     {
+        // Item 50: the link icon's tooltip names its (live) shortcut, e.g. "Insert link (Ctrl+L)".
+        ToolTip.SetTip(LinkButton, $"{Mdhub.Localization.Loc.T("InsertLink")} ({Mdhub.Services.Shortcuts.Format("editor.link", ShortcutKeys.IsMac)})");
         ToolTip.SetTip(TogglePreviewButton, Mdhub.Localization.Loc.F("TogglePreviewTip", Mdhub.Services.Shortcuts.Format("view.togglePreview", ShortcutKeys.IsMac)));
     }
     public void SetFormattingEnabled(bool enabled)
