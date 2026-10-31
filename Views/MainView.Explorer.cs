@@ -41,6 +41,7 @@ public partial class MainView
             case ExplorerAction.Copy:
                 ExplorerClipboard = (path, request.Action == ExplorerAction.Cut);
                 ExplorerClipboardPaths = null;
+                await PublishClipboardFilesAsync([path]);
                 await FolderExplorer.RevealCreatedAsync(path);
                 UpdateStatus(Loc.F(request.Action == ExplorerAction.Cut ? "CutStatus" : "CopiedStatus", path));
                 break;

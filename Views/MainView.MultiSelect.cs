@@ -32,6 +32,7 @@ public partial class MainView
                 var cut = request.Action == ExplorerAction.Cut;
                 ExplorerClipboard = (paths[0], cut);
                 ExplorerClipboardPaths = paths;
+                await PublishClipboardFilesAsync(paths);
                 UpdateStatus(Loc.Plural(cut ? "CutItemsOne" : "CopiedItemsOne", cut ? "CutItemsMany" : "CopiedItemsMany", paths.Count));
                 break;
             }
