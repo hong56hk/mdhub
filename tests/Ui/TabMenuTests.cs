@@ -77,6 +77,32 @@ internal static class TabMenuTests
             Check(menu.IsOpen && !Item("TabCloseOthersMenuItem").IsEnabled && Item("TabCloseMenuItem").IsEnabled, "With one tab, Close other tabs is disabled");
             menu.Close(); Settle();
 
+            // Bug 79: image tabs (bitmaps) close cleanly via Close other tabs and Close tab, with no error dialog.
+            var dir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "mdhub-tabimg-" + Guid.NewGuid().ToString("N"))).FullName;
+            try
+            {
+                var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==");
+                string F(string n) { var p = Path.Combine(dir, n); File.WriteAllBytes(p, png); return p; }
+                void OpenPath(string p) { var t = (Task)typeof(MainView).GetMethod("OpenPathAsync", flags)!.Invoke(view, [p])!; for (var i = 0; i < 100 && !t.IsCompleted; i++) Pump(); t.GetAwaiter().GetResult(); Settle(); }
+                bool NoError() => w.OwnedWindows.Count == 0;
+                OpenPath(F("one.png")); OpenPath(F("two.png")); OpenPath(F("three.png"));
+                var images = Docs().Where(d => d.Image is not null).ToList();
+                Check(images.Count == 3 && tabs.SelectedDocument == images[2], "three image tabs are open, the last one active");
+                tabs.SelectedDocument = images[0]; Settle();
+                RightClick(TabOf(c)); Click("TabCloseOthersMenuItem"); Settle(); Settle();
+                Check(NoError() && Docs().SequenceEqual([c]) && tabs.SelectedDocument == c, $"Close other tabs with image tabs (one active) closes them with no error ({w.OwnedWindows.Count} dialogs)");
+                OpenPath(F("four.png")); OpenPath(F("five.png"));
+                var active = tabs.SelectedDocument!;
+                RightClick(TabOf(active)); Click("TabCloseMenuItem"); Settle(); Settle();
+                Check(NoError() && !Docs().Contains(active) && tabs.SelectedDocument?.Image is not null, "Close tab on the active image tab shows the next image with no error");
+                RightClick(TabOf(c)); Click("TabCloseMenuItem"); Settle(); Settle();
+                Check(NoError() && !Docs().Contains(c), "Close tab on an inactive tab next to an image is clean");
+                RightClick(TabOf(tabs.SelectedDocument!)); Click("TabCloseOthersMenuItem"); Settle();
+                RightClick(TabOf(tabs.SelectedDocument!)); Click("TabCloseMenuItem"); Settle(); Settle();
+                Check(NoError() && Docs().Count == 1 && Docs()[0].Image is null, "Closing the last image tab leaves an empty note, no error");
+            }
+            finally { foreach (var o in w.OwnedWindows.ToList()) o.Close(); try { Directory.Delete(dir, true); } catch { } }
+
             Check(Loc.Languages.Where(l => l.Code != Loc.English).All(l => Loc.Table(l.Code).TryGetValue("CloseOtherTabs", out var v) && v != Loc.En["CloseOtherTabs"]), "Close other tabs is translated in all 8 languages");
             foreach (var d in Docs()) d.SavedText = d.Text;
         }

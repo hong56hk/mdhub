@@ -150,10 +150,6 @@ public partial class MainView
     private async Task CloseDocumentAsync(NoteDocument document)
     {
         if (!await ConfirmCloseAsync(document)) return;
-        var index = _documents.IndexOf(document);
-        _documents.Remove(document);
-        document.Image?.Dispose();
-        if (_documents.Count == 0) AddDocument(null, "");
-        else if (_active == document) FileTabs.SelectedDocument = _documents[Math.Min(index, _documents.Count - 1)];
+        RemoveDocument(document);
     }
 }

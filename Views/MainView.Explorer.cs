@@ -103,12 +103,19 @@ public partial class MainView
         UpdateContentLayout();
     }
 
+    // Bug 79: switch away from the tab first, then remove it, and dispose its bitmap only once nothing shows it
+    // (disposing a bitmap the image viewer or status bar still used threw "Cannot access a disposed object").
     private void RemoveDocument(NoteDocument document)
     {
         var index = _documents.IndexOf(document);
+        if (index < 0) return;
+        if (_active == document && _documents.Count > 1) FileTabs.SelectedDocument = _documents[index + 1 < _documents.Count ? index + 1 : index - 1];
         _documents.Remove(document);
-        document.Image?.Dispose();
         if (_documents.Count == 0) AddDocument(null, "");
-        else if (_active == document) FileTabs.SelectedDocument = _documents[Math.Min(index, _documents.Count - 1)];
+        if (document.Image is { } image)
+        {
+            if (_active == document || _active?.Image != image) ImageViewer.ShowImage(_active == document ? null : _active?.Image);
+            Avalonia.Threading.Dispatcher.UIThread.Post(image.Dispose, Avalonia.Threading.DispatcherPriority.Background);
+        }
     }
 }

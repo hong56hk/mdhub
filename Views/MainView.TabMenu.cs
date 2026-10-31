@@ -36,11 +36,12 @@ public partial class MainView
         foreach (var document in _documents.Where(d => d != keep).ToList())
         {
             if (!_documents.Contains(document)) continue;
-            FileTabs.SelectedDocument = document;
-            if (!await ConfirmCloseAsync(document)) { FileTabs.SelectedDocument = keep; return; }
-            _documents.Remove(document);
-            document.Image?.Dispose();
+            // Bug 79: only a dirty tab is shown (for its prompt); keep is active again before anything is removed.
+            if (document.IsDirty) FileTabs.SelectedDocument = document;
+            var close = await ConfirmCloseAsync(document);
             FileTabs.SelectedDocument = keep;
+            if (!close) return;
+            RemoveDocument(document);
         }
     }
 }
