@@ -18,9 +18,6 @@ on:
   push:
     tags:
       - "v*"
-    # Temporary, so this branch can produce the three assets. Remove before merge.
-    branches:
-      - "cursor/v1-release-assets-9347"
   workflow_dispatch:
 
 permissions:
