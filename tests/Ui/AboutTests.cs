@@ -27,8 +27,11 @@ internal static class AboutTests
         Check(AppInfo.Version == "0.1.0 (alpha)", $"the version is read from the assembly as '0.1.0 (alpha)' ({AppInfo.Version})");
         Check(AppInfo.CleanVersion("0.1.0 (alpha)+abc123") == "0.1.0 (alpha)", "a +commit suffix is stripped");
         var license = AppInfo.LicenseText();
-        Check(license.StartsWith("MIT License") && license.Contains("Copyright (c) 2026 Hong") && license == File.ReadAllText(Path.Combine(RepoRoot(), "LICENSE")).ReplaceLineEndings("\n"),
-            "the embedded LICENSE resource loads and matches the repo LICENSE");
+        Check(license.StartsWith("MIT License") && license.Contains("Copyright (c) 2026 Hong"), "the embedded LICENSE resource loads");
+        if (RepoRoot() is { } repo)
+            Check(license == File.ReadAllText(Path.Combine(repo, "LICENSE")).ReplaceLineEndings("\n"), $"the embedded LICENSE matches the repo LICENSE ({repo})");
+        else
+            Console.WriteLine("SKIP: repo LICENSE comparison: Mdhub.csproj not found above the test exe, the working directory or AppContext.BaseDirectory (build output outside the repo; run from the worktree to include it)");
         foreach (var lang in Loc.Languages)
         {
             var table = Loc.Table(lang.Code);
@@ -83,10 +86,14 @@ internal static class AboutTests
         finally { Loc.Set(Loc.English); DialogService.LaunchOverride = null; foreach (var o in w.OwnedWindows.ToList()) o.Close(); try { w.Close(); Pump(); } catch { } }
     }
 
-    static string RepoRoot()
+    // Bug 83: tests may be built outside the repo (%TEMP%), so also look above the working directory. Null: not found.
+    static string? RepoRoot()
     {
-        for (var d = new DirectoryInfo(AppContext.BaseDirectory); d is not null; d = d.Parent) if (File.Exists(Path.Combine(d.FullName, "Mdhub.csproj"))) return d.FullName;
-        throw new DirectoryNotFoundException("repo root");
+        var starts = new[] { Path.GetDirectoryName(Environment.ProcessPath), Environment.CurrentDirectory, AppContext.BaseDirectory };
+        foreach (var start in starts.Where(s => !string.IsNullOrEmpty(s)))
+            for (var d = new DirectoryInfo(start!); d is not null; d = d.Parent)
+                if (File.Exists(Path.Combine(d.FullName, "Mdhub.csproj"))) return d.FullName;
+        return null;
     }
 
     private static void Check(bool condition, string message)
