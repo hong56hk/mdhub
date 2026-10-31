@@ -1,13 +1,18 @@
 name: Release
 
-# Self-contained desktop builds.
-# - workflow_dispatch uploads the archives as workflow artifacts.
-# - a v* tag does that and also creates a GitHub Release with the archives attached.
+# Self-contained desktop builds. The version comes from the v* tag
+# (v1.0.0 -> 1.0.0). workflow_dispatch uses 0.0.0 and does not publish a release.
 #
-# macOS archives are unsigned .app bundles inside a zip. Signing (Developer ID,
-# hardened runtime with com.apple.security.cs.allow-jit) and notarization are a
-# follow-up: they need an Apple certificate and a notarytool profile, and they
-# must not set IncludeNativeLibrariesForSelfExtract (that breaks CoreCLR on macOS).
+# Assets:
+# - Mdhub-<version>-win-x64.exe  one self-contained executable
+#   (PublishSingleFile + IncludeNativeLibrariesForSelfExtract)
+# - Mdhub-<version>-osx-arm64.dmg and Mdhub-<version>-osx-x64.dmg
+#   each disk image contains an unsigned Mdhub.app
+#
+# macOS is not a single-file bundle: IncludeNativeLibrariesForSelfExtract
+# breaks CoreCLR there. Signing and notarization are a follow-up.
+# The GitHub Release body is docs/release-notes/<tag>.md (for example
+# docs/release-notes/v1.0.0.md).
 
 on:
   push:
@@ -36,12 +41,15 @@ jobs:
         include:
           - rid: win-x64
             os: windows-latest
-          # macOS runners so the .app zip is written with ditto (permissions Finder keeps).
-          # osx-x64 is cross-published from the Apple silicon image.
+            ext: exe
+          # macOS runners: hdiutil writes the dmg, and osx-x64 is cross-published
+          # from the Apple silicon image.
           - rid: osx-arm64
             os: macos-latest
+            ext: dmg
           - rid: osx-x64
             os: macos-latest
+            ext: dmg
     env:
       DOTNET_CLI_TELEMETRY_OPTOUT: 1
       DOTNET_NOLOGO: 1
@@ -50,6 +58,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+
+      - name: Check release notes
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          set -euo pipefail
+          test -f "docs/release-notes/${GITHUB_REF_NAME}.md"
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
@@ -91,53 +105,114 @@ jobs:
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v7
         with:
-          # archive: false keeps the zip itself as the artifact (the file name
-          # becomes the artifact name; do not wrap it in a second zip).
-          path: artifacts/mdhub-${{ matrix.rid }}.zip
+          # archive: false keeps the exe or dmg itself as the artifact.
+          path: artifacts/Mdhub-${{ steps.version.outputs.bundle }}-${{ matrix.rid }}.${{ matrix.ext }}
           archive: false
           if-no-files-found: error
           compression-level: 0
 
+  verify-assets:
+    name: Verify assets
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Download assets
+        uses: actions/download-artifact@v8
+        with:
+          path: dist
+          pattern: Mdhub-*
+          merge-multiple: true
+          skip-decompress: true
+
+      - name: Check the exe and disk images
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          exe=(dist/Mdhub-*-win-x64.exe)
+          arm=(dist/Mdhub-*-osx-arm64.dmg)
+          intel=(dist/Mdhub-*-osx-x64.dmg)
+          test "${#exe[@]}" -eq 1
+          test "${#arm[@]}" -eq 1
+          test "${#intel[@]}" -eq 1
+          # The non-tag filename is Mdhub-0.0.0-*. A v1.0.0 tag produces Mdhub-1.0.0-*.
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            label="${GITHUB_REF_NAME#v}"
+            if [[ "$label" =~ ^([0-9]+)(\.([0-9]+))?(\.([0-9]+))? ]]; then
+              version="${BASH_REMATCH[1]}.${BASH_REMATCH[3]:-0}.${BASH_REMATCH[5]:-0}"
+            else
+              echo "tag is not a version: $label" >&2
+              exit 1
+            fi
+            test -f "dist/Mdhub-${version}-win-x64.exe"
+            test -f "dist/Mdhub-${version}-osx-arm64.dmg"
+            test -f "dist/Mdhub-${version}-osx-x64.dmg"
+          fi
+          python3 scripts/verify-single-file.py "${exe[0]}"
+          for dmg in "${arm[0]}" "${intel[0]}"; do
+            sig="$(tail -c 512 "$dmg" | head -c 4)"
+            test "$sig" = "koly"
+            bytes="$(wc -c < "$dmg" | tr -d ' ')"
+            test "$bytes" -gt 15000000
+            echo "DMG_OK $dmg bytes=$bytes"
+          done
+          echo "ASSET_SIZES"
+          wc -c "${exe[0]}" "${arm[0]}" "${intel[0]}"
+          {
+            echo "## Release assets"
+            echo
+            echo '```'
+            wc -c "${exe[0]}" "${arm[0]}" "${intel[0]}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
   github-release:
     name: GitHub Release
-    needs: publish
+    needs: verify-assets
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
       actions: read
       contents: write
     steps:
-      - name: Download archives
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Download assets
         uses: actions/download-artifact@v8
         with:
           path: dist
-          pattern: mdhub-*
+          pattern: Mdhub-*
           merge-multiple: true
           skip-decompress: true
 
-      - name: Check archives
+      - name: Check assets and notes
         run: |
           set -euo pipefail
+          label="${GITHUB_REF_NAME#v}"
+          if [[ "$label" =~ ^([0-9]+)(\.([0-9]+))?(\.([0-9]+))? ]]; then
+            version="${BASH_REMATCH[1]}.${BASH_REMATCH[3]:-0}.${BASH_REMATCH[5]:-0}"
+          else
+            echo "tag is not a version: $label" >&2
+            exit 1
+          fi
+          notes="docs/release-notes/${GITHUB_REF_NAME}.md"
+          test -f "$notes"
+          test -f "dist/Mdhub-${version}-win-x64.exe"
+          test -f "dist/Mdhub-${version}-osx-arm64.dmg"
+          test -f "dist/Mdhub-${version}-osx-x64.dmg"
           ls -lh dist
-          test -f dist/mdhub-win-x64.zip
-          test -f dist/mdhub-osx-arm64.zip
-          test -f dist/mdhub-osx-x64.zip
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           fail_on_unmatched_files: true
-          generate_release_notes: true
+          generate_release_notes: false
           prerelease: ${{ contains(github.ref_name, '-') }}
+          body_path: ${{ github.workspace }}/docs/release-notes/${{ github.ref_name }}.md
           files: |
-            dist/mdhub-win-x64.zip
-            dist/mdhub-osx-arm64.zip
-            dist/mdhub-osx-x64.zip
-          body: |
-            Self-contained mdhub builds. No .NET install is required.
-
-            - `mdhub-win-x64.zip` — unzip and run `mdhub-win-x64/Mdhub.exe`
-            - `mdhub-osx-arm64.zip` — unsigned `Mdhub.app` for Apple silicon
-            - `mdhub-osx-x64.zip` — unsigned `Mdhub.app` for Intel Macs
-
-            The macOS bundles are not signed or notarized. Gatekeeper will block them until a follow-up adds Developer ID signing (hardened runtime, including `com.apple.security.cs.allow-jit`) and notarization.
+            dist/Mdhub-*-win-x64.exe
+            dist/Mdhub-*-osx-arm64.dmg
+            dist/Mdhub-*-osx-x64.dmg

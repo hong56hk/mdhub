@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
-# Publish a self-contained mdhub build and pack it into one archive.
+# Publish a self-contained mdhub build.
 #
 #   bash scripts/package-release.sh --rid win-x64 --version 1.2.3
 #   bash scripts/package-release.sh --rid osx-arm64 --version 1.2.3
 #   bash scripts/package-release.sh --rid osx-x64 --version 1.2.3
 #
-# Windows archives contain mdhub-<rid>/Mdhub.exe. macOS archives contain an
-# unsigned Mdhub.app bundle. Signing and notarization are intentionally not
-# done here.
+# Windows writes one executable, Mdhub-<version>-win-x64.exe (PublishSingleFile
+# and IncludeNativeLibrariesForSelfExtract). macOS writes one disk image per
+# architecture, Mdhub-<version>-osx-*.dmg, containing an unsigned Mdhub.app.
+# IncludeNativeLibrariesForSelfExtract is left off on macOS: it breaks CoreCLR.
+# Signing and notarization are intentionally not done here.
 set -euo pipefail
 
 rid=""
@@ -17,10 +19,26 @@ output="artifacts"
 app_name="Mdhub"
 bundle_id="hk.hong56.mdhub"
 display_name="mdhub"
+mount_point=""
+
+die() { echo "$*" >&2; exit 1; }
 
 usage() {
   echo "usage: package-release.sh --rid win-x64|osx-arm64|osx-x64 --version major.minor.patch [--label text] [--output dir]" >&2
 }
+
+detach_dmg() {
+  if [[ -n "$mount_point" ]]; then
+    hdiutil detach "$mount_point" >/dev/null 2>&1 || hdiutil detach -force "$mount_point" >/dev/null 2>&1 || true
+    mount_point=""
+  fi
+}
+
+cleanup() {
+  detach_dmg
+  if [[ -n "${stage:-}" ]]; then rm -rf "$stage"; fi
+}
+trap cleanup EXIT
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -44,56 +62,76 @@ if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
 fi
 
 label="${label:-$version}"
-
-if command -v python3 >/dev/null 2>&1; then
-  python="python3"
-elif command -v python >/dev/null 2>&1; then
-  python="python"
-else
-  echo "python3 is required to pack the archive" >&2
-  exit 1
-fi
-
 root="$(cd "$(dirname "$0")/.." && pwd)"
 mkdir -p "$output"
 output="$(cd "$output" && pwd)"
 stage="$(mktemp -d)"
-trap 'rm -rf "$stage"' EXIT
-
 publish_dir="$stage/publish"
-echo "Publishing $rid (version $version, label $label)"
-dotnet publish "$root/Mdhub.csproj" \
-  -c Release \
-  -r "$rid" \
-  --self-contained true \
-  -p:UseAppHost=true \
-  -p:Version="$version" \
-  -p:InformationalVersion="$label" \
-  -p:IncludeNativeLibrariesForSelfExtract=false \
-  -o "$publish_dir"
 
-archive="$output/mdhub-$rid.zip"
-rm -f "$archive"
+publish_args=(
+  -c Release
+  -r "$rid"
+  --self-contained true
+  -p:UseAppHost=true
+  -p:Version="$version"
+  -p:InformationalVersion="$label"
+  -p:DebugSymbols=false
+  -p:DebugType=none
+  -o "$publish_dir"
+)
+if [[ "$rid" == win-* ]]; then
+  # One exe: managed assemblies, the runtime, and native libraries are inside it.
+  # Content files are embedded as manifest resources (see Mdhub.csproj), not
+  # extracted beside the exe by IncludeAllContentForSelfExtract.
+  publish_args+=(
+    -p:PublishSingleFile=true
+    -p:IncludeNativeLibrariesForSelfExtract=true
+    -p:IncludeAllContentForSelfExtract=false
+    -p:EnableCompressionInSingleFile=false
+  )
+else
+  publish_args+=(
+    -p:PublishSingleFile=false
+    -p:IncludeNativeLibrariesForSelfExtract=false
+  )
+fi
+
+echo "Publishing $rid (version $version, label $label)"
+dotnet publish "$root/Mdhub.csproj" "${publish_args[@]}"
 
 if [[ "$rid" == win-* ]]; then
-  if [[ ! -f "$publish_dir/Mdhub.exe" || ! -f "$publish_dir/Mdhub.dll" ]]; then
-    echo "publish output is missing Mdhub.exe or Mdhub.dll" >&2
-    exit 1
+  python=""
+  if command -v python3 >/dev/null 2>&1; then
+    python="python3"
+  elif command -v python >/dev/null 2>&1; then
+    python="python"
+  else
+    die "python3 is required to verify the single-file exe"
   fi
-  bundle="$stage/mdhub-$rid"
-  mkdir -p "$bundle"
-  cp -a "$publish_dir"/. "$bundle"/
-  "$python" "$root/scripts/zip_unix.py" "$bundle" "$archive"
+  test -f "$publish_dir/Mdhub.exe" || die "publish output is missing Mdhub.exe"
+  if [[ -e "$publish_dir/Mdhub.dll" ]]; then
+    die "PublishSingleFile left Mdhub.dll beside the exe"
+  fi
+  loose="$(find "$publish_dir" \( -iname 'coreclr.dll' -o -iname 'libSkiaSharp.dll' -o -iname 'libHarfBuzzSharp.dll' \) -print)"
+  if [[ -n "$loose" ]]; then
+    die "native libraries were published beside the exe: $loose"
+  fi
+  asset="$output/Mdhub-$version-$rid.exe"
+  rm -f "$asset"
+  cp -f "$publish_dir/Mdhub.exe" "$asset"
+  "$python" "$root/scripts/verify-single-file.py" "$asset"
 else
+  command -v hdiutil >/dev/null 2>&1 || die "hdiutil is required to build the macOS dmg (run this rid on macOS)"
+  command -v file >/dev/null 2>&1 || die "file(1) is required to verify the macOS app"
   app="$stage/Mdhub.app"
   macos="$app/Contents/MacOS"
   mkdir -p "$macos" "$app/Contents/Resources"
   cp -a "$publish_dir"/. "$macos"/
+  find "$macos" -name '*.pdb' -delete
+  rm -f "$macos/$app_name.runtimeconfig.dev.json"
   host="$macos/$app_name"
-  if [[ ! -f "$host" || ! -f "$macos/$app_name.dll" ]]; then
-    echo "publish output is missing the macOS app host or $app_name.dll" >&2
-    exit 1
-  fi
+  test -f "$host" || die "publish output is missing the macOS app host"
+  test -f "$macos/$app_name.dll" || die "publish output is missing $app_name.dll"
   chmod +x "$host"
   cat > "$app/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -123,80 +161,51 @@ else
 </dict>
 </plist>
 EOF
-  # ditto writes the zip Finder extracts as an app, including the executable bit.
-  # zip_unix.py is the same layout for Linux and Windows hosts.
-  if command -v ditto >/dev/null 2>&1; then
-    ditto -c -k --keepParent "$app" "$archive"
-  else
-    "$python" "$root/scripts/zip_unix.py" "$app" "$archive"
+  # -format is only valid with -srcfolder on current macOS hdiutil.
+  # The folder holds Mdhub.app and no symlinks, so hdiutil will not follow
+  # /Applications into the image.
+  dmg_root="$stage/dmg-root"
+  mkdir -p "$dmg_root"
+  mv "$app" "$dmg_root/Mdhub.app"
+  asset="$output/Mdhub-$version-$rid.dmg"
+  rm -f "$asset"
+  hdiutil create -volname "MDHub" -srcfolder "$dmg_root" -ov -format UDZO "$asset"
+  test -f "$asset" || die "hdiutil create did not write $asset"
+  sig="$(tail -c 512 "$asset" | head -c 4)"
+  test "$sig" = "koly" || die "dmg is missing the UDIF koly trailer"
+  attach_out="$(hdiutil attach -nobrowse -readonly "$asset")"
+  mount_point="$(printf '%s\n' "$attach_out" | sed -n 's|^.*\(/Volumes/.*\)|\1|p' | tail -n 1)"
+  if [[ -z "$mount_point" || ! -d "$mount_point/Mdhub.app" ]]; then
+    printf '%s\n' "$attach_out" >&2
+    die "failed to mount $asset"
   fi
+  test -d "$mount_point/Mdhub.app"
+  test -f "$mount_point/Mdhub.app/Contents/Info.plist"
+  test -x "$mount_point/Mdhub.app/Contents/MacOS/Mdhub"
+  test -f "$mount_point/Mdhub.app/Contents/MacOS/Mdhub.dll"
+  grep -q "$bundle_id" "$mount_point/Mdhub.app/Contents/Info.plist"
+  grep -q "<string>$version</string>" "$mount_point/Mdhub.app/Contents/Info.plist"
+  dylib="$(find "$mount_point/Mdhub.app/Contents/MacOS" -name '*.dylib' -print | head -n 1)"
+  test -n "$dylib" || die "macOS bundle is missing native libraries (*.dylib)"
+  host_info="$(file "$mount_point/Mdhub.app/Contents/MacOS/Mdhub")"
+  case "$rid" in
+    osx-arm64)
+      case "$host_info" in
+        *arm64*|*ARM64*) ;;
+        *) die "expected an arm64 Mach-O executable, got: $host_info" ;;
+      esac
+      ;;
+    osx-x64)
+      case "$host_info" in
+        *x86_64*) ;;
+        *) die "expected an x86_64 Mach-O executable, got: $host_info" ;;
+      esac
+      ;;
+  esac
+  detach_dmg
+  echo "DMG_OK $asset contains Mdhub.app ($host_info)"
 fi
 
-verify="$(mktemp -d)"
-# ditto and Info-ZIP restore the executable bit. Python's zipfile extractor does not.
-extractor="python"
-if command -v ditto >/dev/null 2>&1; then
-  ditto -x -k "$archive" "$verify"
-  extractor="ditto"
-elif command -v unzip >/dev/null 2>&1; then
-  unzip -q "$archive" -d "$verify"
-  extractor="unzip"
-else
-  "$python" -m zipfile -e "$archive" "$verify"
-fi
-
-if [[ "$rid" == win-* ]]; then
-  test -f "$verify/mdhub-$rid/Mdhub.exe"
-  test -f "$verify/mdhub-$rid/Mdhub.dll"
-  if command -v file >/dev/null 2>&1; then
-    exe_info="$(file "$verify/mdhub-$rid/Mdhub.exe")"
-    case "$exe_info" in
-      *PE32+*) ;;
-      *) echo "expected a 64-bit Windows executable, got: $exe_info" >&2; exit 1 ;;
-    esac
-  fi
-else
-  test -f "$verify/Mdhub.app/Contents/Info.plist"
-  test -f "$verify/Mdhub.app/Contents/MacOS/Mdhub"
-  test -f "$verify/Mdhub.app/Contents/MacOS/Mdhub.dll"
-  if [[ "$extractor" == "python" ]]; then
-    host_mode="$("$python" -c 'import sys, zipfile; info = zipfile.ZipFile(sys.argv[1]).getinfo(sys.argv[2]); print((info.external_attr >> 16) & 0o777)' "$archive" "Mdhub.app/Contents/MacOS/Mdhub")"
-    if (( (10#$host_mode & 73) == 0 )); then
-      echo "app host is not marked executable in the zip (mode $host_mode)" >&2
-      exit 1
-    fi
-  else
-    test -x "$verify/Mdhub.app/Contents/MacOS/Mdhub"
-  fi
-  grep -q "$bundle_id" "$verify/Mdhub.app/Contents/Info.plist"
-  grep -q "<string>$version</string>" "$verify/Mdhub.app/Contents/Info.plist"
-  dylib=""
-  while IFS= read -r candidate; do
-    dylib="$candidate"
-    break
-  done < <(find "$verify/Mdhub.app/Contents/MacOS" -name '*.dylib' -print)
-  if [[ -z "$dylib" ]]; then
-    echo "macOS bundle is missing native libraries (*.dylib)" >&2
-    exit 1
-  fi
-  if command -v file >/dev/null 2>&1; then
-    host_info="$(file "$verify/Mdhub.app/Contents/MacOS/Mdhub")"
-    case "$rid" in
-      osx-arm64)
-        case "$host_info" in
-          *arm64*|*ARM64*) ;;
-          *) echo "expected an arm64 Mach-O executable, got: $host_info" >&2; exit 1 ;;
-        esac
-        ;;
-      osx-x64)
-        case "$host_info" in
-          *x86_64*) ;;
-          *) echo "expected an x86_64 Mach-O executable, got: $host_info" >&2; exit 1 ;;
-        esac
-        ;;
-    esac
-  fi
-fi
-rm -rf "$verify"
-
-echo "Wrote $archive ($(du -h "$archive" | awk '{print $1}'))"
+bytes="$(wc -c < "$asset" | tr -d ' ')"
+echo "ASSET $asset bytes=$bytes"
+echo "Wrote $asset ($bytes bytes)"
