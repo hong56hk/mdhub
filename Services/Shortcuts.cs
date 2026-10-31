@@ -85,6 +85,8 @@ public static class Shortcuts
         E("explorer.paste", "Paste into the explorer selection (explorer focused)", C("V")),
         E("explorer.duplicate", "Duplicate selected explorer item (explorer focused)", C("D")),
         E("explorer.delete", "Move selected explorer item to the Recycle Bin (explorer focused)", P("Delete")),
+        // Item 80: after edit.selectAll so Ctrl+A in the editor still selects text.
+        E("explorer.selectAll", "Select all visible explorer items (explorer focused)", C("A")),
         S("view.wordWrap", ShortcutArea.View, "Toggle word wrap", new ShortcutGesture("Z", ShortcutMods.Alt)),
         S("view.togglePreview", ShortcutArea.View, "Toggle preview", C("OemPipe"), new ShortcutGesture("OemBackslash", ShortcutMods.Command, Hidden: true)),
         S("find.find", ShortcutArea.Find, "Find", C("F")),

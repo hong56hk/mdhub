@@ -2,8 +2,9 @@ using System.Diagnostics;
 
 namespace Mdhub.Services;
 
-public enum ExplorerAction { Reveal, Cut, Copy, Paste, Duplicate, Rename, Delete }
-public sealed record ExplorerRequest(ExplorerAction Action, string Path);
+public enum ExplorerAction { Reveal, Cut, Copy, Paste, Duplicate, Rename, Delete, CopyPath }
+// Paths: item 80 multi-selection (top-level items only); null for a single item.
+public sealed record ExplorerRequest(ExplorerAction Action, string Path, IReadOnlyList<string>? Paths = null);
 
 public static class ExplorerFileOperations
 {

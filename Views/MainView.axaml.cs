@@ -59,6 +59,7 @@ public partial class MainView : UserControl
         WireLineEndingMenu(); // item 68
         FolderExplorer.ExplorerRequested += async request => { if (!_busy) await RunAsync(() => HandleExplorerRequestAsync(request)); };
         FolderExplorer.MoveRequested += async request => await RunAsync(() => MoveExplorerFileAsync(request));
+        FolderExplorer.FilesActivated += async paths => await RunAsync(() => OpenManyAsync(paths));
         FolderExplorer.RenameRequested = RenameExplorerItemAsync;
         GlobalSearch.OpenBuffers = () => _documents.Where(d => d.Path is not null && !d.IsViewOnly)
             .ToDictionary(d => d.Path!, d => d.Text, OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);

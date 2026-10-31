@@ -1,6 +1,6 @@
 namespace Mdhub.Services;
 
-public sealed record ExplorerMoveRequest(string Source, string Directory);
+public sealed record ExplorerMoveRequest(string Source, string Directory, IReadOnlyList<string>? Sources = null);
 
 public static class ExplorerMove
 {

@@ -35,6 +35,13 @@ public partial class FolderExplorer : UserControl
     {
         if (_busy || _folder is null) return false;
         if (ShortcutAction(ShortcutKeys.Match(e, s => s.ExplorerOnly)) is not { } action) return false;
+        if (IsMultiSelect && action is ExplorerAction.Delete or ExplorerAction.Copy or ExplorerAction.Cut)
+        {
+            e.Handled = true;
+            RequestMulti(action);
+            return true;
+        }
+        if (IsMultiSelect && action == ExplorerAction.Duplicate) { e.Handled = true; return true; }
         var selected = FolderTree.SelectedItem is TreeViewItem { Tag: FolderEntry entry } ? entry : null;
         if (action == ExplorerAction.Paste)
         {
@@ -51,6 +58,7 @@ public partial class FolderExplorer : UserControl
     private void FolderTree_KeyDown(object? sender, KeyEventArgs e)
     {
         if (IsRenaming) return;
+        if (!_busy && _folder is not null && HandleSelectionKey(e)) return;
         if (HandleExplorerShortcut(e)) return;
         if (e.Key != Key.Enter || e.KeyModifiers != KeyModifiers.None) return;
         if (FolderTree.SelectedItem is not TreeViewItem { Tag: FolderEntry { IsDirectory: false } entry }) return;
@@ -114,6 +122,7 @@ public partial class FolderExplorer : UserControl
         InitializeComponent();
         InitializeDragDrop();
         FolderTree.AddHandler(PointerPressedEvent, FolderRow_PointerPressed, RoutingStrategies.Tunnel);
+        InitializeSelection();
         FolderTree.AddHandler(KeyDownEvent, FolderTree_KeyDown, RoutingStrategies.Tunnel);
         FolderTree.ContextMenu = CreateBackgroundMenu();
         UpdateLanguage();
@@ -273,6 +282,7 @@ public partial class FolderExplorer : UserControl
     private void Forget(TreeViewItem item)
     {
         foreach (var node in TreeNodes([item])) { _loadChildren.Remove(node); _loaded.Remove(node); }
+        ForgetSelection(TreeNodes([item]));
     }
     private static IEnumerable<TreeViewItem> TreeNodes(IEnumerable<TreeViewItem> items)
     {
@@ -335,6 +345,8 @@ public partial class FolderExplorer : UserControl
         FolderActions.IsEnabled = !_busy;
         FolderName.Text = Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar));
         ToolTip.SetTip(FolderNameButton, Loc.F("FolderTip", path));
+        ClearMultiSelection();
+        _anchor = null;
         FolderTree.Items.Clear();
         foreach (var entry in entries) FolderTree.Items.Add(CreateTreeItem(entry));
         // Only announce an actual open: a refresh (manual or after an external change) must not overwrite
@@ -377,6 +389,7 @@ public partial class FolderExplorer : UserControl
             _loadChildren[item] = EnsureLoaded;
             item.PropertyChanged += async (_, e) =>
             {
+                if (e.Property == TreeViewItem.IsExpandedProperty && !item.IsExpanded) DeselectHidden(item);
                 if (e.Property == TreeViewItem.IsExpandedProperty && item.IsExpanded) await EnsureLoaded();
             };
         }
@@ -386,6 +399,7 @@ public partial class FolderExplorer : UserControl
     {
         if (IsRenaming && ItemAt(e.Source) == _renameItem) return;
         if (_busy || !e.GetCurrentPoint(FolderTree).Properties.IsLeftButtonPressed) return;
+        if (HandleSelectionPress(e)) return;
         // VS Code: a single click opens a file and keeps focus here; a double-click moves focus to the editor.
         if (e.ClickCount == 2 && ItemAt(e.Source) is { Tag: FolderEntry { IsDirectory: false } file })
         {

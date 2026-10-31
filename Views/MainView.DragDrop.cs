@@ -9,6 +9,7 @@ public partial class MainView
     private async Task MoveExplorerFileAsync(ExplorerMoveRequest request)
     {
         var root = FolderExplorer.OpenedFolder ?? throw new InvalidOperationException(Loc.T("OpenFolderFirst"));
+        if (request.Sources is { Count: > 1 } sources) { await MoveManyAsync(root, sources, request.Directory); return; }
         var target = ExplorerMove.Destination(root, request.Source, request.Directory)
             ?? throw new IOException(Loc.T("CannotMoveHere"));
         if (_documents.Any(document => document.Path is not null && SamePath(document.Path, target)))

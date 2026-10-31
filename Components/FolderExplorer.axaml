@@ -34,6 +34,15 @@
       <Setter Property="Background" Value="{DynamicResource ExplorerHoverBackground}" />
       <Setter Property="BorderBrush" Value="Transparent" />
     </Style>
+    <!-- Item 80: rows of a multi-selection use the item 29 selection colours; only the focused row (:selected, below) gets the border. -->
+    <Style Selector="TreeView#FolderTree TreeViewItem.multiSelected /template/ Border#PART_LayoutRoot, TreeView#FolderTree TreeViewItem.multiSelected /template/ Border#PART_LayoutRoot:pointerover">
+      <Setter Property="Background" Value="{DynamicResource ExplorerSelectionInactiveBackground}" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="TreeView#FolderTree:focus-within TreeViewItem.multiSelected /template/ Border#PART_LayoutRoot, TreeView#FolderTree:focus-within TreeViewItem.multiSelected /template/ Border#PART_LayoutRoot:pointerover">
+      <Setter Property="Background" Value="{DynamicResource ExplorerSelectionBackground}" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
     <Style Selector="TreeView#FolderTree TreeViewItem:selected /template/ Border#PART_LayoutRoot, TreeView#FolderTree TreeViewItem:selected /template/ Border#PART_LayoutRoot:pointerover, TreeView#FolderTree TreeViewItem:pressed:selected /template/ Border#PART_LayoutRoot:pointerover">
       <Setter Property="Background" Value="{DynamicResource ExplorerSelectionInactiveBackground}" />
       <Setter Property="BorderBrush" Value="Transparent" />

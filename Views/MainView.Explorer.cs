@@ -30,6 +30,7 @@ public partial class MainView
         var path = Path.GetFullPath(request.Path);
         var root = FolderExplorer.OpenedFolder ?? throw new InvalidOperationException(Loc.T("OpenFolderFirst"));
         var parent = Path.GetDirectoryName(path)!;
+        if (request.Paths is { Count: > 1 }) { await HandleMultiExplorerRequestAsync(request, root); return; }
         switch (request.Action)
         {
             case ExplorerAction.Reveal:
@@ -39,12 +40,14 @@ public partial class MainView
             case ExplorerAction.Cut:
             case ExplorerAction.Copy:
                 ExplorerClipboard = (path, request.Action == ExplorerAction.Cut);
+                ExplorerClipboardPaths = null;
                 await FolderExplorer.RevealCreatedAsync(path);
                 UpdateStatus(Loc.F(request.Action == ExplorerAction.Cut ? "CutStatus" : "CopiedStatus", path));
                 break;
             case ExplorerAction.Paste:
             {
                 if (ExplorerClipboard is not { } clip) return;
+                if (ExplorerClipboardPaths is { Count: > 1 } many) { await PasteManyAsync(path, many, clip.IsCut); break; }
                 var target = Path.Combine(path, Path.GetFileName(clip.Path));
                 if (File.Exists(target) || Directory.Exists(target)) target = ExplorerFileOperations.UniqueCopyPath(target);
                 if (clip.IsCut)
@@ -66,6 +69,9 @@ public partial class MainView
                 UpdateStatus(Loc.F("Duplicated", target));
                 break;
             }
+            case ExplorerAction.CopyPath:
+                await HandleMultiExplorerRequestAsync(request with { Paths = [path] }, root);
+                break;
             case ExplorerAction.Rename:
                 FolderExplorer.BeginRename(path);
                 break;
