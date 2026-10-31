@@ -185,6 +185,9 @@ public partial class MainView
         return true;
     }
 
+    // Bug 86: the window forwards keys here when nothing inside the view has focus.
+    internal void HandleUnfocusedShortcut(KeyEventArgs e) => OnShortcut(this, e);
+
     private async void OnShortcut(object? sender, KeyEventArgs e)
     {
         if (FolderExplorer.IsRenaming) return;

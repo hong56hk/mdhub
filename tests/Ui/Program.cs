@@ -52,6 +52,7 @@ if (args.Contains("--quickopen-only")) { QuickOpenTests.Run(); return; }
 if (args.Contains("--syntax-only")) { SyntaxTests.Run(); return; }
 if (args.Contains("--explorerkeys-only")) { ExplorerShortcutTests.Run(); return; }
 if (args.Contains("--explorerclip-only")) { ExplorerClipboardKeyTests.Run(); return; }
+if (args.Contains("--viewerkeys-only")) { ViewerShortcutTests.Run(); return; }
 if (args.Contains("--explorerrefresh-only")) { ExplorerRefreshTests.Run(); return; }
 if (args.Contains("--menupadding-only")) { MenuPaddingTests.Run(); return; }
 if (args.Contains("--about-only")) { AboutTests.Run(); return; }
