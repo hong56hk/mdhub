@@ -1,14 +1,14 @@
 using System.Collections.Concurrent;
 using System.Text;
 using Mdhub.Localization;
-using UtfUnknown;
 
 namespace Mdhub.Services;
 
 // Item 67 (VS Code): the encodings mdhub reads and writes, the detection order and the per-file cache used by search.
-// Detection: BOM -> UTF-16 without BOM -> valid UTF-8 -> UTF.Unknown (Mozilla universal charset detector, MPL 1.1/LGPL)
+// Detection: BOM -> UTF-16 without BOM -> (binary check) -> ISO-2022-JP -> valid UTF-8 -> item 81's EncodingDetector
 // when confident -> UI-language fallback (ja Shift_JIS, ko EUC-KR/CP949, zh-Hans GBK, zh-Hant Big5) -> the Default
-// encoding setting -> the system ANSI code page (bug 39) -> a low-confidence detector guess -> Latin-1.
+// encoding setting -> the system ANSI code page (bug 39) -> the other positively scored candidates -> Latin-1 (TextFileStore;
+// .NET's cp1252 decodes 0x81/0x8D/0x8F/0x90/0x9D as C1 controls, so a forced 1252 step would hide byte-for-byte Latin-1).
 public sealed record EncodingOption(string Id, string Name, int CodePage, bool Bom = false)
 {
     // Strict: invalid bytes or unencodable characters throw, so a wrong guess never silently corrupts a file.
@@ -80,29 +80,20 @@ public static class TextEncodings
         Loc.Japanese => 932, Loc.Korean => 949, Loc.SimplifiedChinese => 936, Loc.TraditionalChinese => 950, _ => null,
     };
 
-    public const float ConfidentDetection = 0.8f;
 
     // Candidates after BOM/UTF-16/UTF-8 failed, in order; the caller takes the first that decodes strictly.
     public static IEnumerable<Encoding> LegacyCandidates(ReadOnlySpan<byte> bytes)
     {
         var list = new List<Encoding>();
         void Add(int? codePage) { if (codePage is { } cp && list.All(e => e.CodePage != cp) && Strict(cp) is { } e) list.Add(e); }
-        var guesses = new List<(int CodePage, float Confidence)>();
-        try
-        {
-            var sample = bytes[..Math.Min(bytes.Length, 64 * 1024)].ToArray();
-            foreach (var detail in CharsetDetector.DetectFromBytes(sample).Details)
-                if (detail.Encoding?.CodePage is { } cp && !(cp is >= 10000 and < 10100) && cp is not (20127 or 65001 or 1200 or 1201 or 12000 or 12001))
-                    // CP949 and GBK are supersets of the EUC-KR and GB2312 the detector names; GB18030 when GBK fails.
-                    foreach (var mapped in cp switch { 51949 => new[] { 949 }, 54936 or 20936 or 52936 => new[] { 936, 54936 }, _ => new[] { cp } })
-                        guesses.Add((mapped, detail.Confidence));
-        }
-        catch (Exception) { /* the detector must never break opening a file */ }
-        foreach (var guess in guesses.Where(g => g.Confidence >= ConfidentDetection)) Add(guess.CodePage);
-        Add(LanguageCodePage(Loc.Current));
+        // Item 81: mdhub's own heuristic. CP949 stands for EUC-KR (its superset); GB18030 follows GBK.
+        var language = LanguageCodePage(Loc.Current);
+        var ranked = EncodingDetector.Rank(bytes, language);
+        if (EncodingDetector.IsConfident(ranked)) Add(ranked[0].CodePage);
+        Add(language);
         if (Find(DefaultEncodingId) is { CodePage: not (65001 or 1200 or 1201) } option) Add(option.CodePage);
         Add(TextFileStore.AnsiEncoding()?.CodePage);
-        foreach (var guess in guesses) Add(guess.CodePage);
+        foreach (var candidate in ranked.Where(c => c.Score > 0 && c.NonAsciiBytes >= EncodingDetector.ConfidentBytes)) Add(candidate.CodePage); // too short or negative: noise, not text
         return list;
     }
 

@@ -248,6 +248,62 @@ internal static class EncodingTests
             }
             var xaml = File.ReadAllText(IOPath.Combine(Repo(), "Components", "BottomStatusBar.axaml"));
             Check(!System.Text.RegularExpressions.Regex.IsMatch(xaml, "#[0-9A-Fa-f]{6}") && xaml.Contains("x:Name=\"EncodingLabel\"") && xaml.Contains("{DynamicResource Accent}"), "The encoding label uses theme resources only");
+            // --- Item 81: mdhub's own detector (no UTF.Unknown) ---
+            Loc.Set(Loc.English);
+            var misses = new List<string>();
+            void Soft(bool ok, string name) { if (ok) Check(true, name); else { misses.Add(name); Console.WriteLine("MISS " + name); } }
+            string Name(byte[] bytes) => TextEncodings.DisplayName(D(bytes).Encoding);
+            var notesHant = new[]
+            {
+                "\u6703\u8b70\u7d00\u9304\uff1a\u4e0b\u9031\u4e09\u4e0b\u5348\u5169\u9ede\u8207\u8a2d\u8a08\u5718\u968a\u8a0e\u8ad6\u65b0\u7248\u9996\u9801\uff0c\u8acb\u8a18\u5f97\u5e36\u7b46\u96fb\u3002",
+                "\u5f85\u8fa6\u4e8b\u9805\uff1a\u6574\u7406\u8cc7\u6599\u593e\u3001\u56de\u8986\u5ba2\u6236\u90f5\u4ef6\u3001\u78ba\u8a8d\u767c\u7968\u91d1\u984d\u662f\u5426\u6b63\u78ba\u3002",
+                "\u8b80\u66f8\u7b46\u8a18\uff1a\u9019\u672c\u66f8\u8ac7\u5230\u6642\u9593\u7ba1\u7406\u7684\u91cd\u8981\u6027\uff0c\u4f5c\u8005\u8a8d\u70ba\u61c9\u8a72\u5148\u8655\u7406\u6700\u56f0\u96e3\u7684\u5de5\u4f5c\u3002",
+                "\u65c5\u884c\u8a08\u756b\uff1a\u81fa\u5317\u5230\u9ad8\u96c4\u642d\u9ad8\u9435\uff0c\u9810\u8a08\u9031\u672b\u51fa\u767c\uff0c\u8a18\u5f97\u8a02\u98ef\u5e97\u3002",
+                "# \u5de5\u4f5c\u65e5\u8a8c\n\n- \u4fee\u6b63\u767b\u5165\u9801\u9762\u7684\u932f\u8aa4\n- \u6e2c\u8a66\u65b0\u529f\u80fd\n",
+            };
+            var gbkNote = "\u4f1a\u8bae\u8bb0\u5f55\uff1a\u4e0b\u5468\u4e09\u4e0b\u5348\u4e24\u70b9\u4e0e\u8bbe\u8ba1\u56e2\u961f\u8ba8\u8bba\u65b0\u7248\u9996\u9875\uff0c\u8bf7\u8bb0\u5f97\u5e26\u7b14\u8bb0\u672c\u7535\u8111\u3002";
+            var sjisNote = "\u4f1a\u8b70\u306e\u8b70\u4e8b\u9332\uff1a\u6765\u9031\u306e\u6c34\u66dc\u65e5\u306e\u5348\u5f8c\u4e8c\u6642\u304b\u3089\u3001\u30c7\u30b6\u30a4\u30f3\u30c1\u30fc\u30e0\u3068\u65b0\u3057\u3044\u30db\u30fc\u30e0\u30da\u30fc\u30b8\u306b\u3064\u3044\u3066\u8a71\u3057\u5408\u3044\u307e\u3059\u3002";
+            var korNote = "\ud68c\uc758\ub85d: \ub2e4\uc74c \uc8fc \uc218\uc694\uc77c \uc624\ud6c4 \ub450 \uc2dc\uc5d0 \ub514\uc790\uc778 \ud300\uacfc \uc0c8 \ud648\ud398\uc774\uc9c0\uc5d0 \ub300\ud574 \ub17c\uc758\ud569\ub2c8\ub2e4.";
+            foreach (var language in new[] { Loc.English, Loc.Japanese, Loc.Korean, Loc.SimplifiedChinese, Loc.TraditionalChinese })
+            {
+                Loc.Set(language);
+                for (var i = 0; i < notesHant.Length; i++)
+                {
+                    var r = D(Encoding.GetEncoding(950).GetBytes(notesHant[i]));
+                    Soft(r.Text == notesHant[i] && r.Encoding.CodePage == 950, $"Item 81 ({language}): Big5 note {i + 1} is Big5 ({TextEncodings.DisplayName(r.Encoding)})");
+                }
+                foreach (var (text, cp, expected) in new[] { (gbkNote, 936, "GBK"), (sjisNote, 932, "Shift_JIS"), (korNote, 51949, "CP949"), (korNote, 949, "CP949"), (sjisNote, 51932, "EUC-JP") })
+                {
+                    var r = D(Encoding.GetEncoding(cp).GetBytes(text));
+                    Soft(r.Text == text && TextEncodings.DisplayName(r.Encoding) == expected, $"Item 81 ({language}): code page {cp} note is {expected} ({TextEncodings.DisplayName(r.Encoding)})");
+                }
+            }
+            Loc.Set(Loc.English);
+            Soft(Name(Encoding.UTF8.GetBytes(notesHant[0])) == "UTF-8", "Item 81: Chinese UTF-8 without BOM is UTF-8");
+            Soft(Name([0xEF, 0xBB, 0xBF, .. Encoding.UTF8.GetBytes(notesHant[0])]) == "UTF-8 with BOM", "Item 81: Chinese UTF-8 with BOM is UTF-8 with BOM");
+            var le81 = D(Encoding.Unicode.GetBytes("Plain notes for the week, nothing special here."));
+            Soft(le81.Encoding.CodePage == 1200 && le81.Text.StartsWith("Plain notes"), "Item 81: BOM-less UTF-16 LE is UTF-16 LE");
+            var be81 = D(Encoding.BigEndianUnicode.GetBytes("Plain notes for the week, nothing special here."));
+            Soft(be81.Encoding.CodePage == 1201 && be81.Text.StartsWith("Plain notes"), "Item 81: BOM-less UTF-16 BE is UTF-16 BE");
+            Soft(Name(Encoding.ASCII.GetBytes("ok")) == "UTF-8", "Item 81: short ASCII is UTF-8");
+            var binary = Enumerable.Range(0, 4096).Select(i => (byte)(i * 7919 % 256)).ToArray();
+            Soft(WorkspaceSearch.LooksBinary(binary), "Item 81: random bytes still count as binary (item 52's check runs before detection)");
+            Soft(D(binary).Text.Length > 0, "Item 81: decoding binary bytes never throws");
+            Soft(!EncodingDetector.IsConfident(EncodingDetector.Rank(binary, null)), "Item 81: the detector is not confident about binary bytes");
+            // Short ambiguous: E0 A1 E0 A1 is a valid double-byte pair twice in Big5, GBK, Shift_JIS and CP949; the UI language decides.
+            byte[] ambiguous = [0xE0, 0xA1, 0xE0, 0xA1];
+            foreach (var cp in new[] { 950, 936, 932, 949 }) Soft(TextEncodings.TryDecode(TextEncodings.Strict(cp)!, ambiguous, out _), $"Item 81: the ambiguous sample is valid in code page {cp}");
+            foreach (var (language, codePage) in new[] { (Loc.TraditionalChinese, 950), (Loc.SimplifiedChinese, 936), (Loc.Japanese, 932), (Loc.Korean, 949) })
+            {
+                Loc.Set(language);
+                var r = D(ambiguous);
+                Soft(r.Encoding.CodePage == codePage, $"Item 81 ({language}): short ambiguous bytes use code page {codePage} ({TextEncodings.DisplayName(r.Encoding)})");
+            }
+            Loc.Set(Loc.TraditionalChinese);
+            Soft(D(Encoding.GetEncoding(950).GetBytes("\u4e2d\u6587")).Text == "\u4e2d\u6587", "Item 81 (zh-Hant): short Big5 \u4e2d\u6587 round-trips");
+            Loc.Set(Loc.English);
+            Soft(D(ambiguous).Text.Length > 0, "Item 81 (English): short ambiguous bytes still open");
+            Check(misses.Count == 0, $"Item 81: no misdetections ({misses.Count}: {string.Join("; ", misses)})");
             Console.WriteLine($"Encoding tests: {passed} passed");
         }
         finally

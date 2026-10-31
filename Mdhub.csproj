@@ -18,7 +18,6 @@
     <Compile Remove="tests/**/*.cs" />
     <AvaloniaResource Include="Assets\mdhub-128.png" />
     <EmbeddedResource Include="LICENSE" LogicalName="Mdhub.LICENSE" />
-    <PackageReference Include="UTF.Unknown" Version="2.6.0" />
     <!-- Item 74: Hunspell spell checking, used unmodified under its MPL option (see THIRD-PARTY-NOTICES.md). -->
     <PackageReference Include="WeCantSpell.Hunspell" Version="7.0.1" />
     <None Include="Dictionaries\**" CopyToOutputDirectory="PreserveNewest" />
