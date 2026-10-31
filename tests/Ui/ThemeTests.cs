@@ -169,14 +169,14 @@ internal static class ThemeTests
         }
         finally { SessionManager.Enabled = false; SessionManager.PathOverride = null; SessionManager.Reset(); if (File.Exists(temp)) File.Delete(temp); }
 
-        // Leftover hardcoded colours in app sources (Theme.axaml is the palette; tests are excluded).
+        // Leftover hardcoded colours in app sources (Theme.axaml and the item 78 FileIcons.axaml are palettes; tests are excluded).
         var colour = new Regex(@"#[0-9A-Fa-f]{6}(?:[0-9A-Fa-f]{2})?\b|Brush\.Parse|Color\.Parse|Color\.From(?:A)?Rgb|\bBrushes\.(?!Transparent\b)\w+|\bColors\.(?!Transparent\b)\w+");
         var named = new Regex(@"\b(?:Foreground|Background|BorderBrush|Stroke|Fill|Color)=""(?!\{|Transparent"")[A-Za-z]+""");
         var allowed = new[] { "BoxShadow=\"0 2 8 0 #66000000\"" };
         var sources = Directory.EnumerateFiles(repo, "*.*", SearchOption.AllDirectories)
             .Where(f => f.EndsWith(".cs") || f.EndsWith(".axaml"))
             .Where(f => !Regex.IsMatch(Path.GetRelativePath(repo, f), @"^(tests|bin|obj|artifacts|\.nuget|\.dotnet-home|test-folder)[\\/]"))
-            .Where(f => Path.GetFileName(f) != "Theme.axaml").ToList();
+            .Where(f => Path.GetFileName(f) is not ("Theme.axaml" or "FileIcons.axaml")).ToList();
         var leftovers = sources.SelectMany(f => File.ReadAllLines(f).Select((line, i) => (f, i, line)))
             .Where(x => colour.IsMatch(allowed.Aggregate(x.line, (l, a) => l.Replace(a, ""))) || x.f.EndsWith(".axaml") && named.IsMatch(x.line))
             .Select(x => $"{Path.GetRelativePath(repo, x.f)}:{x.i + 1}").ToList();
