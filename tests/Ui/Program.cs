@@ -22,6 +22,7 @@ if (args.Contains("--searchindent-only")) { SearchIndentTests.Run(); return; }
 if (args.Contains("--tabcycle-only")) { TabCycleTests.Run(); return; }
 if (args.Contains("--formaticons-only")) { FormatIconTests.Run(); return; }
 if (args.Contains("--formatsel-only")) { FormatSelectionTests.Run(); return; }
+if (args.Contains("--norepeat-only")) { NoRepeatTests.Run(); return; }
 if (args.Contains("--previewsettings-only")) { PreviewSettingsTests.Run(); return; }
 if (args.Contains("--editorfont-only")) { EditorFontsTests.Run(); return; }
 if (args.Contains("--foldertabs-only")) { FolderTabsTests.Run(); return; }

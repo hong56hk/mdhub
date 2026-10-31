@@ -167,6 +167,7 @@ public partial class MainView
         if (ShortcutKeys.Match(e, s => s.Id == "file.quickOpen") is not null)
         {
             e.Handled = true;
+            if (!Shortcuts.BeginPress("file.quickOpen", e.Key.ToString())) return true; // bug 87: auto-repeat
             OpenQuickOpen();
             return true;
         }
@@ -203,7 +204,7 @@ public partial class MainView
         if (!_busy && FolderExplorer.IsKeyboardFocusWithin && ShortcutKeys.Match(e, s => s.Id == "explorer.rename") is not null)
         {
             e.Handled = true;
-            FolderExplorer.BeginRename();
+            if (Shortcuts.BeginPress("explorer.rename", e.Key.ToString())) FolderExplorer.BeginRename();
             return;
         }
         if (TextEditor.IsFindOpen && ShortcutKeys.Match(e, s => s.Id is "find.next" or "find.previous" or "find.close") is { } findId)
@@ -255,6 +256,7 @@ public partial class MainView
         };
         if (action is null) return;
         e.Handled = true;
+        if (!Shortcuts.BeginPress(id!, e.Key.ToString())) return; // bug 87: a held one-shot key fires once per press
         ShortcutFired?.Invoke(id!);
         if (id == "edit.paste") await PasteAsync(); // runs busy only while saving an image
         else if (id is "find.find" or "find.replace" or "view.wordWrap" or "view.togglePreview" || id!.StartsWith("editor.") && id != "editor.goToLine" || id == "view.previewCaret") await action(); // find: focus must land in the find bar

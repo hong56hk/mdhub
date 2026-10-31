@@ -34,7 +34,8 @@ public readonly record struct ShortcutGesture(string Key, ShortcutMods Mods, str
 // Defaults are the built-in gestures; Gestures are the live ones (a user's custom binding when there is one).
 // ExplorerOnly (item 53): acts only while the explorer has focus, so it may share a gesture with an Edit entry
 // (Ctrl+C/X/V) without conflicting: the editor keeps its keys and the explorer gets them only when focused.
-public sealed record Shortcut(string Id, ShortcutArea Area, string Label, IReadOnlyList<ShortcutGesture> Defaults, bool HandledByTextBox = false, bool ExplorerOnly = false)
+// NoRepeat (bug 87): a one-shot command (save, close tab, a dialog) fires once per press; key auto-repeat is ignored until release.
+public sealed record Shortcut(string Id, ShortcutArea Area, string Label, IReadOnlyList<ShortcutGesture> Defaults, bool HandledByTextBox = false, bool ExplorerOnly = false, bool NoRepeat = false)
 {
     public IReadOnlyList<ShortcutGesture> Gestures => Shortcuts.GesturesFor(this);
     // Only mdhub's own handlers read the live table; gestures built into the TextBox cannot be rebound.
@@ -54,17 +55,18 @@ public static class Shortcuts
     private static ShortcutGesture C(string key) => ShortcutGesture.Cmd(key);
     private static ShortcutGesture CS(string key) => ShortcutGesture.CmdShift(key);
     private static ShortcutGesture P(string key) => ShortcutGesture.Plain(key);
+    private static Shortcut Once(Shortcut s) => s with { NoRepeat = true };
 
     public static readonly IReadOnlyList<Shortcut> All =
     [
-        S("file.new", ShortcutArea.File, "New note", C("N")),
-        S("file.open", ShortcutArea.File, "Open file", C("O")),
-        S("file.quickOpen", ShortcutArea.File, "Go to file", C("P")),
-        S("file.openFolder", ShortcutArea.File, "Open folder", CS("O"), CS("N")),
-        S("file.save", ShortcutArea.File, "Save", C("S")),
-        S("file.saveAs", ShortcutArea.File, "Save as", CS("S")),
-        S("file.closeTab", ShortcutArea.File, "Close tab", C("W")),
-        S("explorer.rename", ShortcutArea.File, "Rename selected explorer item (explorer focused)", P("F2")),
+        Once(S("file.new", ShortcutArea.File, "New note", C("N"))),
+        Once(S("file.open", ShortcutArea.File, "Open file", C("O"))),
+        Once(S("file.quickOpen", ShortcutArea.File, "Go to file", C("P"))),
+        Once(S("file.openFolder", ShortcutArea.File, "Open folder", CS("O"), CS("N"))),
+        Once(S("file.save", ShortcutArea.File, "Save", C("S"))),
+        Once(S("file.saveAs", ShortcutArea.File, "Save as", CS("S"))),
+        Once(S("file.closeTab", ShortcutArea.File, "Close tab", C("W"))),
+        Once(S("explorer.rename", ShortcutArea.File, "Rename selected explorer item (explorer focused)", P("F2"))),
         S("sidebar.explorer", ShortcutArea.View, "Show explorer", CS("E")),
         S("file.revealInSidebar", ShortcutArea.View, "Reveal active file in side bar", C("E")),
         S("sidebar.search", ShortcutArea.Find, "Search in folder", CS("F")),
@@ -84,11 +86,11 @@ public static class Shortcuts
         E("explorer.copy", "Copy selected explorer item (explorer focused)", C("C")),
         E("explorer.paste", "Paste into the explorer selection (explorer focused)", C("V")),
         E("explorer.duplicate", "Duplicate selected explorer item (explorer focused)", C("D")),
-        E("explorer.delete", "Move selected explorer item to the Recycle Bin (explorer focused)", P("Delete")),
+        Once(E("explorer.delete", "Move selected explorer item to the Recycle Bin (explorer focused)", P("Delete"))),
         // Item 80: after edit.selectAll so Ctrl+A in the editor still selects text.
         E("explorer.selectAll", "Select all visible explorer items (explorer focused)", C("A")),
-        S("view.wordWrap", ShortcutArea.View, "Toggle word wrap", new ShortcutGesture("Z", ShortcutMods.Alt)),
-        S("view.togglePreview", ShortcutArea.View, "Toggle preview", C("OemPipe"), new ShortcutGesture("OemBackslash", ShortcutMods.Command, Hidden: true)),
+        Once(S("view.wordWrap", ShortcutArea.View, "Toggle word wrap", new ShortcutGesture("Z", ShortcutMods.Alt))),
+        Once(S("view.togglePreview", ShortcutArea.View, "Toggle preview", C("OemPipe"), new ShortcutGesture("OemBackslash", ShortcutMods.Command, Hidden: true))),
         S("find.find", ShortcutArea.Find, "Find", C("F")),
         S("find.replace", ShortcutArea.Find, "Find and replace", C("H")),
         S("find.next", ShortcutArea.Find, "Next match", P("F3")),
@@ -107,7 +109,7 @@ public static class Shortcuts
         // Ctrl+" is Shift+' on most layouts: accept both and show it as Ctrl+".
         S("editor.quote", ShortcutArea.Editor, "Block quote (Markdown)", new ShortcutGesture("OemQuotes", ShortcutMods.Command, "\""), new ShortcutGesture("OemQuotes", ShortcutMods.Command | ShortcutMods.Shift, Hidden: true)),
         S("editor.insertTime", ShortcutArea.Editor, "Insert date and time", C("OemSemicolon")),
-        S("editor.goToLine", ShortcutArea.Editor, "Go to line", C("G")),
+        Once(S("editor.goToLine", ShortcutArea.Editor, "Go to line", C("G"))),
         // Item 74: next misspelling (Markdown files, spell checking on).
         S("editor.nextMisspelling", ShortcutArea.Editor, "Next misspelling", P("F7")),
         T("editor.wordLeft", ShortcutArea.Editor, "Move one word left", C("Left")),
@@ -116,7 +118,7 @@ public static class Shortcuts
         T("editor.docEnd", ShortcutArea.Editor, "Go to end of document", C("End")),
         T("editor.tab", ShortcutArea.Editor, "Insert tab", P("Tab")),
         T("editor.outdent", ShortcutArea.Editor, "Outdent", new ShortcutGesture("Tab", ShortcutMods.Shift)),
-        S("editor.toggleOverwrite", ShortcutArea.Editor, "Toggle insert/overwrite", P("Insert")), // item 66
+        Once(S("editor.toggleOverwrite", ShortcutArea.Editor, "Toggle insert/overwrite", P("Insert"))), // item 66
     ];
 
     // ---- Custom bindings (item 32). A custom entry replaces all of an entry's default gestures; an empty list
@@ -209,6 +211,30 @@ public static class Shortcuts
             if (Custom[id].Any(g => All.Any(o => o.Id != id && Overlap(Get(id), o) && o.Gestures.Any(x => SameKeys(x, g))))) Custom.Remove(id);
         Changed?.Invoke();
     }
+
+    // ---- Bug 87: NoRepeat. Avalonia has no repeat flag on KeyDown, so track the press: the first KeyDown of a NoRepeat
+    // command fires and marks it held (with its key); further KeyDowns of that key are auto-repeat and are swallowed until
+    // KeyUp of the key or of any modifier. Window deactivation (a dialog, another app) clears everything (ReleaseAll),
+    // so a KeyUp that went elsewhere can never leave a command stuck.
+    private static readonly Dictionary<string, string> Held = [];
+    private static readonly HashSet<string> ModifierKeys = ["LeftCtrl", "RightCtrl", "LeftShift", "RightShift", "LeftAlt", "RightAlt", "LWin", "RWin"];
+
+    // True: run the command. False: an auto-repeat of a held NoRepeat command (the caller swallows the key).
+    public static bool BeginPress(string id, string key)
+    {
+        if (All.FirstOrDefault(s => s.Id == id) is not { NoRepeat: true }) return true;
+        if (Held.TryGetValue(id, out var held) && held == key) return false;
+        Held[id] = key;
+        return true;
+    }
+    public static void KeyReleased(string key)
+    {
+        if (Held.Count == 0) return;
+        if (ModifierKeys.Contains(key)) { Held.Clear(); return; }
+        foreach (var id in Held.Where(p => p.Value == key).Select(p => p.Key).ToList()) Held.Remove(id);
+    }
+    public static void ReleaseAll() => Held.Clear();
+    public static bool IsHeld(string id) => Held.ContainsKey(id);
 
     public static Shortcut Get(string id) => All.First(s => s.Id == id);
     public static string Format(string id, bool mac) => Get(id).Format(mac);
