@@ -24,8 +24,8 @@ internal static class AboutTests
         AppBuilder.Configure<App>().UseSkia().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).SetupWithoutStarting();
         void Pump() { using var t = new CancellationTokenSource(50); Dispatcher.UIThread.MainLoop(t.Token); }
 
-        Check(AppInfo.Version == "0.1.0 (alpha)", $"the version is read from the assembly as '0.1.0 (alpha)' ({AppInfo.Version})");
-        Check(AppInfo.CleanVersion("0.1.0 (alpha)+abc123") == "0.1.0 (alpha)", "a +commit suffix is stripped");
+        Check(AppInfo.Version == "1.0.0", $"the version is read from the assembly as '1.0.0' ({AppInfo.Version})");
+        Check(AppInfo.CleanVersion("1.0.0+abc123") == "1.0.0", "a +commit suffix is stripped");
         var license = AppInfo.LicenseText();
         Check(license.StartsWith("MIT License") && license.Contains("Copyright (c) 2026 Hong"), "the embedded LICENSE resource loads");
         if (RepoRoot() is { } repo)
@@ -55,9 +55,9 @@ internal static class AboutTests
             }
             var about = OpenAbout();
             T Named<T>(string name) where T : Control => about.GetVisualDescendants().OfType<T>().First(c => c.Name == name);
-            var expected = new[] { "MDHub", "Version 0.1.0 (alpha)", Loc.En["AboutDescription"], "Copyright \u00a9 2026 Hong" };
+            var expected = new[] { "MDHub", "Version 1.0.0", Loc.En["AboutDescription"], "Copyright \u00a9 2026 Hong" };
             Check(Named<TextBlock>("AboutName").Text == expected[0] && Named<TextBlock>("AboutVersion").Text == expected[1] && Named<TextBlock>("AboutDescription").Text == expected[2] && Named<TextBlock>("AboutCopyright").Text == expected[3],
-                "About shows MDHub, Version 0.1.0 (alpha), the description and the copyright");
+                "About shows MDHub, Version 1.0.0, the description and the copyright");
             var github = Named<HyperlinkButton>("AboutGitHubLink");
             var mit = Named<HyperlinkButton>("AboutLicenseLink");
             Check(Named<StackPanel>("AboutGitHubRow").Children.OfType<TextBlock>().First().Text == "GitHub:" && github.Content as string == "github.com/hong56hk/mdhub"
@@ -80,7 +80,7 @@ internal static class AboutTests
             Check(((IEnumerable<NoteDocument>)typeof(MainView).GetField("_documents", Flags)!.GetValue(v)!).Count() == before + 1, "opening the licence again reuses its tab");
             Loc.Set(Loc.Japanese); Pump();
             var ja = OpenAbout();
-            Check(ja.Title == Loc.Ja["AboutTitle"] && ja.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Name == "AboutVersion" && t.Text == Loc.F("AboutVersion", "0.1.0 (alpha)")), "About follows the UI language");
+            Check(ja.Title == Loc.Ja["AboutTitle"] && ja.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Name == "AboutVersion" && t.Text == Loc.F("AboutVersion", "1.0.0")), "About follows the UI language");
             ja.Close(); Pump();
         }
         finally { Loc.Set(Loc.English); DialogService.LaunchOverride = null; foreach (var o in w.OwnedWindows.ToList()) o.Close(); try { w.Close(); Pump(); } catch { } }
