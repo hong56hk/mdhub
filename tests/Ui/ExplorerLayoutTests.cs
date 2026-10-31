@@ -50,6 +50,9 @@ internal static class ExplorerLayoutTests
             Control Part(TreeViewItem i, string name) => i.GetVisualDescendants().OfType<Control>().First(c => c.Name == name);
             double TextX(TreeViewItem i) => X(Part(i, "PART_HeaderPresenter").GetVisualDescendants().OfType<TextBlock>().First());
             double HeaderX(TreeViewItem i) => X(Part(i, "PART_HeaderPresenter"));
+            // Item 78: a file row starts with its type icon; a folder row with its name.
+            FileTypeIcon? RowIcon(TreeViewItem i) => Part(i, "PART_HeaderPresenter").GetVisualDescendants().OfType<FileTypeIcon>().FirstOrDefault();
+            double IconX(TreeViewItem i) => RowIcon(i) is { } icon ? X(icon) : TextX(i);
             bool Same(double a, double b) => Math.Abs(a - b) < 0.5;
             var alpha = Node(sub); var empty = Node(Path.Combine(root, "Empty")); var top = Node(Path.Combine(root, "top.md"));
             var nested = Node(Path.Combine(sub, "Nested")); var inner = Node(Path.Combine(sub, "inner.md")); var deep = Node(Path.Combine(sub, "Nested", "deep.md"));
@@ -59,8 +62,8 @@ internal static class ExplorerLayoutTests
             double ChevronX(TreeViewItem i) => X(Part(i, "PART_ExpandCollapseChevron"));
             foreach (var (file, folder, depth) in new[] { (top, alpha, 0), (top, empty, 0), (inner, nested, 1), (deep, deeper, 2) })
             {
-                Console.WriteLine($"INFO depth {depth}: file icon {TextX(file)} folder chevron {ChevronX(folder)}");
-                Check(Part(folder, "PART_ExpandCollapseChevron").IsVisible && Same(TextX(file), ChevronX(folder)), $"depth {depth}: file icon x equals the folder chevron x");
+                Console.WriteLine($"INFO depth {depth}: file icon {IconX(file)} folder chevron {ChevronX(folder)}");
+                Check(Part(folder, "PART_ExpandCollapseChevron").IsVisible && RowIcon(file) is not null && Same(IconX(file), ChevronX(folder)), $"depth {depth}: file icon x equals the folder chevron x");
             }
             Check(Same(TextX(alpha), TextX(empty)) && Same(ChevronX(alpha), ChevronX(empty)), "level 0: folders align with each other");
             var step1 = HeaderX(inner) - HeaderX(top); var step2 = HeaderX(deep) - HeaderX(inner);
@@ -74,9 +77,9 @@ internal static class ExplorerLayoutTests
                 tree.SelectedItem = row; for (var k = 0; k < 6; k++) Pump();
                 var rowText = Part(row, "PART_HeaderPresenter").GetVisualDescendants().OfType<TextBlock>().First();
                 var entryName = Path.GetFileName(((FolderEntry)row.Tag!).Path);
-                var full = rowText.Text!; var prefixLen = full.Length - entryName.Length;
-                var iconX = X(rowText);
-                var nameX = iconX + rowText.TextLayout.HitTestTextPosition(prefixLen).X;
+                var rowIcon = RowIcon(row);
+                var iconX = IconX(row);
+                var nameX = X(rowText); var rowName = rowText.Text;
                 var rowHeight = Part(row, "PART_Header").Bounds.Height;
                 var (family, size, weight) = (rowText.FontFamily, rowText.FontSize, rowText.FontWeight);
                 var lineHeight = rowText.TextLayout.Height;
@@ -86,12 +89,12 @@ internal static class ExplorerLayoutTests
                 var presenter = box.GetVisualDescendants().OfType<TextPresenter>().First();
                 var boxText = X(presenter);
                 Console.WriteLine($"INFO rename level {level}: icon {iconX} name {nameX} box text {boxText}");
-                Check(Same(boxText, nameX) && Same(iconX, TextX(row)), $"inline rename text starts exactly where the name was (level {level}, {kind})");
+                Check(Same(boxText, nameX) && Same(iconX, IconX(row)) && rowName == entryName, $"inline rename text starts exactly where the name was (level {level}, {kind})");
                 Check(box.Text == entryName && box.FontFamily == family && box.FontSize == size && box.FontWeight == weight && Same(presenter.TextLayout.Height, lineHeight),
                     $"rename box uses the row font ({family} {size} {weight}) with the same line height (level {level}, {kind})");
                 Check(Same(Part(row, "PART_Header").Bounds.Height, rowHeight), $"row height is unchanged while renaming ({rowHeight:0.#}px, level {level}, {kind})");
-                var icon = row.GetVisualDescendants().OfType<TextBlock>().FirstOrDefault(b => b.Name == "ExplorerRenameIcon");
-                Check(prefixLen == 0 ? icon is null : icon is { IsEffectivelyVisible: true } && Same(X(icon), iconX) && icon.Text == full[..prefixLen] && icon.FontSize == size,
+                var icon = row.GetVisualDescendants().OfType<FileTypeIcon>().FirstOrDefault(b => b.Name == "ExplorerRenameIcon");
+                Check(rowIcon is null ? icon is null : icon is { IsEffectivelyVisible: true } && Same(X(icon), iconX) && ReferenceEquals(icon.Data, rowIcon.Data),
                     $"the type icon stays visible at the same x while renaming (level {level}, {kind})");
                 var frame = box.GetVisualDescendants().OfType<Border>().First(b => b.Name == "PART_BorderElement");
                 Check(frame.BorderThickness == new Thickness(1) && frame.BorderBrush is ISolidColorBrush fb && fb.Color == ThemeService.Lookup("ExplorerRenameBorder") && box.Padding == default,

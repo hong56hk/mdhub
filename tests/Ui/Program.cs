@@ -32,6 +32,7 @@ if (args.Contains("--autocomplete-only")) { AutoCompleteTests.Run(); return; }
 if (args.Contains("--spelling-only")) { SpellCheckTests.Run(); return; }
 if (args.Contains("--tabmenu-only")) { TabMenuTests.Run(); return; }
 if (args.Contains("--tabs-only")) { TabSettingsTests.Run(); return; }
+if (args.Contains("--fileicons-only")) { FileIconTests.Run(); return; }
 if (args.Contains("--gears-only")) { GearsTests.Run(); return; }
 if (args.Contains("--export-only")) { ExportTests.Run(); return; }
 if (args.Contains("--binary-only")) { BinaryFileTests.Run(); return; }

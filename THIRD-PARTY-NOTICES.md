@@ -37,3 +37,12 @@ None of them is modified. The full licence texts are in the `Dictionaries` folde
 - German (de_DE_frami): GPL 2/3 (or the OASIS 0.1 licence, which only covers apps whose primary format is ODF),
   which is not compatible with distributing it inside an MIT app, so it is left out. German UI users get the
   English dictionary unless they pick another one.
+## Material Icon Theme (file-type icons)
+
+- Source: https://github.com/material-extensions/vscode-material-icon-theme (`icons/*.svg`)
+- Licence: MIT, Copyright (c) 2025 Material Extensions
+- Licence text: `Dictionaries/MaterialIconTheme-LICENSE.txt`
+- Only the icons mdhub uses are bundled, as offline vector path data in `Services/FileIcons.cs` (no SVG files or fonts):
+  markdown, image, svg, pdf, document, json, yaml, csharp, javascript, typescript, html, css, zip, word, table,
+  powerpoint, audio, video, exe, readme, certificate, git, nodejs, docker and hex, plus the generic page outline.
+  Modifications: each icon is drawn in a single colour from `Styles/FileIcons.axaml` (dark and light variants).

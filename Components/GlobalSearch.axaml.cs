@@ -158,11 +158,15 @@ public partial class GlobalSearch : UserControl
     private static TreeViewItem BuildGroup(string root, SearchFile file)
     {
         var relative = System.IO.Path.GetRelativePath(root, file.Path);
-        var group = new TreeViewItem { Header = $"{relative}  ({file.Hits.Count})", Tag = file, IsExpanded = true };
+        var groupHeader = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = FileRowHeader.Gap };
+        // Item 78: the file-type icon, then the path and hit count; match rows below start at the path text.
+        groupHeader.Children.Add(new FileTypeIcon(file.Path));
+        groupHeader.Children.Add(new TextBlock { Text = $"{relative}  ({file.Hits.Count})", VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center });
+        var group = new TreeViewItem { Header = groupHeader, Tag = file, IsExpanded = true };
         ToolTip.SetTip(group, relative);
         foreach (var hit in file.Hits)
         {
-            var label = new TextBlock { FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis };
+            var label = new TextBlock { FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Avalonia.Thickness(Mdhub.Services.FileIcon.Size + FileRowHeader.Gap, 0, 0, 0) };
             label.Inlines!.Add(new Run($"{hit.Line}: ") { Foreground = Mdhub.Services.ThemeService.Brush("SearchLineNumberForeground") });
             var offset = Math.Clamp(hit.Start - hit.PreviewStart, 0, hit.Preview.Length);
             var length = Math.Min(hit.Length, hit.Preview.Length - offset);

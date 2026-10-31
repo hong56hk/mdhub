@@ -343,7 +343,7 @@ public partial class FolderExplorer : UserControl
     }
     private TreeViewItem CreateTreeItem(FolderEntry entry)
     {
-        var item = new ExplorerTreeViewItem { Header = (entry.IsDirectory ? "" : "▤  ") + Path.GetFileName(entry.Path), Tag = entry };
+        var item = new ExplorerTreeViewItem { Header = entry.IsDirectory ? Path.GetFileName(entry.Path) : new FileRowHeader(entry.Path, !entry.IsSupported), Tag = entry };
         ToolTip.SetTip(item, TipFor(entry));
         // VS Code: a file's icon takes the chevron's slot (see the TreeViewItem.file style).
         if (!entry.IsDirectory) item.Classes.Add("file");

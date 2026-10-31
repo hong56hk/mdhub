@@ -28,21 +28,16 @@ public partial class FolderExplorer
         CancelRename();
         var name = Path.GetFileName(entry.Path);
         // Like VS Code only the name becomes editable: the type icon (the header's prefix) stays where it was.
-        var prefix = item.Header is string text && text.EndsWith(name, StringComparison.Ordinal) ? text[..^name.Length] : "";
+
         // Same font as the row; no padding, and a -1 margin hides the 1px border from layout so neither the text x nor the row height moves.
         var box = new TextBox
         {
             Name = "ExplorerRenameBox", Text = name, MinWidth = 100, MinHeight = 0, Padding = new Thickness(0), BorderThickness = new Thickness(1), Margin = new Thickness(-1),
             FontFamily = item.FontFamily, FontSize = item.FontSize, FontWeight = item.FontWeight, FontStyle = item.FontStyle, VerticalContentAlignment = VerticalAlignment.Center,
         };
-        var header = new StackPanel { Name = "ExplorerRenameHeader", Orientation = Orientation.Horizontal };
-        if (prefix.Length > 0)
-        {
-            var icon = new TextBlock { Name = "ExplorerRenameIcon", Text = prefix, VerticalAlignment = VerticalAlignment.Center };
-            // Trailing spaces count towards the width so the name starts exactly where it did.
-            icon.Width = new Avalonia.Media.TextFormatting.TextLayout(prefix, new Typeface(item.FontFamily, item.FontStyle, item.FontWeight), item.FontSize, null).WidthIncludingTrailingWhitespace;
-            header.Children.Add(icon);
-        }
+        var header = new StackPanel { Name = "ExplorerRenameHeader", Orientation = Orientation.Horizontal, Spacing = FileRowHeader.Gap };
+        // Item 78: the same icon and gap as the row, so the name starts exactly where it did.
+        if (item.Header is FileRowHeader row) header.Children.Add(new FileTypeIcon(row.FilePath, row.IsBinary) { Name = "ExplorerRenameIcon" });
         header.Children.Add(box);
         _renameItem = item;
         _renameHeader = item.Header;

@@ -47,6 +47,8 @@ public sealed class NoteDocument : INotifyPropertyChanged
     }
     public bool IsDirty => Text != SavedText || (LineEnding != SavedLineEnding && !IsViewOnly);
     public bool IsMarkdown => !IsViewOnly && System.IO.Path.GetExtension(Path ?? UntitledName).ToLowerInvariant() is ".md" or ".markdown";
+    // Item 78: the name the file-type icon is looked up by.
+    public string IconName => Path ?? UntitledName;
     public string Title => (IsDirty ? "● " : "") + (Path is null ? UntitledName : System.IO.Path.GetFileName(Path));
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -93,5 +95,6 @@ public sealed class NoteDocument : INotifyPropertyChanged
     {
         ((Mdhub.Components.MarkdownTextBox)Editor).HighlightMarkdown = IsMarkdown;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Title)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IconName)));
     }
 }
