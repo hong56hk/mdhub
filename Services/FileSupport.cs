@@ -13,32 +13,37 @@ public static class FileSupport
         or ".pdf" or ".doc" or ".docx" or ".xls" or ".xlsx" or ".ppt" or ".pptx"
         or ".sqlite" or ".db" or ".mp3" or ".mp4" or ".wav" or ".woff" or ".woff2" or ".ttf";
 
+    // Bug 39 / item 52: text by extension (notes, config, data and source files), whatever their encoding or stray control bytes;
+    // never dimmed, always open as text. Everything else is sniffed.
+    private static readonly HashSet<string> TextExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".txt", ".md", ".markdown", ".json", ".jsonc", ".yaml", ".yml", ".log", ".csv", ".tsv", ".ini", ".cfg", ".conf", ".toml", ".env", ".properties",
+        ".xml", ".xaml", ".axaml", ".csproj", ".props", ".targets", ".sln", ".config", ".html", ".htm", ".css", ".scss", ".svg",
+        ".cs", ".fs", ".vb", ".js", ".mjs", ".ts", ".tsx", ".jsx", ".py", ".rb", ".go", ".rs", ".java", ".kt", ".c", ".h", ".cpp", ".hpp", ".swift",
+        ".php", ".sql", ".sh", ".bash", ".ps1", ".psm1", ".bat", ".cmd", ".lua", ".r", ".tex", ".rst", ".adoc", ".gitignore", ".gitattributes", ".editorconfig",
+    };
+    public static bool IsTextByExtension(string path) => TextExtensions.Contains(Path.GetExtension(path));
+    public const long LargeTextBytes = 50L * 1024 * 1024;
+
     // Inspect a bounded sample on the folder-loading worker, including extensionless text files.
     public static SupportedFileKind Detect(string path)
     {
         if (IsImage(path)) return SupportedFileKind.Image;
+        if (IsTextByExtension(path)) return SupportedFileKind.Text;
         if (IsKnownBinary(path)) return SupportedFileKind.Unsupported;
         try
         {
             using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-            // Decode the sample without exceptions: invalid UTF-8 (e.g. cp1252 text) stays Unsupported for opening,
-            // but no longer raises a DecoderFallbackException per file while a folder loads.
             var bytes = new byte[8192];
             var length = stream.ReadAtLeast(bytes, bytes.Length, throwOnEndOfStream: false);
-            var sample = bytes.AsSpan(0, length);
-            var final = length < bytes.Length;
-            if (sample is [0xEF, 0xBB, 0xBF, ..] || sample is not ([0xFF, 0xFE, ..] or [0xFE, 0xFF, ..] or [0x00, 0x00, 0xFE, 0xFF, ..]))
-            {
-                var utf8 = sample is [0xEF, 0xBB, 0xBF, ..] ? sample[3..] : sample;
-                var chars = new char[utf8.Length];
-                var status = System.Text.Unicode.Utf8.ToUtf16(utf8, chars, out _, out var written, replaceInvalidSequences: false, isFinalBlock: final);
-                if (status == System.Buffers.OperationStatus.InvalidData) return SupportedFileKind.Unsupported;
-                return IsText(chars.AsSpan(0, written)) ? SupportedFileKind.Text : SupportedFileKind.Unsupported;
-            }
-            var decoded = TextFileStore.DecodeLenient(sample);
-            var text = decoded.Text.AsSpan();
-            if (!final && text.Length > 0 && text[^1] == '\uFFFD') text = text[..^1]; // a code unit split by the sample boundary
-            return !text.Contains('\uFFFD') && IsText(text) ? SupportedFileKind.Text : SupportedFileKind.Unsupported;
+            // Item 52 (VS Code): a raw NUL byte means binary unless a UTF-16/32 BOM says otherwise.
+            var unicodeBom = length >= 2 && (bytes[0] == 0xFF && bytes[1] == 0xFE || bytes[0] == 0xFE && bytes[1] == 0xFF) || length >= 4 && bytes[0] == 0 && bytes[1] == 0 && bytes[2] == 0xFE && bytes[3] == 0xFF;
+            // Item 67: BOM-less UTF-16 too, so its NUL high bytes do not make it binary.
+            unicodeBom = unicodeBom || TextFileStore.LooksUtf16(bytes.AsSpan(0, length));
+            if (!unicodeBom && bytes.AsSpan(0, length).Contains((byte)0)) return SupportedFileKind.Unsupported;
+            // Same detection as opening (BOM, UTF-16, UTF-8, then the ANSI code page); binary data fails IsText.
+            var text = TextFileStore.Decode(bytes.AsSpan(0, length), final: length < bytes.Length).Text;
+            return IsText(text) ? SupportedFileKind.Text : SupportedFileKind.Unsupported;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or DecoderFallbackException)
         {
@@ -46,10 +51,16 @@ public static class FileSupport
         }
     }
 
+    // Item 52 (VS Code): binary when the sample has a NUL, or more than 10% control characters (tab/CR/LF/FF excluded).
     public static bool IsText(ReadOnlySpan<char> text)
     {
+        if (text.Length > 8192) text = text[..8192];
+        var controls = 0;
         foreach (var character in text)
-            if (char.IsControl(character) && character is not ('\t' or '\r' or '\n' or '\f')) return false;
-        return true;
+        {
+            if (character == '\0') return false;
+            if (char.IsControl(character) && character is not ('\t' or '\r' or '\n' or '\f')) controls++;
+        }
+        return controls * 10 <= text.Length;
     }
 }

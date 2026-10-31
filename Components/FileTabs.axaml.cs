@@ -10,7 +10,20 @@ public partial class FileTabs : UserControl
     public event Action? NewRequested;
     public event Action<NoteDocument>? CloseRequested;
     public event Action<NoteDocument>? DocumentSelected;
-    public FileTabs() => InitializeComponent();
+    public FileTabs()
+    {
+        InitializeComponent();
+        // Item 75: the tab context menu opens only over a tab, and remembers which one (not necessarily the active tab).
+        Tabs.AddHandler(ContextRequestedEvent, (_, e) =>
+        {
+            MenuTarget = null;
+            for (var v = e.Source as Avalonia.Visual; v is not null && v != Tabs; v = Avalonia.VisualTree.VisualExtensions.GetVisualParent(v))
+                if (v is ListBoxItem { DataContext: NoteDocument document }) { MenuTarget = document; return; }
+            e.Handled = true;
+        }, RoutingStrategies.Tunnel);
+    }
+    public ContextMenu? TabMenu { get => Tabs.ContextMenu; set => Tabs.ContextMenu = value; }
+    public NoteDocument? MenuTarget { get; private set; }
     public NoteDocument? SelectedDocument { get => Tabs.SelectedItem as NoteDocument; set => Tabs.SelectedItem = value; }
     public void SetDocuments(ObservableCollection<NoteDocument> documents) => Tabs.ItemsSource = documents;
     public void SetBusy(bool busy) => Tabs.IsEnabled = !busy;

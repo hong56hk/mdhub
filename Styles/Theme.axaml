@@ -8,6 +8,9 @@
       <SolidColorBrush x:Key="EditorBackground" Color="#202329" />
       <SolidColorBrush x:Key="PreviewBackground" Color="#101318" />
       <SolidColorBrush x:Key="ToolbarBackground" Color="#20242A" />
+      <SolidColorBrush x:Key="PreviewToggleOn" Color="#E0E0E0" />
+      <SolidColorBrush x:Key="PreviewToggleOff" Color="#6A6A6A" />
+      <SolidColorBrush x:Key="PreviewToggleOnBackground" Color="#2B313A" />
       <SolidColorBrush x:Key="FloatingBackground" Color="#252A32" />
       <SolidColorBrush x:Key="InputBackground" Color="#1B1E23" />
       <SolidColorBrush x:Key="ButtonBackground" Color="#2B313A" />
@@ -45,9 +48,40 @@
       <SolidColorBrush x:Key="FindCurrentBackground" Color="#99E8A33D" />
       <SolidColorBrush x:Key="FindCurrentBorder" Color="#F0B45A" />
       <SolidColorBrush x:Key="GutterForeground" Color="#6B7280" />
-      <SolidColorBrush x:Key="SyntaxHeading" Color="#C792EA" />
-      <SolidColorBrush x:Key="SyntaxOrderedList" Color="#82AAFF" />
-      <SolidColorBrush x:Key="SyntaxUnorderedList" Color="#8FD6A0" />
+      <SolidColorBrush x:Key="SyntaxH1" Color="#569CD6" />
+      <SolidColorBrush x:Key="SyntaxH2" Color="#4EC9B0" />
+      <SolidColorBrush x:Key="SyntaxH3" Color="#C586C0" />
+      <SolidColorBrush x:Key="SyntaxH4" Color="#9CDCFE" />
+      <SolidColorBrush x:Key="SyntaxMarker" Color="#6A6A6A" />
+      <SolidColorBrush x:Key="SyntaxInlineCode" Color="#CE9178" />
+      <SolidColorBrush x:Key="SyntaxInlineCodeBackground" Color="#2D2D2D" />
+      <SolidColorBrush x:Key="SyntaxCodeBlockBackground" Color="#1E1E1E" />
+      <SolidColorBrush x:Key="SyntaxLink" Color="#3794FF" />
+      <SolidColorBrush x:Key="SyntaxUrl" Color="#808080" />
+      <SolidColorBrush x:Key="SyntaxListMarker" Color="#D7BA7D" />
+      <SolidColorBrush x:Key="SyntaxQuote" Color="#9E9E9E" />
+      <SolidColorBrush x:Key="SyntaxQuoteBar" Color="#4F5560" />
+      <SolidColorBrush x:Key="SyntaxCheckbox" Color="#D7BA7D" />
+      <SolidColorBrush x:Key="SyntaxChecked" Color="#7A7A7A" />
+      <SolidColorBrush x:Key="SyntaxFrontMatter" Color="#6A6A6A" />
+      <SolidColorBrush x:Key="SyntaxRule" Color="#4A4A4A" />
+      <SolidColorBrush x:Key="SyntaxCodeText" Color="#D4D4D4" />
+      <SolidColorBrush x:Key="SyntaxCodeKeyword" Color="#569CD6" />
+      <SolidColorBrush x:Key="SyntaxCodeString" Color="#CE9178" />
+      <SolidColorBrush x:Key="SyntaxCodeComment" Color="#6A9955" />
+      <SolidColorBrush x:Key="SyntaxCodeNumber" Color="#B5CEA8" />
+      <SolidColorBrush x:Key="SyntaxCodeType" Color="#4EC9B0" />
+      <SolidColorBrush x:Key="SyntaxCodeProperty" Color="#9CDCFE" />
+      <SolidColorBrush x:Key="SyntaxCodeTag" Color="#569CD6" />
+      <SolidColorBrush x:Key="SyntaxCodeAttribute" Color="#9CDCFE" />
+      <SolidColorBrush x:Key="SyntaxBold" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="SyntaxItalic" Color="#E0E0E0" />
+      <SolidColorBrush x:Key="SyntaxStrike" Color="#C8C8C8" />
+      <!-- Item 62: editor-only keys for the editor gear's colours (values are the look before item 62). -->
+      <SolidColorBrush x:Key="SyntaxOrderedMarker" Color="#D7BA7D" />
+      <SolidColorBrush x:Key="EditorTextBackground" Color="#202329" />
+      <SolidColorBrush x:Key="EditorForeground" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="EditorSelectionBackground" Color="#C1CBCD" />
       <SolidColorBrush x:Key="PreviewHighlight" Color="#5C4F8FE8" />
       <SolidColorBrush x:Key="PreviewSelectionBackground" Color="#99306FB8" />
         <!-- Explorer rows, VS Code Dark Modern: focused selection, selection while focus is elsewhere, hover. -->
@@ -74,6 +108,9 @@
       <SolidColorBrush x:Key="EditorBackground" Color="#FFFFFF" />
       <SolidColorBrush x:Key="PreviewBackground" Color="#FAFAFA" />
       <SolidColorBrush x:Key="ToolbarBackground" Color="#F5F5F5" />
+      <SolidColorBrush x:Key="PreviewToggleOn" Color="#1F1F1F" />
+      <SolidColorBrush x:Key="PreviewToggleOff" Color="#A0A0A0" />
+      <SolidColorBrush x:Key="PreviewToggleOnBackground" Color="#E3E3E3" />
       <SolidColorBrush x:Key="FloatingBackground" Color="#FFFFFF" />
       <SolidColorBrush x:Key="InputBackground" Color="#FFFFFF" />
       <SolidColorBrush x:Key="ButtonBackground" Color="#E4E7EB" />
@@ -111,9 +148,40 @@
       <SolidColorBrush x:Key="FindCurrentBackground" Color="#99F0A02A" />
       <SolidColorBrush x:Key="FindCurrentBorder" Color="#B87400" />
       <SolidColorBrush x:Key="GutterForeground" Color="#8A929E" />
-      <SolidColorBrush x:Key="SyntaxHeading" Color="#8E3FB5" />
-      <SolidColorBrush x:Key="SyntaxOrderedList" Color="#2563C9" />
-      <SolidColorBrush x:Key="SyntaxUnorderedList" Color="#23804A" />
+      <SolidColorBrush x:Key="SyntaxH1" Color="#0451A5" />
+      <SolidColorBrush x:Key="SyntaxH2" Color="#267F99" />
+      <SolidColorBrush x:Key="SyntaxH3" Color="#AF00DB" />
+      <SolidColorBrush x:Key="SyntaxH4" Color="#001080" />
+      <SolidColorBrush x:Key="SyntaxMarker" Color="#8A8A8A" />
+      <SolidColorBrush x:Key="SyntaxInlineCode" Color="#A31515" />
+      <SolidColorBrush x:Key="SyntaxInlineCodeBackground" Color="#EFEFEF" />
+      <SolidColorBrush x:Key="SyntaxCodeBlockBackground" Color="#F3F3F3" />
+      <SolidColorBrush x:Key="SyntaxLink" Color="#006AB1" />
+      <SolidColorBrush x:Key="SyntaxUrl" Color="#767676" />
+      <SolidColorBrush x:Key="SyntaxListMarker" Color="#795E26" />
+      <SolidColorBrush x:Key="SyntaxQuote" Color="#616161" />
+      <SolidColorBrush x:Key="SyntaxQuoteBar" Color="#C8CCD2" />
+      <SolidColorBrush x:Key="SyntaxCheckbox" Color="#795E26" />
+      <SolidColorBrush x:Key="SyntaxChecked" Color="#8A8A8A" />
+      <SolidColorBrush x:Key="SyntaxFrontMatter" Color="#8A8A8A" />
+      <SolidColorBrush x:Key="SyntaxRule" Color="#B8B8B8" />
+      <SolidColorBrush x:Key="SyntaxCodeText" Color="#1F2328" />
+      <SolidColorBrush x:Key="SyntaxCodeKeyword" Color="#0000FF" />
+      <SolidColorBrush x:Key="SyntaxCodeString" Color="#A31515" />
+      <SolidColorBrush x:Key="SyntaxCodeComment" Color="#008000" />
+      <SolidColorBrush x:Key="SyntaxCodeNumber" Color="#07704A" />
+      <SolidColorBrush x:Key="SyntaxCodeType" Color="#1F6E85" />
+      <SolidColorBrush x:Key="SyntaxCodeProperty" Color="#0451A5" />
+      <SolidColorBrush x:Key="SyntaxCodeTag" Color="#800000" />
+      <SolidColorBrush x:Key="SyntaxCodeAttribute" Color="#C80000" />
+      <SolidColorBrush x:Key="SyntaxBold" Color="#1F2328" />
+      <SolidColorBrush x:Key="SyntaxItalic" Color="#1F2328" />
+      <SolidColorBrush x:Key="SyntaxStrike" Color="#1F2328" />
+      <!-- Item 62: editor-only keys for the editor gear's colours (values are the look before item 62). -->
+      <SolidColorBrush x:Key="SyntaxOrderedMarker" Color="#795E26" />
+      <SolidColorBrush x:Key="EditorTextBackground" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="EditorForeground" Color="#000000" />
+      <SolidColorBrush x:Key="EditorSelectionBackground" Color="#C1CBCD" />
       <SolidColorBrush x:Key="PreviewHighlight" Color="#404F8FE8" />
       <SolidColorBrush x:Key="PreviewSelectionBackground" Color="#99ADD6FF" />
         <!-- Explorer rows, VS Code Light Modern: focused selection, selection while focus is elsewhere, hover. -->
@@ -135,4 +203,8 @@
       <SolidColorBrush x:Key="LinkForeground" Color="#2563C9" />
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
+  <!-- Item 60: toolbar settings icons (thin-stroke outlines, 16x14 like the other toolbar icons). Shared by Light and Dark (shapes, not
+       colours, so StaticResource); their colour is the themed toolbar button foreground. Editor: gear + 'T' badge. Preview: gear + eye badge. -->
+  <StreamGeometry x:Key="EditorSettingsIconGeometry">M 9.5,6.5 A 3.5,3.5 0 1 1 2.5,6.5 A 3.5,3.5 0 1 1 9.5,6.5 Z M 7.25,6.5 A 1.25,1.25 0 1 1 4.75,6.5 A 1.25,1.25 0 1 1 7.25,6.5 Z M 6,1.5 V 3 M 6,10 V 11.5 M 1,6.5 H 2.5 M 9.5,6.5 H 11 M 2.46,2.96 L 3.53,4.03 M 9.54,2.96 L 8.47,4.03 M 2.46,10.04 L 3.53,8.97 M 10,8.75 H 15 M 12.5,8.75 V 13.5</StreamGeometry>
+  <StreamGeometry x:Key="PreviewSettingsIconGeometry">M 9.5,6.5 A 3.5,3.5 0 1 1 2.5,6.5 A 3.5,3.5 0 1 1 9.5,6.5 Z M 7.25,6.5 A 1.25,1.25 0 1 1 4.75,6.5 A 1.25,1.25 0 1 1 7.25,6.5 Z M 6,1.5 V 3 M 6,10 V 11.5 M 1,6.5 H 2.5 M 9.5,6.5 H 11 M 2.46,2.96 L 3.53,4.03 M 9.54,2.96 L 8.47,4.03 M 2.46,10.04 L 3.53,8.97 M 9.5,11.25 Q 12.25,8.25 15,11.25 Q 12.25,14.25 9.5,11.25 Z M 13,11.25 A 0.75,0.75 0 1 1 11.5,11.25 A 0.75,0.75 0 1 1 13,11.25 Z</StreamGeometry>
 </ResourceDictionary>

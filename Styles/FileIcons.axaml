@@ -1,0 +1,62 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Item 78: file-type icon colours (Material Icon Theme palette, MIT; see THIRD-PARTY-NOTICES.md), one entry per icon and theme.
+       Kept out of Theme.axaml; FileTypeIcon reads them as dynamic resources so a theme switch applies live. -->
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="FileIcon.Markdown" Color="#42A5F5" />
+      <SolidColorBrush x:Key="FileIcon.Image" Color="#26A69A" />
+      <SolidColorBrush x:Key="FileIcon.Svg" Color="#FFB300" />
+      <SolidColorBrush x:Key="FileIcon.Pdf" Color="#EF5350" />
+      <SolidColorBrush x:Key="FileIcon.Text" Color="#90A4AE" />
+      <SolidColorBrush x:Key="FileIcon.Json" Color="#F9A825" />
+      <SolidColorBrush x:Key="FileIcon.Yaml" Color="#FF5252" />
+      <SolidColorBrush x:Key="FileIcon.CSharp" Color="#29B6F6" />
+      <SolidColorBrush x:Key="FileIcon.JavaScript" Color="#FFCA28" />
+      <SolidColorBrush x:Key="FileIcon.TypeScript" Color="#29B6F6" />
+      <SolidColorBrush x:Key="FileIcon.Html" Color="#F4511E" />
+      <SolidColorBrush x:Key="FileIcon.Css" Color="#9575CD" />
+      <SolidColorBrush x:Key="FileIcon.Archive" Color="#C0CA33" />
+      <SolidColorBrush x:Key="FileIcon.Word" Color="#4F8FE0" />
+      <SolidColorBrush x:Key="FileIcon.Excel" Color="#8BC34A" />
+      <SolidColorBrush x:Key="FileIcon.PowerPoint" Color="#FF7043" />
+      <SolidColorBrush x:Key="FileIcon.Audio" Color="#EF5350" />
+      <SolidColorBrush x:Key="FileIcon.Video" Color="#FF9800" />
+      <SolidColorBrush x:Key="FileIcon.Exe" Color="#FF7043" />
+      <SolidColorBrush x:Key="FileIcon.Readme" Color="#42A5F5" />
+      <SolidColorBrush x:Key="FileIcon.License" Color="#FF7043" />
+      <SolidColorBrush x:Key="FileIcon.Git" Color="#F4511E" />
+      <SolidColorBrush x:Key="FileIcon.NodeJs" Color="#8BC34A" />
+      <SolidColorBrush x:Key="FileIcon.Docker" Color="#29B6F6" />
+      <SolidColorBrush x:Key="FileIcon.Binary" Color="#4DB6AC" />
+      <SolidColorBrush x:Key="FileIcon.File" Color="#90A4AE" />
+    </ResourceDictionary>
+    <ResourceDictionary x:Key="Light">
+      <SolidColorBrush x:Key="FileIcon.Markdown" Color="#1E88E5" />
+      <SolidColorBrush x:Key="FileIcon.Image" Color="#00897B" />
+      <SolidColorBrush x:Key="FileIcon.Svg" Color="#E08E00" />
+      <SolidColorBrush x:Key="FileIcon.Pdf" Color="#D32F2F" />
+      <SolidColorBrush x:Key="FileIcon.Text" Color="#607D8B" />
+      <SolidColorBrush x:Key="FileIcon.Json" Color="#C17900" />
+      <SolidColorBrush x:Key="FileIcon.Yaml" Color="#D32F2F" />
+      <SolidColorBrush x:Key="FileIcon.CSharp" Color="#0277BD" />
+      <SolidColorBrush x:Key="FileIcon.JavaScript" Color="#B28900" />
+      <SolidColorBrush x:Key="FileIcon.TypeScript" Color="#0277BD" />
+      <SolidColorBrush x:Key="FileIcon.Html" Color="#D84315" />
+      <SolidColorBrush x:Key="FileIcon.Css" Color="#673AB7" />
+      <SolidColorBrush x:Key="FileIcon.Archive" Color="#827717" />
+      <SolidColorBrush x:Key="FileIcon.Word" Color="#01579B" />
+      <SolidColorBrush x:Key="FileIcon.Excel" Color="#558B2F" />
+      <SolidColorBrush x:Key="FileIcon.PowerPoint" Color="#D84315" />
+      <SolidColorBrush x:Key="FileIcon.Audio" Color="#C62828" />
+      <SolidColorBrush x:Key="FileIcon.Video" Color="#E65100" />
+      <SolidColorBrush x:Key="FileIcon.Exe" Color="#BF360C" />
+      <SolidColorBrush x:Key="FileIcon.Readme" Color="#1E88E5" />
+      <SolidColorBrush x:Key="FileIcon.License" Color="#E64A19" />
+      <SolidColorBrush x:Key="FileIcon.Git" Color="#D84315" />
+      <SolidColorBrush x:Key="FileIcon.NodeJs" Color="#558B2F" />
+      <SolidColorBrush x:Key="FileIcon.Docker" Color="#0277BD" />
+      <SolidColorBrush x:Key="FileIcon.Binary" Color="#00796B" />
+      <SolidColorBrush x:Key="FileIcon.File" Color="#78909C" />
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

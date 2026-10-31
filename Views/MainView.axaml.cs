@@ -25,9 +25,14 @@ public partial class MainView : UserControl
     public event Action<WindowAction>? WindowActionRequested;
     public string DocumentTitle => $"{_active?.Title ?? "mdhub"} — mdhub";
 
+    private void ApplyEditorFonts()
+    {
+        foreach (var document in _documents) document.Editor.FontFamily = Services.EditorFonts.BodyFamily;
+    }
     public MainView()
     {
         InitializeComponent();
+        MdEditor.ContextMenu = CreateEditorMenu(null); // item 41: Reveal in Side Bar from the preview
         FileTabs.SetDocuments(_documents);
         // Code-set status texts follow a language switch (XAML texts use DynamicResource).
         AttachedToVisualTree += (_, _) => Loc.Changed += OnLanguageChanged;
@@ -36,6 +41,7 @@ public partial class MainView : UserControl
         FileTabs.DocumentSelected += SelectDocument;
         FileTabs.NewRequested += () => RequestAction(WorkspaceAction.New);
         FileTabs.CloseRequested += async document => await RunAsync(() => CloseDocumentAsync(document));
+        FileTabs.TabMenu = CreateTabMenu(); // item 75
         TopMenu.ActionRequested += RequestAction;
         TopMenu.WindowActionRequested += action => WindowActionRequested?.Invoke(action);
         TopMenu.EditRequested += Edit;
@@ -48,13 +54,20 @@ public partial class MainView : UserControl
         FolderExplorer.FileRequested += async path => await RunAsync(() => OpenPathAsync(path), focusEditor: false);
         FolderExplorer.FileActivated += async path => { _focusEditorAfterBusy = true; await RunAsync(() => OpenPathAsync(path)); };
         FolderExplorer.RefreshRequested += () => RequestAction(WorkspaceAction.RefreshFolder);
+        WireBinaryPlaceholder();
+        WireEncodingMenu();
+        WireLineEndingMenu(); // item 68
         FolderExplorer.ExplorerRequested += async request => { if (!_busy) await RunAsync(() => HandleExplorerRequestAsync(request)); };
         FolderExplorer.MoveRequested += async request => await RunAsync(() => MoveExplorerFileAsync(request));
+        FolderExplorer.FilesActivated += async paths => await RunAsync(() => OpenManyAsync(paths));
         FolderExplorer.RenameRequested = RenameExplorerItemAsync;
-        GlobalSearch.OpenBuffers = () => _documents.Where(d => d.Path is not null && !d.IsImage)
+        GlobalSearch.OpenBuffers = () => _documents.Where(d => d.Path is not null && !d.IsViewOnly)
             .ToDictionary(d => d.Path!, d => d.Text, OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
         GlobalSearch.HitRequested += async (file, hit) => await RunAsync(() => OpenSearchHitAsync(file, hit));
         GlobalSearch.ReplaceRequested = ReplaceSearchResultsAsync;
+        // Item 57: the editor gear's fonts apply live to every open editor (the presenters re-lay out code spans).
+        AttachedToVisualTree += (_, _) => Services.EditorFonts.Changed += ApplyEditorFonts;
+        DetachedFromVisualTree += (_, _) => Services.EditorFonts.Changed -= ApplyEditorFonts;
         FolderExplorer.ExternalChangeRefreshed += () => { if (GlobalSearch.IsVisible) GlobalSearch.Schedule(); };
         FolderExplorer.CanPaste = () => ExplorerClipboard is not null;
         FolderExplorer.OpenFolderRequested += () => RequestAction(WorkspaceAction.OpenFolder);
@@ -62,6 +75,8 @@ public partial class MainView : UserControl
         FolderExplorer.MessageChanged += BottomStatusBar.SetMessage;
         MdEditor.StatisticsChanged += BottomStatusBar.UpdateStatistics;
         MdEditor.MessageChanged += BottomStatusBar.SetMessage;
+        TextEditor.SpellCountChanged += BottomStatusBar.SetSpellCount; // item 74
+        ImageViewer.ZoomChanged += percent => { if (ImageViewer.IsVisible) BottomStatusBar.SetImageZoom(percent); };
         AddHandler(KeyDownEvent, OnShortcut, RoutingStrategies.Tunnel);
         // Focus moving into or out of the preview shows or hides the caret position.
         AddHandler(GotFocusEvent, (_, _) => UpdateCaretStatus(), RoutingStrategies.Bubble, handledEventsToo: true);
@@ -122,7 +137,7 @@ public partial class MainView : UserControl
         _active.Refresh();
         TitleChanged?.Invoke(DocumentTitle);
         BottomStatusBar.UpdateDocument(_active, message ?? TransientStatus ?? _sessionNote);
-        if (!_active.IsMarkdown && !_active.IsImage) BottomStatusBar.UpdateStatistics(Mdhub.Text.TextStatistics.Count(_active.Text));
+        if (!_active.IsMarkdown && !_active.IsViewOnly) BottomStatusBar.UpdateStatistics(Mdhub.Text.TextStatistics.Count(_active.Text));
         TextFormatter.SetFormattingEnabled(_active.IsMarkdown && !_busy);
         UpdateCaretStatus();
     }
@@ -131,7 +146,7 @@ public partial class MainView : UserControl
     private void UpdateCaretStatus()
     {
         var previewFocused = MdEditor.PreviewPanel.IsKeyboardFocusWithin || MdEditor.IsEditingPreview;
-        if (_active is not { IsImage: false } document || !_documents.Contains(document) || previewFocused) { BottomStatusBar.SetCaret(null); return; }
+        if (_active is not { IsViewOnly: false } document || !_documents.Contains(document) || previewFocused) { BottomStatusBar.SetCaret(null); return; }
         BottomStatusBar.SetCaret(Mdhub.Text.CaretPosition.Format(document.Text, document.Editor.SelectionStart, document.Editor.SelectionEnd));
     }
 
@@ -163,7 +178,7 @@ public partial class MainView : UserControl
         TopMenu.IsEnabled = !busy;
         FolderExplorer.SetBusy(busy);
         TextFormatter.SetFormattingEnabled(!busy && _active?.IsMarkdown == true);
-        foreach (var document in _documents) document.Editor.IsReadOnly = busy || document.IsImage;
+        foreach (var document in _documents) document.Editor.IsReadOnly = busy || document.IsViewOnly || document.IsReadOnlyText;
     }
     // Saved file tabs only: untitled buffers and unsaved text are never written to the session.
     public WindowSession CaptureSession()

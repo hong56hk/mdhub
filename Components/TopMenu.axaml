@@ -28,8 +28,11 @@
       <Setter Property="HorizontalAlignment" Value="Right" />
     </Style>
   </UserControl.Styles>
-  <Grid ColumnDefinitions="Auto,*,Auto" Height="32" Background="{DynamicResource AppBackground}">
-  <Menu x:Name="MainMenu" Background="{DynamicResource AppBackground}" VerticalAlignment="Center">
+  <Grid ColumnDefinitions="Auto,Auto,*,Auto" Height="32" Background="{DynamicResource AppBackground}">
+  <!-- Item 69: the app logo left of File; part of the title bar drag area. Source set in code (AppIcon.Logo). -->
+  <Image x:Name="TitleLogo" Width="16" Height="16" Margin="12,0,6,0" VerticalAlignment="Center"
+         RenderOptions.BitmapInterpolationMode="HighQuality" WindowDecorationProperties.ElementRole="TitleBar" />
+  <Menu x:Name="MainMenu" Grid.Column="1" Background="{DynamicResource AppBackground}" VerticalAlignment="Center">
     <MenuItem Header="{DynamicResource MenuFile}">
       <MenuItem Header="{DynamicResource MenuNew}" Click="New_Click" c:ShortcutKeys.Id="file.new" />
       <MenuItem Header="{DynamicResource MenuOpenFile}" Click="Open_Click" c:ShortcutKeys.Id="file.open" />
@@ -39,6 +42,10 @@
       <MenuItem Header="{DynamicResource MenuQuickOpen}" Click="Command_Click" c:ShortcutKeys.Id="file.quickOpen" />
       <MenuItem Header="{DynamicResource MenuSave}" Click="Save_Click" c:ShortcutKeys.Id="file.save" />
       <MenuItem Header="{DynamicResource MenuSaveAs}" Click="SaveAs_Click" c:ShortcutKeys.Id="file.saveAs" />
+      <MenuItem x:Name="ExportMenu" Header="{DynamicResource MenuExport}">
+        <MenuItem x:Name="ExportHtmlMenuItem" Header="{DynamicResource MenuExportHtml}" Click="ExportHtml_Click" />
+        <MenuItem x:Name="ExportPdfMenuItem" Header="{DynamicResource MenuExportPdf}" Click="ExportPdf_Click" />
+      </MenuItem>
       <MenuItem Header="{DynamicResource MenuCloseTab}" Click="CloseTab_Click" c:ShortcutKeys.Id="file.closeTab" />
       <MenuItem Header="{DynamicResource MenuExit}" Click="Exit_Click" />
     </MenuItem>
@@ -49,6 +56,9 @@
       <MenuItem Header="{DynamicResource MenuCopy}" Click="Edit_Click" Tag="copy" c:ShortcutKeys.Id="edit.copy" />
       <MenuItem Header="{DynamicResource MenuPaste}" Click="Edit_Click" Tag="paste" c:ShortcutKeys.Id="edit.paste" />
       <MenuItem Header="{DynamicResource MenuSelectAll}" Click="Edit_Click" Tag="select all" c:ShortcutKeys.Id="edit.selectAll" />
+      <MenuItem Header="{DynamicResource MenuMoveLineUp}" Click="Command_Click" c:ShortcutKeys.Id="edit.moveLineUp" />
+      <MenuItem Header="{DynamicResource MenuMoveLineDown}" Click="Command_Click" c:ShortcutKeys.Id="edit.moveLineDown" />
+      <MenuItem Header="{DynamicResource MenuDuplicateLine}" Click="Command_Click" c:ShortcutKeys.Id="edit.duplicateLine" />
       <Separator />
       <MenuItem Header="{DynamicResource MenuBold}" Click="Command_Click" c:ShortcutKeys.Id="editor.bold" />
       <MenuItem Header="{DynamicResource MenuItalic}" Click="Command_Click" c:ShortcutKeys.Id="editor.italic" />
@@ -62,7 +72,10 @@
       <MenuItem Header="{DynamicResource MenuToggleFolders}" Click="ToggleFolders_Click" />
       <MenuItem Header="{DynamicResource MenuTogglePreview}" Click="TogglePreview_Click" c:ShortcutKeys.Id="view.togglePreview" />
       <MenuItem Header="{DynamicResource MenuToggleWordWrap}" Click="WordWrap_Click" c:ShortcutKeys.Id="view.wordWrap" />
+      <MenuItem Header="{DynamicResource MenuNextTab}" Click="Command_Click" c:ShortcutKeys.Id="view.nextTab" />
+      <MenuItem Header="{DynamicResource MenuPreviousTab}" Click="Command_Click" c:ShortcutKeys.Id="view.previousTab" />
       <MenuItem Header="{DynamicResource MenuScrollPreview}" Click="Command_Click" c:ShortcutKeys.Id="view.previewCaret" />
+      <MenuItem x:Name="RevealInSidebarMenuItem" Header="{DynamicResource RevealInSidebar}" Click="Command_Click" c:ShortcutKeys.Id="file.revealInSidebar" />
       <MenuItem Header="{DynamicResource MenuRefreshFolder}" Click="RefreshFolder_Click" />
     </MenuItem>
     <MenuItem Header="{DynamicResource MenuSettings}">
@@ -78,9 +91,9 @@
       <MenuItem Header="{DynamicResource MenuAbout}" Click="About_Click" />
     </MenuItem>
   </Menu>
-  <Border x:Name="TitleBarDragRegion" Grid.Column="1" Background="Transparent"
+  <Border x:Name="TitleBarDragRegion" Grid.Column="2" Background="Transparent"
           WindowDecorationProperties.ElementRole="TitleBar" />
-  <StackPanel Grid.Column="2" Orientation="Horizontal">
+  <StackPanel Grid.Column="3" Orientation="Horizontal">
     <Button x:Name="MinimizeButton" Classes="caption" Click="Minimize_Click"
             ToolTip.Tip="{DynamicResource Minimize}" AutomationProperties.Name="{DynamicResource Minimize}">
       <Path Data="M 0,5 L 10,5" Width="10" Height="10" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1" />

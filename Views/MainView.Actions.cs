@@ -26,6 +26,8 @@ public partial class MainView
             case WorkspaceAction.Guide: Guide_Click(null, new RoutedEventArgs()); return;
             case WorkspaceAction.About: About_Click(null, new RoutedEventArgs()); return;
             case WorkspaceAction.Shortcuts: await RunAsync(() => DialogService.ShowShortcutsAsync(Host)); return;
+            case WorkspaceAction.ExportHtml: await ExportAsync(pdf: false); return;
+            case WorkspaceAction.ExportPdf: await ExportAsync(pdf: true); return;
         }
         await RunAsync(async () =>
         {
@@ -44,7 +46,7 @@ public partial class MainView
 
     private async void Edit(string action)
     {
-        if (_busy || _active?.IsImage == true) return;
+        if (_busy || _active?.IsViewOnly == true) return;
         if (action == "paste") await PasteAsync();
         else if (action == "copy" && MdEditor.PreviewHasFocus) await MdEditor.CopyPreviewAsync();
         else if (action == "select all" && MdEditor.PreviewHasFocus) MdEditor.SelectAllPreview();
@@ -102,7 +104,16 @@ public partial class MainView
     {
         RecentService.AddFolder(path);
         await LoadRootAsync(path);
+        await RestoreFolderTabsAsync(path);
         if (!Sidebar.IsVisible) ToggleFolders_Click(null, new RoutedEventArgs());
+    }
+
+    // Item 64: reopen the folder's saved tabs (existing files only, silently) when nothing is open in this window yet.
+    private async Task RestoreFolderTabsAsync(string folder)
+    {
+        if (!SessionManager.Enabled || _documents.Any(d => d.Path is not null || d.IsDirty)) return;
+        if (FolderTabsStore.Recall(FolderTabsStore.Load(FolderTabsStore.PathFor(SessionManager.SessionPath)), folder, File.Exists) is not { Tabs.Count: > 0 } saved) return;
+        await RestoreSessionAsync(new WindowSession { Tabs = saved.Tabs, ActiveTab = saved.ActiveTab }, null);
     }
 
     private static bool SameFolder(string a, string b)
@@ -156,23 +167,44 @@ public partial class MainView
         if (ShortcutKeys.Match(e, s => s.Id == "file.quickOpen") is not null)
         {
             e.Handled = true;
+            if (!Shortcuts.BeginPress("file.quickOpen", e.Key.ToString())) return true; // bug 87: auto-repeat
             OpenQuickOpen();
+            return true;
+        }
+        if (ShortcutKeys.Match(e, s => s.Id == "file.revealInSidebar") is not null)
+        {
+            e.Handled = true;
+            ShortcutFired?.Invoke("file.revealInSidebar");
+            _ = RevealInSidebarAsync();
             return true;
         }
         if (ShortcutKeys.Match(e, s => s.Id is "sidebar.explorer" or "sidebar.search" or "sidebar.replace") is not { } sidebar) return false;
         e.Handled = true;
         ShowSidebar(sidebar != "sidebar.explorer", sidebar == "sidebar.replace");
+        // Item 41: Ctrl+Shift+E also selects the active file (expanding its folders) when it is in the open folder.
+        if (sidebar == "sidebar.explorer" && CanRevealInSidebar) _ = RevealInSidebarAsync(quietWhenUnavailable: true);
         return true;
     }
+
+    // Bug 86: the window forwards keys here when nothing inside the view has focus.
+    internal void HandleUnfocusedShortcut(KeyEventArgs e) => OnShortcut(this, e);
 
     private async void OnShortcut(object? sender, KeyEventArgs e)
     {
         if (FolderExplorer.IsRenaming) return;
+        // Item 49: Ctrl+Tab / Ctrl+Shift+Tab from any focus (this tunnel handler runs before the editor and focus navigation).
+        if (ShortcutKeys.Match(e, s => s.Id is "view.nextTab" or "view.previousTab") is { } tabId)
+        {
+            e.Handled = true;
+            ShortcutFired?.Invoke(tabId);
+            CycleTab(tabId == "view.nextTab" ? 1 : -1);
+            return;
+        }
         if (HandleSidebarShortcut(e)) return;
         if (!_busy && FolderExplorer.IsKeyboardFocusWithin && ShortcutKeys.Match(e, s => s.Id == "explorer.rename") is not null)
         {
             e.Handled = true;
-            FolderExplorer.BeginRename();
+            if (Shortcuts.BeginPress("explorer.rename", e.Key.ToString())) FolderExplorer.BeginRename();
             return;
         }
         if (TextEditor.IsFindOpen && ShortcutKeys.Match(e, s => s.Id is "find.next" or "find.previous" or "find.close") is { } findId)
@@ -191,6 +223,14 @@ public partial class MainView
             if (undoId == "edit.undo") undoDoc.Editor.Undo(); else undoDoc.Editor.Redo();
             return;
         }
+        // Item 72: Alt+Up/Down and Ctrl+D act on the focused editor only; elsewhere (the explorer) Ctrl+D falls through to Duplicate.
+        if (!_busy && EditorFocused && _active is { IsViewOnly: false } && !_active.Editor.IsReadOnly && ShortcutKeys.Match(e, s => s.Id is "edit.moveLineUp" or "edit.moveLineDown" or "edit.duplicateLine") is { } lineId)
+        {
+            e.Handled = true;
+            ShortcutFired?.Invoke(lineId);
+            LineEdit(lineId);
+            return;
+        }
         // Built-in TextBox keys and zoom (MainWindow) are listed in the table but handled elsewhere.
         var id = ShortcutKeys.Match(e, s => !s.HandledByTextBox && s.Area != ShortcutArea.Zoom && s.Id is not ("find.next" or "find.previous" or "find.close"));
         Func<Task>? action = id switch
@@ -201,19 +241,22 @@ public partial class MainView
             "file.save" => async () => { if (_active is not null) await SaveAsync(_active, false); },
             "file.saveAs" => async () => { if (_active is not null) await SaveAsync(_active, true); },
             "file.closeTab" => async () => { if (_active is not null) await CloseDocumentAsync(_active); },
-            "find.find" when _active?.IsImage != true => () => { TextEditor.OpenFind(false); return Task.CompletedTask; },
-            "find.replace" when _active?.IsImage != true => () => { TextEditor.OpenFind(true); return Task.CompletedTask; },
+            "find.find" when _active?.IsViewOnly != true => () => { TextEditor.OpenFind(false); return Task.CompletedTask; },
+            "find.replace" when _active?.IsViewOnly != true => () => { TextEditor.OpenFind(true); return Task.CompletedTask; },
             "edit.paste" when _active?.Editor.IsKeyboardFocusWithin == true => PasteAsync,
             "view.wordWrap" => () => { RequestAction(WorkspaceAction.WordWrap); return Task.CompletedTask; },
             "view.togglePreview" => () => { RequestAction(WorkspaceAction.TogglePreview); return Task.CompletedTask; },
             // Formatting and insert time act on the focused editor only; go to line / preview work anywhere but the find fields.
             "editor.bold" or "editor.italic" or "editor.link" or "editor.quote" when EditorFocused && _active!.IsMarkdown => EditorCommand(id),
             "editor.insertTime" when EditorFocused => EditorCommand(id),
-            "editor.goToLine" or "view.previewCaret" when _active is { IsImage: false } && !TextEditor.IsFindFocused => EditorCommand(id),
+            "editor.nextMisspelling" when _active is { IsMarkdown: true } && !TextEditor.IsFindFocused => EditorCommand(id),
+            "editor.toggleOverwrite" when _active is { IsViewOnly: false } && !TextEditor.IsFindFocused => () => { Mdhub.Services.EditorMode.Toggle(); return Task.CompletedTask; },
+            "editor.goToLine" or "view.previewCaret" when _active is { IsViewOnly: false } && !TextEditor.IsFindFocused => EditorCommand(id),
             _ => null
         };
         if (action is null) return;
         e.Handled = true;
+        if (!Shortcuts.BeginPress(id!, e.Key.ToString())) return; // bug 87: a held one-shot key fires once per press
         ShortcutFired?.Invoke(id!);
         if (id == "edit.paste") await PasteAsync(); // runs busy only while saving an image
         else if (id is "find.find" or "find.replace" or "view.wordWrap" or "view.togglePreview" || id!.StartsWith("editor.") && id != "editor.goToLine" || id == "view.previewCaret") await action(); // find: focus must land in the find bar
@@ -226,10 +269,20 @@ public partial class MainView
     internal static Func<DateTime> Clock { get; set; } = () => DateTime.Now;
 
     // Menu items carrying one of these ids (not focus-scoped: the menu has focus when clicked).
+    // Selects the tab step places to the right (negative: left), wrapping around at the ends.
+    internal void CycleTab(int step)
+    {
+        if (_documents.Count < 2 || _active is null) return;
+        var index = _documents.IndexOf(_active);
+        FileTabs.SelectedDocument = _documents[((index + step) % _documents.Count + _documents.Count) % _documents.Count];
+    }
+
     private async void RunMenuCommand(string id)
     {
+        if (id is "view.nextTab" or "view.previousTab") { CycleTab(id == "view.nextTab" ? 1 : -1); return; }
         if (id == "file.quickOpen") { if (!_busy) OpenQuickOpen(); return; }
-        if (_busy || _active is null || _active.IsImage || EditorCommand(id) is not { } action) return;
+        if (id == "file.revealInSidebar") { await RevealInSidebarAsync(); return; }
+        if (_busy || _active is null || _active.IsViewOnly || EditorCommand(id) is not { } action) return;
         if (id == "editor.goToLine") await RunAsync(action); else await action();
     }
 
@@ -241,10 +294,29 @@ public partial class MainView
         "editor.quote" => Sync(() => TextEditor.Format("quote")),
         "editor.insertTime" => Sync(InsertTime),
         "editor.goToLine" => GoToLineAsync,
+        "editor.nextMisspelling" => Sync(() => TextEditor.NextMisspelling()),
+        "edit.moveLineUp" or "edit.moveLineDown" or "edit.duplicateLine" => Sync(() => LineEdit(id)),
         "view.previewCaret" => Sync(() => { if (_active is { } d) MdEditor.CenterPreviewOnLine(d.Editor.CaretIndex); }),
         _ => null
     };
     private static Func<Task> Sync(Action a) => () => { a(); return Task.CompletedTask; };
+
+    // Item 72: one replacement (a single undo step), then the selection (anchor and caret) on the moved/copied lines.
+    private void LineEdit(string id)
+    {
+        if (_active is not { } document || document.Editor.IsReadOnly) return;
+        var editor = document.Editor;
+        var text = editor.Text ?? "";
+        int anchor = editor.SelectionStart, caret = editor.SelectionEnd;
+        var edit = id == "edit.duplicateLine" ? Mdhub.Text.LineEdits.Duplicate(text, anchor, caret, Mdhub.Text.LineEndings.Sequence(document.LineEnding)) : Mdhub.Text.LineEdits.Move(text, anchor, caret, id == "edit.moveLineUp" ? -1 : 1);
+        if (edit is { } change)
+        {
+            editor.SelectionStart = change.Start; editor.SelectionEnd = change.Start + change.Length;
+            editor.SelectedText = change.Text;
+            editor.SelectionStart = change.Anchor; editor.SelectionEnd = change.Caret;
+        }
+        editor.Focus();
+    }
 
     // Replaces the selection with the local time as a single edit (one undo step).
     private void InsertTime()
@@ -292,6 +364,8 @@ public partial class MainView
     });
 
     private async void About_Click(object? sender, RoutedEventArgs e) => await RunAsync(async () =>
-        await DialogService.ShowAsync(Host, Loc.T("AboutTitle"), Loc.T("AboutText"), "OK"));
+    {
+        if (await DialogService.ShowAboutAsync(Host) == DialogService.LicenseChoice) OpenLicenseTab();
+    });
 
 }

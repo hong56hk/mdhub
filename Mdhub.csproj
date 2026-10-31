@@ -5,11 +5,22 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\mdhub.ico</ApplicationIcon>
+    <!-- Item 58: About shows the informational version exactly; no "+commit" SourceLink suffix. -->
+    <Version>0.1.0</Version>
+    <InformationalVersion>0.1.0 (alpha)</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop" Version="12.1.4" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4" />
     <PackageReference Include="Markdig" Version="1.5.0" />
     <Compile Remove="tests/**/*.cs" />
+    <AvaloniaResource Include="Assets\mdhub-128.png" />
+    <EmbeddedResource Include="LICENSE" LogicalName="Mdhub.LICENSE" />
+    <!-- Item 74: Hunspell spell checking, used unmodified under its MPL option (see THIRD-PARTY-NOTICES.md). -->
+    <PackageReference Include="WeCantSpell.Hunspell" Version="7.0.1" />
+    <None Include="Dictionaries\**" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

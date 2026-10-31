@@ -1,11 +1,37 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.BottomStatusBar">
+  <UserControl.Styles>
+    <!-- Item 40: the file path copies on click; hand cursor and a subtle underline on hover. -->
+    <Style Selector="TextBlock#StatusAction:pointerover">
+      <Setter Property="TextDecorations" Value="Underline" />
+    </Style>
+    <Style Selector="TextBlock#Status.pathLink">
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="TextBlock#Status.pathLink:pointerover">
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+      <Setter Property="TextDecorations" Value="Underline" />
+    </Style>
+  </UserControl.Styles>
   <Border BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="0,1,0,0" Padding="12,7">
-    <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+    <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
       <TextBlock x:Name="Counts" FontSize="11" Foreground="{DynamicResource TextSecondary}" />
-      <TextBlock x:Name="Status" Grid.Column="1" Margin="20,0" FontSize="11" Foreground="{DynamicResource TextMuted}" TextTrimming="CharacterEllipsis" />
+      <Grid Grid.Column="1" ColumnDefinitions="*,Auto">
+        <TextBlock x:Name="Status" Margin="20,0" FontSize="11" Foreground="{DynamicResource TextMuted}" TextTrimming="CharacterEllipsis" Background="Transparent" PointerReleased="Status_PointerReleased" />
+        <!-- Item 51: an action for the current message (e.g. Open after an export). -->
+        <TextBlock x:Name="StatusAction" Grid.Column="1" Margin="0,0,20,0" FontSize="11" Foreground="{DynamicResource LinkForeground}" Cursor="Hand" IsVisible="False" Background="Transparent" PointerReleased="StatusAction_PointerReleased" />
+      </Grid>
+      <!-- Item 74: misspelling count (spell checking on, Markdown files). -->
+      <TextBlock x:Name="SpellCountLabel" Grid.Column="8" Margin="16,0,0,0" FontSize="11" Foreground="{DynamicResource ErrorForeground}" IsVisible="False" />
       <TextBlock x:Name="CaretLabel" Grid.Column="2" Margin="0,0,16,0" FontSize="11" Foreground="{DynamicResource TextSecondary}" IsVisible="False" />
-      <TextBlock x:Name="FileKindLabel" Grid.Column="3" Margin="0,0,16,0" FontSize="11" Foreground="{DynamicResource TextMuted}" Text="Markdown" />
-      <TextBlock x:Name="EncodingLabel" Grid.Column="4" FontSize="11" Foreground="{DynamicResource Accent}" Text="UTF-8" />
+      <!-- Item 66: INS/OVR; a click toggles insert/overwrite. -->
+      <TextBlock x:Name="ModeLabel" Grid.Column="3" Margin="0,0,16,0" FontSize="11" Foreground="{DynamicResource TextSecondary}" Cursor="Hand" Background="Transparent" IsVisible="False" PointerReleased="ModeLabel_Toggle" />
+      <TextBlock x:Name="FileKindLabel" Grid.Column="4" Margin="0,0,16,0" FontSize="11" Foreground="{DynamicResource TextMuted}" Text="Markdown" />
+      <!-- Item 67: a click opens Reopen / Save with Encoding. -->
+      <TextBlock x:Name="EncodingLabel" Grid.Column="5" Margin="0,0,16,0" FontSize="11" Foreground="{DynamicResource Accent}" Text="UTF-8" Cursor="Hand" Background="Transparent" PointerReleased="EncodingLabel_PointerReleased" />
+      <!-- Item 68: CRLF/LF/CR; a click opens Change End of Line Sequence. -->
+      <TextBlock x:Name="LineEndingLabel" Grid.Column="6" FontSize="11" Foreground="{DynamicResource Accent}" Cursor="Hand" Background="Transparent" PointerReleased="LineEndingLabel_PointerReleased" />
+      <!-- Item 68: a file with mixed line endings; a click normalizes them to the majority. -->
+      <TextBlock x:Name="MixedLineEndingsLabel" Grid.Column="7" Margin="10,0,0,0" FontSize="11" Foreground="{DynamicResource ErrorForeground}" Cursor="Hand" Background="Transparent" IsVisible="False" PointerReleased="MixedLineEndings_PointerReleased" />
     </Grid>
   </Border>
 </UserControl>

@@ -150,8 +150,9 @@ internal static class WorkspaceSearchTests
             try
             {
                 var bad = Path.Combine(root, "cp1252.md");
-                var badBytes = System.Text.Encoding.ASCII.GetBytes("gamma here, it's a smart quote. gamma").ToArray();
-                badBytes[31] = 0x92; // 'Unable to translate bytes [92] at index 31' (replaces the '.')
+                // Item 67: BOM-less legacy bytes are now detected (Shift_JIS, Big5, cp1252...); a UTF-8 BOM with a bad byte stays undecodable.
+                var badBytes = new byte[] { 0xEF, 0xBB, 0xBF }.Concat(System.Text.Encoding.ASCII.GetBytes("gamma here, it's a smart quote. gamma")).ToArray();
+                badBytes[34] = 0xFF; // invalid UTF-8 after the BOM (replaces the '.')
                 File.WriteAllBytes(bad, badBytes);
                 File.WriteAllText(Path.Combine(root, "plain.md"), "gamma plain");
                 File.WriteAllBytes(Path.Combine(root, "bom.md"), [0xEF, 0xBB, 0xBF, .. System.Text.Encoding.UTF8.GetBytes("gamma bom")]);

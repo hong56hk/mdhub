@@ -81,7 +81,8 @@ Require(heading.Replacement == "## hello world", "Heading applies to the current
 }
 {
     // Item 27: localization tables, language detection and persistence.
-    var tables = new[] { ("zh-Hant", Loc.ZhHant), ("ja", Loc.Ja), ("ko", Loc.Ko) };
+    var tables = new[] { ("zh-Hant", Loc.ZhHant), ("ja", Loc.Ja), ("ko", Loc.Ko), ("zh-Hans", Loc.ZhHans), ("de", Loc.De), ("fr", Loc.Fr), ("es", Loc.Es) };
+    Require(tables.Length + 1 == Loc.Languages.Count && tables.All(t => Loc.Normalize(t.Item1) == t.Item1), "All 8 languages have a table");
     foreach (var (code, table) in tables)
     {
         var missing = Loc.En.Keys.Except(table.Keys).ToList();
@@ -91,7 +92,7 @@ Require(heading.Replacement == "## hello world", "Heading applies to the current
     }
     Require(Loc.En.Count > 200, $"English table has {Loc.En.Count} keys");
     var all = new[] { ("en", Loc.En) }.Concat(tables).ToList();
-    Require(all.All(t => t.Item2.Values.All(v => !string.IsNullOrWhiteSpace(v) && !v.StartsWith('^') && !v.EndsWith('^'))), "Every string is non-empty in all 4 languages");
+    Require(all.All(t => t.Item2.Values.All(v => !string.IsNullOrWhiteSpace(v) && !v.StartsWith('^') && !v.EndsWith('^'))), $"Every string is non-empty in all {all.Count} languages");
     static string Holes(string s) => string.Join(",", System.Text.RegularExpressions.Regex.Matches(s, @"\{(\d+)").Select(m => m.Groups[1].Value).Distinct().OrderBy(x => x));
     var badHoles = tables.SelectMany(t => t.Item2.Where(kv => Holes(kv.Value) != Holes(Loc.En[kv.Key])).Select(kv => $"{t.Item1}:{kv.Key}")).ToList();
     Require(badHoles.Count == 0, $"Placeholders match English in every language ({string.Join(", ", badHoles)})");
@@ -102,13 +103,14 @@ Require(heading.Replacement == "## hello world", "Heading applies to the current
     Require(Shortcuts.All.All(s => Loc.En["Sc." + s.Id] == s.Label), "English shortcut labels match the shortcut table");
     foreach (var area in Enum.GetNames<ShortcutArea>()) Require(Loc.En.ContainsKey("Area" + area), $"Shortcut area {area} has a label");
     var identical = tables.Select(t => (t.Item1, t.Item2.Count(kv => kv.Value == Loc.En[kv.Key]))).ToList();
-    Require(identical.All(t => t.Item2 <= 12), $"CJK tables translate nearly everything (same as English: {string.Join(", ", identical.Select(t => $"{t.Item1}={t.Item2}"))})");
-    Require(Loc.Languages.Select(l => l.NativeName).SequenceEqual(["English", "繁體中文", "日本語", "한국어"]), "Languages are listed under their own names");
+    Require(identical.All(t => t.Item2 <= 12), $"Translated tables translate nearly everything (same as English: {string.Join(", ", identical.Select(t => $"{t.Item1}={t.Item2}"))})");
+    Require(Loc.Languages.Select(l => l.NativeName).SequenceEqual(["English", "繁體中文", "日本語", "한국어", "简体中文", "Deutsch", "Français", "Español"]), "Languages are listed under their own names");
     Require(Loc.Detect("zh-TW") == "zh-Hant" && Loc.Detect("zh-HK") == "zh-Hant" && Loc.Detect("zh-MO") == "zh-Hant" && Loc.Detect("zh-Hant-TW") == "zh-Hant" && Loc.Detect("zh-Hant") == "zh-Hant",
         "Traditional Chinese OS cultures pick zh-Hant");
-    Require(Loc.Detect("zh-CN") == "en" && Loc.Detect("zh-Hans") == "en" && Loc.Detect("zh-SG") == "en", "Simplified Chinese falls back to English");
+    Require(Loc.Detect("zh-CN") == "zh-Hans" && Loc.Detect("zh-Hans") == "zh-Hans" && Loc.Detect("zh-SG") == "zh-Hans" && Loc.Detect("zh-Hans-CN") == "zh-Hans" && Loc.Detect("zh_CN") == "zh-Hans" && Loc.Detect("zh") == "zh-Hans", "Simplified Chinese OS cultures pick zh-Hans");
+    Require(Loc.Detect("de-DE") == "de" && Loc.Detect("de-AT") == "de" && Loc.Detect("fr-FR") == "fr" && Loc.Detect("fr-CA") == "fr" && Loc.Detect("es-ES") == "es" && Loc.Detect("es-MX") == "es" && Loc.Detect("es") == "es", "German, French and Spanish OS cultures are detected");
     Require(Loc.Detect("ja-JP") == "ja" && Loc.Detect("ja") == "ja" && Loc.Detect("ko-KR") == "ko" && Loc.Detect("ko") == "ko", "Japanese and Korean OS cultures are detected");
-    Require(Loc.Detect("fr-FR") == "en" && Loc.Detect("") == "en" && Loc.Detect(null) == "en" && Loc.Detect("en-GB") == "en" && Loc.Detect("kok-IN") == "en" && Loc.Detect("jam") == "en", "Other OS cultures fall back to English");
+    Require(Loc.Detect("pt-BR") == "en" && Loc.Detect("it-IT") == "en" && Loc.Detect("deu") == "en" && Loc.Detect("") == "en" && Loc.Detect(null) == "en" && Loc.Detect("en-GB") == "en" && Loc.Detect("kok-IN") == "en" && Loc.Detect("jam") == "en", "Other OS cultures fall back to English");
     Require(Loc.Normalize("ZH-HANT") == "zh-Hant" && Loc.Normalize("xx") is null && Loc.Normalize(null) is null, "Saved codes are normalized and unknown ones ignored");
     var changes = 0;
     void Count() => changes++;
@@ -118,6 +120,10 @@ Require(heading.Replacement == "## hello world", "Heading applies to the current
     Loc.Set("ja");
     Require(changes == 1, "Setting the same language does not raise Changed");
     Require(Loc.T("No.Such.Key") == "No.Such.Key", "A missing key falls back to the key itself");
+    var partial = new Dictionary<string, string> { ["MenuSave"] = "Sichern" };
+    Require(Loc.Lookup(partial, "MenuSave") == "Sichern" && Loc.Lookup(partial, "MenuSaveAs") == Loc.En["MenuSaveAs"] && Loc.Lookup(partial, "No.Such.Key") == "No.Such.Key", "A string missing from a language table falls back to English");
+    foreach (var (code, _) in tables) { Loc.Set(code); Require(Loc.Current == code && Loc.Table(code).Keys.All(k => Loc.T(k) == Loc.Table(code)[k]), $"{code} lookups use its own table"); }
+    Loc.Set("ja"); changes = 1;
     Require(FindReplace.CountLabel(1, 3) == string.Format(Loc.Ja["FindCount"], 2, 3) && CaretPosition.Format("ab", 0, 2).Contains(Loc.F("CaretSelected", 2).Trim()),
         "Find count and caret position use the current language");
     Loc.Set("xx");
@@ -186,6 +192,50 @@ try
         await TextFileStore.WriteAsync(path, "", loaded.Encoding);
         Require((await TextFileStore.ReadAsync(path)).Text == "", "Saving empty text removes old content");
     }
+    // Bug 39: legacy-encoded and BOM-less notes open, save back in their own encoding, and are never dimmed.
+    TextFileStore.AnsiCodePageOverride = 950;
+    try
+    {
+        var big5 = Encoding.GetEncoding(950);
+        var legacyText = "20170426 \u8003\u8eca\r\n\u4eca\u5929\u5f88\u4e0d\u958b\u5fc3 (unhappy)\r\n";
+        async Task RoundTrip(string name, byte[] bytes, string expectedText, Func<Encoding, bool> encodingCheck, Func<string, byte[]> encode, string label)
+        {
+            var path = Path.Combine(root, name);
+            await File.WriteAllBytesAsync(path, bytes);
+            Require(FileSupport.Detect(path) == SupportedFileKind.Text, $"{label}: the file is supported (not dimmed)");
+            var loaded = await TextFileStore.ReadAsync(path);
+            Require(loaded.Text == expectedText && encodingCheck(loaded.Encoding), $"{label}: opens with the right text and encoding ({loaded.Encoding.WebName})");
+            await TextFileStore.WriteAsync(path, loaded.Text, loaded.Encoding);
+            Require((await File.ReadAllBytesAsync(path)).SequenceEqual(bytes), $"{label}: an unedited save is byte-identical");
+            await TextFileStore.WriteAsync(path, loaded.Text + "edited", loaded.Encoding);
+            Require((await File.ReadAllBytesAsync(path)).SequenceEqual(encode(loaded.Text + "edited")), $"{label}: an edited save keeps the encoding");
+        }
+        await RoundTrip("20170426_big5.txt", big5.GetBytes(legacyText), legacyText, e => e.CodePage == 950, big5.GetBytes, "Big5 (cp950) .txt");
+        var ansiNote = Path.Combine(root, "README-big5"); await File.WriteAllBytesAsync(ansiNote, big5.GetBytes(legacyText));
+        Require(FileSupport.Detect(ansiNote) == SupportedFileKind.Text, "An extensionless Big5 text file is supported through the ANSI code page");
+        var le = new UnicodeEncoding(false, false); var be = new UnicodeEncoding(true, false);
+        await RoundTrip("utf16le-nobom.txt", le.GetBytes(legacyText), legacyText, e => e is UnicodeEncoding && e.GetPreamble().Length == 0 && e.CodePage == 1200, le.GetBytes, "UTF-16 LE without BOM");
+        await RoundTrip("utf16be-nobom.txt", be.GetBytes(legacyText), legacyText, e => e is UnicodeEncoding && e.GetPreamble().Length == 0 && e.CodePage == 1201, be.GetBytes, "UTF-16 BE without BOM");
+        await RoundTrip("utf16le-bom.txt", [.. Encoding.Unicode.GetPreamble(), .. Encoding.Unicode.GetBytes(legacyText)], legacyText, e => e.GetPreamble().SequenceEqual(Encoding.Unicode.GetPreamble()), s => [.. Encoding.Unicode.GetPreamble(), .. Encoding.Unicode.GetBytes(s)], "UTF-16 LE with BOM");
+        var bom8 = new UTF8Encoding(true);
+        await RoundTrip("utf8-bom.md", [.. bom8.GetPreamble(), .. bom8.GetBytes(legacyText)], legacyText, e => e.GetPreamble().Length == 3, s => [.. bom8.GetPreamble(), .. bom8.GetBytes(s)], "UTF-8 with BOM");
+        await RoundTrip("utf8.txt", Encoding.UTF8.GetBytes(legacyText), legacyText, e => e is UTF8Encoding && e.GetPreamble().Length == 0, Encoding.UTF8.GetBytes, "UTF-8 without BOM");
+        var control = "log\0line\u0001\u001b[0m end\r\n";
+        await RoundTrip("control.txt", Encoding.UTF8.GetBytes(control), control, e => e is UTF8Encoding, Encoding.UTF8.GetBytes, "A .txt with NUL and control bytes");
+        byte[] broken = [(byte)'a', 0x92, 0x81, 0xFF, (byte)'b'];
+        await RoundTrip("broken.txt", broken, "a\u0092\u0081\u00FFb", e => e.CodePage == 28591, s => Encoding.Latin1.GetBytes(s), "Bytes invalid as UTF-8 and Big5 (Latin-1 fallback)");
+        var video = Path.Combine(root, "clip.mp4"); await File.WriteAllBytesAsync(video, big5.GetBytes(legacyText));
+        var binary = Path.Combine(root, "data.bin"); await File.WriteAllBytesAsync(binary, [0, 1, 2, 3, 0x92, 0x81, 0xFF]);
+        var odd = Path.Combine(root, "odd.dat"); await File.WriteAllBytesAsync(odd, [0x92, 0x81, 0xFF]);
+        Require(FileSupport.Detect(video) == SupportedFileKind.Unsupported && FileSupport.Detect(binary) == SupportedFileKind.Unsupported && FileSupport.Detect(odd) == SupportedFileKind.Unsupported,
+            "Known binary types and binary content stay unsupported");
+        TextFileStore.AnsiCodePageOverride = 1252;
+        var cp1252 = Path.Combine(root, "smart.txt"); byte[] smart = [.. Encoding.ASCII.GetBytes("it"), 0x92, .. Encoding.ASCII.GetBytes("s")];
+        await File.WriteAllBytesAsync(cp1252, smart);
+        var smartLoaded = await TextFileStore.ReadAsync(cp1252);
+        Require(smartLoaded.Text == "it\u2019s" && smartLoaded.Encoding.CodePage == 1252, "On a cp1252 system a smart quote opens as cp1252");
+    }
+    finally { TextFileStore.AnsiCodePageOverride = null; }
 {
 {
     // Status-bar caret position: 1-based, CRLF/LF/CR each one line break, selection counts a CRLF as 1.
@@ -236,10 +286,9 @@ try
 
     var invalidPath = Path.Combine(root, "legacy.txt");
     await File.WriteAllBytesAsync(invalidPath, [0xff, 0x61]);
-    var rejected = false;
-    try { await TextFileStore.ReadAsync(invalidPath); }
-    catch (DecoderFallbackException) { rejected = true; }
-    Require(rejected, "Unsupported encoding fails instead of silently corrupting text");
+    var legacyLoaded = await TextFileStore.ReadAsync(invalidPath); // bug 39: legacy bytes open (ANSI or Latin-1) instead of failing
+    await TextFileStore.WriteAsync(invalidPath, legacyLoaded.Text, legacyLoaded.Encoding);
+    Require((await File.ReadAllBytesAsync(invalidPath)).SequenceEqual(new byte[] { 0xff, 0x61 }), $"Non-UTF-8 text opens ({legacyLoaded.Encoding.WebName}) and saves back without corrupting it");
     var stamp = new DateTime(2026, 10, 29, 13, 5, 9);
     var notePath = Path.Combine(root, "My note.md");
     Require(ImageAssets.FileName(notePath, ".png", stamp, _ => false) == "My note-20261029130509.png", "Pasted bitmap is named <note>-<yyyyMMddHHmmss>.png");
@@ -422,6 +471,39 @@ try
         Require(Shortcuts.Format("zoom.in", false) == "Ctrl+= / Ctrl+Shift+= / Ctrl+Num +" && Shortcuts.Format("zoom.reset", true) == "Cmd+0 / Cmd+Num 0", "Multiple gestures and key names are formatted");
         Require(Shortcuts.Format("find.previous", true) == "Shift+F3" && Shortcuts.Format("view.wordWrap", false) == "Alt+Z" && Shortcuts.Format("view.wordWrap", true) == "Option+Z", "Shift and Alt (Option on macOS) format");
         Require(Shortcuts.Get("edit.undo").HandledByTextBox && !Shortcuts.Get("file.save").HandledByTextBox, "Entries record whether the editor handles them itself");
+    }
+    {
+        // Item 32: custom bindings (UI-free part).
+        var changes = 0; void Count() => changes++;
+        Shortcuts.Changed += Count;
+        Shortcuts.ResetAll();
+        var ctrlK = ShortcutGesture.Cmd("K");
+        Require(Shortcuts.FindConflicts("file.save", ctrlK).Count == 0 && Shortcuts.Rebind("file.save", ctrlK) && Shortcuts.Format("file.save", false) == "Ctrl+K"
+            && Shortcuts.IsCustomized("file.save") && !Shortcuts.IsCustomized("file.open") && changes == 1, "Rebinding replaces an entry's gestures and marks it customized");
+        var ctrlF = ShortcutGesture.Cmd("F");
+        Require(Shortcuts.FindConflicts("file.save", ctrlF).Select(s => s.Id).SequenceEqual(["find.find"]) && !Shortcuts.Rebind("file.save", ctrlF)
+            && Shortcuts.Format("file.save", false) == "Ctrl+K" && Shortcuts.Format("find.find", false) == "Ctrl+F" && changes == 1, "A clashing gesture is detected and nothing changes without reassign");
+        Require(Shortcuts.Rebind("file.save", ctrlF, reassign: true) && Shortcuts.Format("file.save", false) == "Ctrl+F" && Shortcuts.Get("find.find").Gestures.Count == 0
+            && Shortcuts.IsCustomized("find.find") && !Shortcuts.Conflicts().Any(), "Reassign moves the gesture and leaves the other entry unassigned");
+        Require(!Shortcuts.Rebind("file.save", ShortcutGesture.Cmd("C"), reassign: true) && Shortcuts.Format("edit.copy", false) == "Ctrl+C" && !Shortcuts.Rebind("edit.copy", ShortcutGesture.Cmd("J"))
+            && Shortcuts.Format("file.save", false) == "Ctrl+F", "Gestures built into the editor are never taken or rebound");
+        Require(Shortcuts.Rebind("find.find", ctrlF, reassign: true) && !Shortcuts.IsCustomized("find.find") && Shortcuts.Get("file.save").Gestures.Count == 0,
+            "Binding an entry back to its default stores nothing for it");
+        Shortcuts.Reset("file.save");
+        Require(!Shortcuts.IsCustomized("file.save") && Shortcuts.Format("file.save", false) == "Ctrl+S" && !Shortcuts.AnyCustomized, "Reset restores one entry's default");
+        Require(Shortcuts.Serialize(new ShortcutGesture("F", ShortcutMods.Command | ShortcutMods.Shift)) == "Command+Shift+F" && Shortcuts.Parse("Command+Alt+K") == new ShortcutGesture("K", ShortcutMods.Command | ShortcutMods.Alt)
+            && Shortcuts.Parse("Hyper+K") is null && Shortcuts.Parse("") is null && Shortcuts.Parse("Command+Bogus", k => k != "Bogus") is null, "Gestures serialize as modifier names plus the key");
+        Shortcuts.Rebind("file.save", ctrlK); Shortcuts.Rebind("sidebar.search", new ShortcutGesture("F", ShortcutMods.Command | ShortcutMods.Alt));
+        var json = SessionStore.Serialize(new SessionData { CustomShortcuts = Shortcuts.Export() });
+        Shortcuts.ResetAll();
+        Require(!Shortcuts.AnyCustomized && Shortcuts.Format("sidebar.search", false) == "Ctrl+Shift+F", "Reset all restores every default");
+        Shortcuts.Import(SessionStore.Deserialize(json)!.CustomShortcuts);
+        Require(Shortcuts.Format("file.save", false) == "Ctrl+K" && Shortcuts.Format("sidebar.search", false) == "Ctrl+Alt+F" && Shortcuts.Export().Count == 2, "Custom bindings survive a session save and load");
+        Shortcuts.Import(new Dictionary<string, List<string>> { ["nope"] = ["Command+K"], ["edit.copy"] = ["Command+J"], ["file.open"] = ["Command+Bogus"], ["file.new"] = ["Command+F"], ["file.save"] = ["Command+K"] }, k => k != "Bogus");
+        Require(Shortcuts.Export().Keys.SequenceEqual(["file.save"]) && Shortcuts.Format("file.new", false) == "Ctrl+N", "Loading ignores unknown ids, editor gestures, bad keys and clashing bindings");
+        Require(SessionStore.Deserialize("{\"Version\":1,\"Windows\":[]}")!.CustomShortcuts is null, "Old session files load with default shortcuts");
+        Shortcuts.ResetAll();
+        Shortcuts.Changed -= Count;
     }    {
         Require(new[] { ("editor.bold", "Ctrl+B", "Cmd+B"), ("editor.italic", "Ctrl+I", "Cmd+I"), ("editor.link", "Ctrl+L", "Cmd+L"), ("editor.quote", "Ctrl+\"", "Cmd+\""),
             ("editor.insertTime", "Ctrl+;", "Cmd+;"), ("editor.goToLine", "Ctrl+G", "Cmd+G"), ("view.previewCaret", "Ctrl+Shift+G", "Cmd+Shift+G"), ("file.quickOpen", "Ctrl+P", "Cmd+P"), ("find.replace", "Ctrl+H", "Cmd+H") }
@@ -430,7 +512,9 @@ try
         Require(quote.Gestures.Count == 2 && quote.Gestures.All(g => g.Key == "OemQuotes") && quote.Gestures.Count(g => g.Hidden) == 1, "Block quote accepts Ctrl+' and Ctrl+Shift+' but shows one gesture");
         Require(!Shortcuts.Conflicts().Any() && new[] { "editor.bold", "editor.italic", "editor.link", "editor.quote", "editor.insertTime", "editor.goToLine", "view.previewCaret" }.All(id => !Shortcuts.Get(id).HandledByTextBox),
             "New shortcuts do not clash and are handled by mdhub");
-        var dup = Shortcuts.All.SelectMany(s => s.Gestures.Select(g => (g.Key, g.Mods))).GroupBy(k => k).Where(g => g.Count() > 1).ToList();
+        // Item 53: explorer-only entries may share Ctrl+C/X/V with the Edit entries (they never fire together).
+        var dup = Shortcuts.All.SelectMany(s => s.Gestures.Select(g => (s, g.Key, g.Mods))).GroupBy(k => (k.Key, k.Mods)).Where(g => g.Count() > 1)
+            .Where(g => g.SelectMany((x, i) => g.Skip(i + 1).Select(y => (x.s, y.s))).Any(p => Shortcuts.Overlap(p.Item1, p.Item2))).ToList();
         Require(dup.Count == 0, "No key combination appears twice (display-only differences ignored)");
         var savedCulture = System.Globalization.CultureInfo.CurrentCulture;
         System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("fi-FI");
@@ -500,7 +584,81 @@ try
         var codePlan = global::Mdhub.Rendering.PreviewEdit.PlanCode(fence, 5, 11, "let x;\nlet y;", any);
         Require(codePlan.Edit is { } ce && fence[..ce.Start] + ce.Replacement + fence[ce.End..] == "```\r\nlet x;\r\nlet y;\r\n```\r\n", "Code block edits keep the note's CRLF line breaks");
         Require(global::Mdhub.Rendering.PreviewEdit.PlanCode(fence, 5, 11, "let x;", any).NoChange && global::Mdhub.Rendering.PreviewEdit.PlanCode(fence, 5, 11, "```", _ => false).Error == global::Mdhub.Rendering.PreviewEdit.ChangesStructure, "Code edits that close the fence are rejected");
-    }    Console.WriteLine("All file tests passed.");
+    }
+    {
+        // Item 64: per-folder tab history (round trip, missing files, LRU cap, path normalization, active tab).
+        var store = Path.Combine(root, "appdata", "session-folder-tabs.json");
+        Require(FolderTabsStore.PathFor(Path.Combine(root, "appdata", "session.json")) == store, "Folder tabs live beside session.json in app data");
+        var folder = Directory.CreateDirectory(Path.Combine(root, "Tabbed")).FullName;
+        var t1 = Path.Combine(folder, "one.md"); var t2 = Path.Combine(folder, "two.md"); var t3 = Path.Combine(folder, "three.md");
+        foreach (var t in new[] { t1, t2, t3 }) File.WriteAllText(t, "x");
+        var now = new DateTime(2026, 10, 30, 12, 0, 0, DateTimeKind.Utc);
+        FolderTabsStore.Save(store, FolderTabsStore.Remember(null, folder, [t1, t2, t3], 1, now));
+        var back = FolderTabsStore.Recall(FolderTabsStore.Load(store), folder, File.Exists);
+        Require(back is { ActiveTab: 1 } && back.Tabs.SequenceEqual([t1, t2, t3]), "Folder tabs round-trip with their order and the active tab");
+        Require(Directory.GetFiles(folder).Length == 3 && !Directory.GetFiles(folder, "*", SearchOption.AllDirectories).Any(f => f.EndsWith(".json")), "Nothing is written inside the folder");
+        Require(FolderTabsStore.Recall(FolderTabsStore.Load(store), folder + Path.DirectorySeparatorChar, File.Exists) is { ActiveTab: 1 }, "A trailing separator finds the same folder");
+        if (OperatingSystem.IsWindows())
+            Require(FolderTabsStore.Recall(FolderTabsStore.Load(store), folder.ToUpperInvariant(), File.Exists) is { ActiveTab: 1 } && FolderTabsStore.Key(folder.ToUpperInvariant()) == FolderTabsStore.Key(folder + "\\"), "Folder keys ignore case on Windows");
+        File.Delete(t2);
+        var pruned = FolderTabsStore.Recall(FolderTabsStore.Load(store), folder, File.Exists);
+        Require(pruned is { ActiveTab: 0 } && pruned.Tabs.SequenceEqual([t1, t3]), "A missing active file is skipped and the first tab becomes active");
+        Require(FolderTabsStore.Recall(FolderTabsStore.Load(store), folder, p => p != t1 && File.Exists(p)) is { ActiveTab: 0 } r1 && r1.Tabs.SequenceEqual([t3]), "Missing files are skipped silently");
+        var active3 = FolderTabsStore.Recall(FolderTabsStore.Remember(null, folder, [t1, t3], 1, now), folder, File.Exists);
+        Require(active3 is { ActiveTab: 1 } && active3.Tabs[1] == t3, "The active tab is kept by path");
+        Require(FolderTabsStore.Recall(FolderTabsStore.Load(store), Path.Combine(root, "Other"), File.Exists) is null, "An unknown folder has no saved tabs");
+        FolderTabsData? lru = null;
+        for (var i = 0; i < 55; i++) lru = FolderTabsStore.Remember(lru, Path.Combine(root, $"f{i}"), [], -1, now.AddMinutes(i));
+        lru = FolderTabsStore.Remember(lru, Path.Combine(root, "f6"), [], -1, now.AddMinutes(100)); // reopened: most recent again
+        lru = FolderTabsStore.Remember(lru, Path.Combine(root, "f55"), [], -1, now.AddMinutes(101));
+        Require(lru!.Folders.Count == FolderTabsStore.Capacity && lru.Folders.ContainsKey(FolderTabsStore.Key(Path.Combine(root, "f6"))) && !lru.Folders.ContainsKey(FolderTabsStore.Key(Path.Combine(root, "f5")))
+            && lru.Folders.ContainsKey(FolderTabsStore.Key(Path.Combine(root, "f8"))), "The history keeps the 50 most recently used folders");
+        Require(FolderTabsStore.Deserialize("{ nope") is null && FolderTabsStore.Deserialize("{\"Version\":9,\"Folders\":{}}") is null && FolderTabsStore.Load(Path.Combine(root, "none.json")) is null, "Corrupt, other-version or missing history loads as nothing");
+        FolderTabsStore.Record(store, new WindowSession { Folder = folder, Tabs = [t3, t1], ActiveTab = 0 });
+        Require(FolderTabsStore.Recall(FolderTabsStore.Load(store), folder, File.Exists) is { ActiveTab: 0 } rec && rec.Tabs.SequenceEqual([t3, t1]), "Record replaces the folder's tabs from a window session");
+    }
+    // Item 70: Tab / Shift+Tab rules and the session round-trip of the tab settings.
+    {
+        string Tab(string t, int s, int e, bool o, bool sp = true, int n = 4) => Mdhub.Text.TabEditing.Apply(t, s, e, o, sp, n) is { } x ? t[..x.Start] + x.Replacement + t[x.End..] : t;
+        Require(Tab("ab", 0, 0, false) == "    ab" && Tab("ab", 0, 0, false, sp: false) == "\tab" && Tab("ab", 1, 1, false, n: 2) == "a b", "Tab inserts spaces to the next stop or a tab");
+        Require(Tab("    a\n\tb", 0, 8, true) == "a\nb" && Tab("a\nb", 0, 3, false, n: 2) == "  a\n  b", "Shift+Tab and multi-line Tab follow the tab size");
+        Require(Mdhub.Text.TabEditing.Clamp(0) == 1 && Mdhub.Text.TabEditing.Clamp(99) == 8, "Tab size clamps to 1-8");
+        var tabSession = Path.Combine(root, "tabs-session.json");
+        SessionStore.Save(tabSession, new SessionData { EditorBehavior = new EditorBehaviorData { InsertSpaces = false, TabSize = 3 } });
+        Require(SessionStore.Load(tabSession)?.EditorBehavior is { InsertSpaces: false, TabSize: 3 }, "Tab settings round-trip through the session file");
+        Require(new EditorBehaviorData() is { InsertSpaces: true, TabSize: 4 }, "Tab settings default to spaces, size 4");
+    }
+    // Item 71: list and table auto-complete rules.
+    {
+        var ac = new Mdhub.Services.MarkdownAutoComplete.Options();
+        string Ap(string t, Mdhub.Text.CaretEdit? e) => e is { } x ? t[..x.Start] + x.Replacement + t[x.End..] : "<none>";
+        Require(Ap("- a", Mdhub.Services.MarkdownAutoComplete.Enter("- a", 3, ac, "\n")) == "- a\n- " && Ap("1) x\n2) y", Mdhub.Services.MarkdownAutoComplete.Enter("1) x\n2) y", 4, ac, "\n")) == "1) x\n2) \n3) y", "Lists continue and renumber");
+        Require(Mdhub.Services.MarkdownAutoComplete.Enter("```\n- a", 7, ac) is null, "No auto-complete in fenced code");
+        Require(Mdhub.Services.MarkdownAutoComplete.AlignRows(["|a|\u6f22|", "|-|-|"]) == "| a   | \u6f22  |\n| --- | --- |", "Table alignment is CJK-width aware");
+        Require(new EditorBehaviorData() is { AutoLists: true, AutoTables: true, AlignTables: true }, "Auto-complete defaults on");
+    }
+    // Item 74: spell-check tokenizing and skip rules (prose only).
+    {
+        string Ws(string t) => string.Join(",", Mdhub.Text.SpellTokenizer.Words(t).Select(w => w.Word));
+        Require(Ws("Helo wrold, don't stop.") == "Helo,wrold,don't,stop", "Spelling: prose words, apostrophes kept, punctuation trimmed");
+        Require(Ws("a `codez` b ```x``` c") == "", "Spelling: code spans and single letters are skipped");
+        Require(Ws("```\nmisspeld\n```\nwordz") == "wordz" && Ws("~~~md\nbadd\n~~~") == "", "Spelling: fenced code blocks are skipped");
+        Require(Ws("text\n\n    indentd code\n\nnext") == "text,next", "Spelling: indented code blocks are skipped");
+        Require(Ws("- item\n\n    continud") == "item,continud", "Spelling: an indented list continuation is prose");
+        Require(Ws("---\ntitle: Foo barr\n---\nbody") == "body", "Spelling: front matter is skipped");
+        Require(Ws("see https://exampel.com/pathh and www.foo.org or me@mail.com") == "see,and,or", "Spelling: URLs and e-mail addresses are skipped");
+        Require(Ws("[link textt](docs/pagee.md) ![alt textt](imgs/picc.png)") == "link,textt,alt,textt", "Spelling: link and image targets are skipped, their text is checked");
+        Require(Ws("[ref]: http://x.y/zz \"Titel\"\nok") == "ok", "Spelling: reference definitions are skipped");
+        Require(Ws("<span class=\"foo\">wordd</span> <!-- commentt --> <https://a.b>") == "wordd", "Spelling: HTML tags, comments and autolinks are skipped");
+        Require(Ws("NASA HTTP abc123 v2 readme.md src/main.cs my_var getValue") == "", "Spelling: ALL-CAPS, digits, file names, paths and identifiers are skipped");
+        Require(Ws("\u4e2d\u6587 \u65e5\u672c\u8a9e \ud55c\uad6d\uc5b4 mixedd") == "mixedd", "Spelling: CJK text is skipped");
+        Require(Ws("well-knwon") == "well,knwon", "Spelling: hyphenated words are checked part by part");
+        var crlf = Mdhub.Text.SpellTokenizer.Words("one\r\ntwoo");
+        Require(crlf.Count == 2 && crlf[1].Start == 5 && crlf[1].Word == "twoo", "Spelling: offsets are into the raw text (CRLF)");
+        Require(Mdhub.Text.SpellTokenizer.Words("aa bb cc", 3, 5).Select(w => w.Word).SequenceEqual(["bb"]), "Spelling: a range checks only the words inside it");
+        Require(new EditorBehaviorData() is { SpellCheck: false, SpellLanguage: null }, "Spelling is off by default, dictionary follows the UI language");
+    }
+    Console.WriteLine("All file tests passed.");
 }
 finally
 {

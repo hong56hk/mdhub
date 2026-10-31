@@ -40,8 +40,13 @@ internal static class ThemeTests
             ("TextPrimary", "EditorBackground", 7), ("TextPrimary", "AppBackground", 7), ("TextStrong", "AppBackground", 7), ("FolderNameForeground", "AppBackground", 4.5),
             ("TextSecondary", "AppBackground", 4.5), ("TextMuted", "AppBackground", 4.5), ("SidebarTabForeground", "AppBackground", 4.5), ("SectionForeground", "AppBackground", 4.5),
             ("IconForeground", "AppBackground", 4.5), ("IconForeground", "FloatingBackground", 4.5), ("IconForeground", "HoverBackground", 3), ("AcceleratorForeground", "AppBackground", 3),
-            ("Accent", "AppBackground", 3), ("Accent", "TabStripBackground", 3), ("GutterForeground", "EditorBackground", 3), ("SyntaxHeading", "EditorBackground", 3),
-            ("SyntaxOrderedList", "EditorBackground", 3), ("SyntaxUnorderedList", "EditorBackground", 3), ("LinkForeground", "PreviewBackground", 4.5),
+            ("Accent", "AppBackground", 3), ("Accent", "TabStripBackground", 3), ("GutterForeground", "EditorBackground", 3), ("SyntaxH1", "EditorBackground", 4.5), ("SyntaxH2", "EditorBackground", 4.5),
+            ("SyntaxH3", "EditorBackground", 4.5), ("SyntaxH4", "EditorBackground", 4.5), ("SyntaxLink", "EditorBackground", 4.5), ("SyntaxListMarker", "EditorBackground", 4.5),
+            ("SyntaxQuote", "EditorBackground", 4.5), ("SyntaxCheckbox", "EditorBackground", 4.5), ("SyntaxInlineCode", "SyntaxInlineCodeBackground", 4.5),
+            ("SyntaxMarker", "EditorBackground", 2.5), ("SyntaxUrl", "EditorBackground", 3), ("SyntaxChecked", "EditorBackground", 3),
+            ("SyntaxCodeText", "SyntaxCodeBlockBackground", 7), ("SyntaxCodeKeyword", "SyntaxCodeBlockBackground", 4.5), ("SyntaxCodeString", "SyntaxCodeBlockBackground", 4.5),
+            ("SyntaxCodeComment", "SyntaxCodeBlockBackground", 4.5), ("SyntaxCodeNumber", "SyntaxCodeBlockBackground", 4.5), ("SyntaxCodeType", "SyntaxCodeBlockBackground", 4.5),
+            ("SyntaxCodeProperty", "SyntaxCodeBlockBackground", 4.5), ("SyntaxCodeTag", "SyntaxCodeBlockBackground", 4.5), ("SyntaxCodeAttribute", "SyntaxCodeBlockBackground", 4.5), ("LinkForeground", "PreviewBackground", 4.5),
             ("InlineCodeForeground", "InlineCodeBackground", 4.5), ("ErrorForeground", "FloatingBackground", 3), ("DialogErrorForeground", "AppBackground", 3),
             ("SearchMatchForeground", "SearchMatchBackground", 4.5), ("ShortcutKeyForeground", "AppBackground", 4.5), ("DialogHintForeground", "AppBackground", 4.5),
             ("PreviewPlaceholderForeground", "PreviewBackground", 3) };
@@ -53,6 +58,33 @@ internal static class ThemeTests
             Check(surfaces.All(s => Contrast(ThemeService.Lookup("TextPrimary", theme), ThemeService.Lookup(s, theme)) >= 7) && (theme == AppTheme.Light) == (Luminance(ThemeService.Lookup("EditorBackground", theme)) > 0.5),
                 $"{theme}: surfaces are {(theme == AppTheme.Light ? "light" : "dark")} with readable text");
         }
+
+        // Item 34: the app logo. The .ico holds every size, small sizes are pixel-crisp, and every window carries it.
+        var ico = File.ReadAllBytes(Path.Combine(repo, "Assets", "mdhub.ico"));
+        var icoSizes = Enumerable.Range(0, BitConverter.ToUInt16(ico, 4)).Select(i => ico[6 + 16 * i] == 0 ? 256 : ico[6 + 16 * i]).Order().ToList();
+        Check(BitConverter.ToUInt16(ico, 2) == 1 && icoSizes.SequenceEqual(new[] { 16, 20, 24, 32, 40, 48, 64, 128, 256 }), $"mdhub.ico holds sizes {string.Join(", ", icoSizes)}");
+        var csproj = File.ReadAllText(Path.Combine(repo, "Mdhub.csproj"));
+        Check(csproj.Contains(@"<ApplicationIcon>Assets\mdhub.ico</ApplicationIcon>") && csproj.Contains(@"<AvaloniaResource Include=""Assets\mdhub-128.png"" />"), "the csproj sets ApplicationIcon and embeds the logo assets");
+        using (var stream = Avalonia.Platform.AssetLoader.Open(AppIcon.IconUri))
+        using (var frames = new System.IO.MemoryStream()) { stream.CopyTo(frames); Check(frames.Length == ico.Length, "the icon is an embedded avares resource"); }
+        using (var logo = AppIcon.Logo()) Check(logo.PixelSize == new PixelSize(128, 128), "the About logo loads (128 px)");
+        var blue = Color.Parse("#0078D4");
+        foreach (var theme in new[] { AppTheme.Dark, AppTheme.Light })
+            Check(new[] { "AppBackground", "EditorBackground", "FloatingBackground" }.All(s => Contrast(blue, ThemeService.Lookup(s, theme)) >= 3),
+                $"{theme}: the #0078D4 logo stays legible on the app surfaces ({string.Join(", ", new[] { "AppBackground", "EditorBackground", "FloatingBackground" }.Select(s => $"{Contrast(blue, ThemeService.Lookup(s, theme)):0.0}"))})");
+        var iconWindow = new MainWindow(); iconWindow.Show(); Pump();
+        Check(AppIcon.Icon is not null && ReferenceEquals(iconWindow.Icon, AppIcon.Icon), "the main window shows the app icon");
+        var about = DialogService.ShowAboutAsync(iconWindow); Pump();
+        var aboutWindow = iconWindow.OwnedWindows.Single();
+        Check(ReferenceEquals(aboutWindow.Icon, AppIcon.Icon) && aboutWindow.GetVisualDescendants().OfType<Image>().Any(i => i.Name == "AboutLogo" && i.Source is not null && i.Bounds.Width == 64),
+            "About shows the logo and carries the app icon");
+        aboutWindow.Close(); Pump();
+        var message = DialogService.ShowAsync(iconWindow, "t", "m", "OK"); Pump();
+        Check(ReferenceEquals(iconWindow.OwnedWindows.Single().Icon, AppIcon.Icon), "message dialogs carry the app icon");
+        iconWindow.OwnedWindows.Single().Close(); Pump();
+        var bare = new Window(); bare.Show(); Pump();
+        Check(ReferenceEquals(bare.Icon, AppIcon.Icon), "any other window gets the icon on open");
+        bare.Close(); iconWindow.Close(); Pump();
 
         // Two windows with a Markdown document that has a code block, table, link and inline code; find bar open.
         var windows = new[] { new MainWindow { Width = 1300, Height = 800 }, new MainWindow { Width = 1100, Height = 700 } };
@@ -100,7 +132,7 @@ internal static class ThemeTests
                 ["gutter"] = C(Brush<LineNumberGutter>("NumberBrush")) == L("GutterForeground"),
                 ["currentLine"] = C(CurrentLineOverlay.LineBrush) == L("CurrentLineBackground"),
                 ["findHighlights"] = C(Brush<FindHighlightOverlay>("MatchBrush")) == L("FindMatchBackground") && C(Brush<FindHighlightOverlay>("CurrentBrush")) == L("FindCurrentBackground"),
-                ["syntax"] = C(MarkdownTextPresenter.HeadingBrush) == L("SyntaxHeading"),
+                ["syntax"] = C(MarkdownTextPresenter.BrushFor(Mdhub.Text.SyntaxColor.H1)!) == L("SyntaxH1") && C(MarkdownBlockOverlay.CodeBrush) == L("SyntaxCodeBlockBackground"),
             };
             var bad = checks.Where(c => !c.Value).Select(c => c.Key).ToList();
             if (bad.Count > 0) Console.WriteLine($"  {theme} mismatches: {string.Join(", ", bad)}");
@@ -137,14 +169,14 @@ internal static class ThemeTests
         }
         finally { SessionManager.Enabled = false; SessionManager.PathOverride = null; SessionManager.Reset(); if (File.Exists(temp)) File.Delete(temp); }
 
-        // Leftover hardcoded colours in app sources (Theme.axaml is the palette; tests are excluded).
+        // Leftover hardcoded colours in app sources (Theme.axaml and the item 78 FileIcons.axaml are palettes; tests are excluded).
         var colour = new Regex(@"#[0-9A-Fa-f]{6}(?:[0-9A-Fa-f]{2})?\b|Brush\.Parse|Color\.Parse|Color\.From(?:A)?Rgb|\bBrushes\.(?!Transparent\b)\w+|\bColors\.(?!Transparent\b)\w+");
         var named = new Regex(@"\b(?:Foreground|Background|BorderBrush|Stroke|Fill|Color)=""(?!\{|Transparent"")[A-Za-z]+""");
         var allowed = new[] { "BoxShadow=\"0 2 8 0 #66000000\"" };
         var sources = Directory.EnumerateFiles(repo, "*.*", SearchOption.AllDirectories)
             .Where(f => f.EndsWith(".cs") || f.EndsWith(".axaml"))
             .Where(f => !Regex.IsMatch(Path.GetRelativePath(repo, f), @"^(tests|bin|obj|artifacts|\.nuget|\.dotnet-home|test-folder)[\\/]"))
-            .Where(f => Path.GetFileName(f) != "Theme.axaml").ToList();
+            .Where(f => Path.GetFileName(f) is not ("Theme.axaml" or "FileIcons.axaml")).ToList();
         var leftovers = sources.SelectMany(f => File.ReadAllLines(f).Select((line, i) => (f, i, line)))
             .Where(x => colour.IsMatch(allowed.Aggregate(x.line, (l, a) => l.Replace(a, ""))) || x.f.EndsWith(".axaml") && named.IsMatch(x.line))
             .Select(x => $"{Path.GetRelativePath(repo, x.f)}:{x.i + 1}").ToList();

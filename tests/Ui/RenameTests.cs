@@ -155,7 +155,7 @@ internal static class RenameTests
             Check(innerDoc.Path == newInner && view.CaptureSession().Tabs.Contains(newInner), "folder rename updates tabs inside it and the session");
 
             Check(Shortcuts.All.Any(s => s.Id == "explorer.rename" && s.Format(false) == "F2"), "F2 is listed in the shortcut list");
-            Check(typeof(DialogService).GetMethod("PromptNameAsync")!.GetParameters().Length == 4, "rename popup mode removed from the name dialog");
+            Check(typeof(DialogService).GetMethod("PromptNameAsync")!.GetParameters().All(p => !p.Name!.Contains("rename", StringComparison.OrdinalIgnoreCase)), "rename popup mode removed from the name dialog");
             foreach (var d in tabs.Items.OfType<NoteDocument>()) d.SavedText = d.Text;
         }
         finally { window.Close(); Directory.Delete(root, true); }

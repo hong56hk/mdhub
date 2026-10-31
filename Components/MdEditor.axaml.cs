@@ -28,6 +28,17 @@ public partial class MdEditor : UserControl
         PreviewContent.LayoutUpdated += (_, _) => PreviewBlockHighlights.InvalidateVisual();
         PreviewContent.DoubleTapped += OnPreviewDoubleTapped;
         InitSelection();
+        // Item 35: typography changes apply live to the open preview.
+        PreviewContent.Spacing = Mdhub.Services.PreviewSettings.Current.ParagraphSpacing;
+        AttachedToVisualTree += (_, _) => Mdhub.Services.PreviewSettings.Changed += OnPreviewSettingsChanged;
+        DetachedFromVisualTree += (_, _) => Mdhub.Services.PreviewSettings.Changed -= OnPreviewSettingsChanged;
+    }
+    internal int SettingsRefreshes { get; private set; }
+    private void OnPreviewSettingsChanged()
+    {
+        PreviewContent.Spacing = Mdhub.Services.PreviewSettings.Current.ParagraphSpacing;
+        SettingsRefreshes++;
+        if (_active is not null) { ++_previewVersion; _previewTimer.Stop(); _ = RefreshPreviewAsync(); }
     }
     public void ShowDocument(NoteDocument? document)
     {
@@ -314,7 +325,7 @@ public partial class MdEditor : UserControl
                 _render = MarkdownPreview.RenderMapped(result.Markdown, text, document.Path is { } notePath ? Path.GetDirectoryName(notePath) : null);
                 foreach (var control in _render.Controls) PreviewContent.Children.Add(control);
             }
-            else PreviewContent.Children.Add(new SelectableTextBlock { Text = text, TextWrapping = TextWrapping.Wrap, FontSize = 15 });
+            else PreviewContent.Children.Add(new SelectableTextBlock { Text = text, TextWrapping = TextWrapping.Wrap, FontSize = Mdhub.Services.PreviewSettings.Current.BodySize });
             ResetSelection();
             ApplyHighlight(scroll: false);
             if (_pendingCenter is { } pending && _render is not null) CenterPreviewOnLine(pending);

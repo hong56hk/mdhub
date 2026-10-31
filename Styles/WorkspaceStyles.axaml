@@ -3,6 +3,17 @@
   <Style Selector="Popup">
     <Setter Property="InheritsTransform" Value="True" />
   </Style>
+  <!-- Item 45: every menu (top menu, context menus) shows the hand over its items; context menus get 10px padding. -->
+  <Style Selector="ContextMenu">
+    <Setter Property="Padding" Value="10" />
+  </Style>
+  <Style Selector="MenuItem">
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <!-- Bug 55: context menu items (code-built menus also get it as a local value, see LocResources.MenuItemPadding). -->
+  <Style Selector="ContextMenu MenuItem">
+    <Setter Property="Padding" Value="10,2,8,2" />
+  </Style>
   <Style Selector="Button.tool">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="Padding" Value="10,5" />

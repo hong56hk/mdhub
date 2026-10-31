@@ -18,23 +18,37 @@ public partial class MainView
             Path = path, SavedText = text, UntitledName = name ?? $"Untitled {++_untitled}.md",
             Encoding = encoding ?? TextFileStore.DefaultEncoding
         };
+        document.SetLoadedLineEnding(Mdhub.Text.LineEndings.Detect(text, LineEndingSettings.ForNewFile)); // item 68
+        InitializeTextDocument(document, text);
+        _documents.Add(document);
+        FileTabs.SelectedDocument = document;
+        return document;
+    }
+
+    private void InitializeTextDocument(NoteDocument document, string text)
+    {
         document.Editor.Text = text;
+        // TextChanged for this initial load arrives after the handler below is attached (e.g. right after a
+        // search hit opens the file): only a real change in the text may restart the global search.
+        var searchedText = text;
         document.Editor.TextWrapping = _wrap ? TextWrapping.Wrap : TextWrapping.NoWrap;
+        document.Editor.ContextFlyout = null; // item 41: our menu adds Reveal in Side Bar to Cut/Copy/Paste/Select All
+        document.Editor.ContextMenu = CreateEditorMenu(document);
         document.Editor.TextChanged += (_, _) =>
         {
             document.Refresh();
             if (document.IsDirty) _sessionNote = null;
             if (_active == document) { UpdateStatus(); MdEditor.ScheduleRefresh(); }
-            if (GlobalSearch.IsVisible && !_busy) GlobalSearch.Schedule();
+            var textChanged = document.Editor.Text != searchedText;
+            searchedText = document.Editor.Text;
+            if (textChanged && GlobalSearch.IsVisible && !_busy) GlobalSearch.Schedule();
         };
         document.Editor.PropertyChanged += (_, e) =>
         {
             if (_active == document && (e.Property == Avalonia.Controls.TextBox.SelectionStartProperty || e.Property == Avalonia.Controls.TextBox.SelectionEndProperty || e.Property == Avalonia.Controls.TextBox.CaretIndexProperty))
                 UpdateCaretStatus();
         };
-        _documents.Add(document);
-        FileTabs.SelectedDocument = document;
-        return document;
+        if (document.IsReadOnlyText) document.Editor.IsReadOnly = true;
     }
 
     private async Task OpenAsync()
@@ -58,7 +72,7 @@ public partial class MainView
         var existing = _documents.FirstOrDefault(d => SamePath(d.Path, path));
         if (existing is not null) { FileTabs.SelectedDocument = existing; if (recent) RecentService.AddFile(path); return; }
         var kind = await Task.Run(() => FileSupport.Detect(path));
-        if (kind == SupportedFileKind.Unsupported) { UpdateStatus(Loc.F("UnsupportedFile", path)); return; }
+        if (kind == SupportedFileKind.Unsupported) { AddBinaryDocument(path, recent); return; }
         if (kind == SupportedFileKind.Image)
         {
             var bitmap = await Task.Run(() =>
@@ -72,10 +86,11 @@ public partial class MainView
             if (recent) RecentService.AddFile(path);
             return;
         }
+        if (!await ConfirmLargeAsync(path)) return;
         (string Text, System.Text.Encoding Encoding) loaded;
         try { loaded = await TextFileStore.ReadAsync(path); }
-        catch (System.Text.DecoderFallbackException) { UpdateStatus(Loc.F("UnsupportedEncoding", path)); return; }
-        if (!FileSupport.IsText(loaded.Text)) { UpdateStatus(Loc.F("UnsupportedBinary", path)); return; }
+        catch (System.Text.DecoderFallbackException) { AddBinaryDocument(path, recent); return; }
+        if (!FileSupport.IsTextByExtension(path) && !FileSupport.IsText(loaded.Text)) { AddBinaryDocument(path, recent); return; }
         AddDocument(path, loaded.Text, encoding: loaded.Encoding);
         if (recent) RecentService.AddFile(path);
     }
@@ -89,6 +104,7 @@ public partial class MainView
     private async Task<bool> SaveAsync(NoteDocument document, bool saveAs)
     {
         if (document.IsImage) { UpdateStatus(Loc.T("ImagesViewOnly")); return true; }
+        if (document.IsBinary || document.IsReadOnlyText) return true;
         var path = document.Path;
         if (saveAs || path is null)
         {
@@ -108,10 +124,12 @@ public partial class MainView
             if (_documents.Any(d => d != document && SamePath(d.Path, path)))
                 throw new IOException(Loc.T("AlreadyOpenSaveAs"));
         }
+        if (!await EnsureEncodableAsync(document)) return false; // item 67
         await TextFileStore.WriteAsync(path, document.Text, document.Encoding);
         var isNewPath = document.Path is null || !SamePath(document.Path, Path.GetFullPath(path));
         document.Path = path;
         document.SavedText = document.Text;
+        document.SavedLineEnding = document.LineEnding; // item 68
         document.Refresh();
         if (_active == document) MdEditor.ShowDocument(document.IsMarkdown ? document : null);
         UpdateContentLayout();
@@ -132,10 +150,6 @@ public partial class MainView
     private async Task CloseDocumentAsync(NoteDocument document)
     {
         if (!await ConfirmCloseAsync(document)) return;
-        var index = _documents.IndexOf(document);
-        _documents.Remove(document);
-        document.Image?.Dispose();
-        if (_documents.Count == 0) AddDocument(null, "");
-        else if (_active == document) FileTabs.SelectedDocument = _documents[Math.Min(index, _documents.Count - 1)];
+        RemoveDocument(document);
     }
 }

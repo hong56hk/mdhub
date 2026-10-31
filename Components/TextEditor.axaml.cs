@@ -12,7 +12,12 @@ public partial class TextEditor : UserControl
         InitializeComponent();
         FindBar.Overlay = FindHighlights;
         FindBar.Closed += FocusEditor;
+        SpellOverlay.CountChanged += count => SpellCountChanged?.Invoke(count);
     }
+    // Item 74: spell checking of the shown Markdown editor.
+    public SpellCheckOverlay Spelling => SpellOverlay;
+    public event Action<int?>? SpellCountChanged;
+    public bool NextMisspelling() => _document?.IsViewOnly == false && SpellOverlay.Next();
     public bool IsFindOpen => FindBar.IsOpen;
     public bool IsFindFocused => FindBar.IsKeyboardFocusWithin;
     public void OpenFind(bool replace) { if (_document is not null) FindBar.Open(replace); }
@@ -24,15 +29,17 @@ public partial class TextEditor : UserControl
         _document = document;
         EditorHost.Content = document.Editor;
         LineGutter.Attach(document.Editor);
+        MarkdownBlocks.Attach(document.Editor);
         CurrentLine.Attach(document.Editor);
+        SpellOverlay.Attach(document.Editor);
         FindBar.Attach(document.Editor, () => document.SavedSelection);
         LineGutter.InvalidateMeasure();
         LineGutter.InvalidateVisual();
     }
-    public void FocusEditor() { if (_document?.IsImage == false) _document.Editor.Focus(); }
+    public void FocusEditor() { if (_document?.IsViewOnly == false) _document.Editor.Focus(); }
     public void Edit(string action)
     {
-        if (_document is null || _document.IsImage) return;
+        if (_document is null || _document.IsViewOnly) return;
         var editor = _document.Editor;
         switch (action)
         {

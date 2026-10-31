@@ -8,13 +8,14 @@ namespace Mdhub.Services;
 
 public static class DialogService
 {
-    public static Task<string?> PromptNameAsync(Window owner, string title, string directory, string initialName)
+    // displayDirectory: how "Create in:" names the target (item 42: relative to the open folder); the tooltip has the full path.
+    public static Task<string?> PromptNameAsync(Window owner, string title, string directory, string initialName, string? displayDirectory = null)
     {
         var dialog = new Window { Title = title, Width = 480, SizeToContent = SizeToContent.Height, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
         var input = new TextBox { Name = "ItemName", Text = initialName, PlaceholderText = Loc.T("DialogName") };
         var error = new TextBlock { Foreground = ThemeService.Brush("DialogErrorForeground"), TextWrapping = TextWrapping.Wrap, IsVisible = false };
-        var create = new Button { Content = Loc.T("Create"), IsDefault = true, MinWidth = 80 };
-        var cancel = new Button { Content = Loc.T("Cancel"), IsCancel = true, MinWidth = 80 };
+        var create = new Button { Content = Loc.T("Create"), IsDefault = true, MinWidth = 80, MinHeight = 42, FontSize = 16, Classes = { "textAction" }, HorizontalContentAlignment = HorizontalAlignment.Center };
+        var cancel = new Button { Content = Loc.T("Cancel"), IsCancel = true, MinWidth = 80, MinHeight = 42, FontSize = 16, Classes = { "textAction" }, HorizontalContentAlignment = HorizontalAlignment.Center };
         create.Click += (_, _) =>
         {
             var name = input.Text ?? "";
@@ -25,18 +26,33 @@ public static class DialogService
             dialog.Close(name);
         };
         cancel.Click += (_, _) => dialog.Close(null);
-        dialog.Opened += (_, _) => { input.Focus(); input.SelectAll(); };
+        // As in rename: a file name pre-selects only its stem ("Untitled" of "Untitled.md"); a folder name is selected whole.
+        dialog.Opened += (_, _) =>
+        {
+            input.Focus();
+            var stem = Path.GetFileNameWithoutExtension(initialName);
+            if (Path.HasExtension(initialName) && stem.Length > 0) { input.SelectionStart = 0; input.SelectionEnd = stem.Length; }
+            else input.SelectAll();
+        };
         dialog.Content = new StackPanel
         {
             Margin = new Thickness(20), Spacing = 12,
             Children =
             {
-                new TextBlock { Text = Loc.F("CreateIn", directory), TextWrapping = TextWrapping.Wrap }, input, error,
+                CreateInText(directory, displayDirectory), input, error,
                 new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, Children = { create, cancel } }
             }
         };
         ApplyOwnerZoom(dialog, owner);
+        ThemeService.PrepareTitleBar(dialog);
         return dialog.ShowDialog<string?>(owner);
+    }
+
+    private static TextBlock CreateInText(string directory, string? displayDirectory)
+    {
+        var text = new TextBlock { Name = "CreateInText", Text = Loc.F("CreateIn", displayDirectory ?? directory), TextWrapping = TextWrapping.Wrap };
+        ToolTip.SetTip(text, directory);
+        return text;
     }
 
     // Dialogs are separate windows, so the owner's zoom transform does not reach them: scale content and width here.
@@ -57,8 +73,8 @@ public static class DialogService
         var input = new TextBox { Name = "LineNumber", Text = currentLine.ToString(), PlaceholderText = Loc.T("LineNumber") };
         input.AddHandler(Avalonia.Input.InputElement.TextInputEvent, (_, e) => { if (e.Text is { } t && !t.All(char.IsAsciiDigit)) e.Handled = true; }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         input.TextChanged += (_, _) => { if (input.Text is { } t && !t.All(char.IsAsciiDigit)) input.Text = new string(t.Where(char.IsAsciiDigit).ToArray()); };
-        var go = new Button { Content = Loc.T("Go"), IsDefault = true, MinWidth = 70 };
-        var cancel = new Button { Content = Loc.T("Cancel"), IsCancel = true, MinWidth = 70 };
+        var go = new Button { Content = Loc.T("Go"), IsDefault = true, MinWidth = 70, Classes = { "textAction" } };
+        var cancel = new Button { Content = Loc.T("Cancel"), IsCancel = true, MinWidth = 70, Classes = { "textAction" } };
         go.Click += (_, _) => { if (Mdhub.Text.EditorCommands.ParseLine(input.Text, lineCount) is { } line) dialog.Close(line); else input.Focus(); };
         cancel.Click += (_, _) => dialog.Close(null);
         dialog.Opened += (_, _) => { input.Focus(); input.SelectAll(); };
@@ -72,53 +88,89 @@ public static class DialogService
             }
         };
         ApplyOwnerZoom(dialog, owner);
+        ThemeService.PrepareTitleBar(dialog);
         return dialog.ShowDialog<int?>(owner);
     }
 
-    // Read-only list of every shortcut, grouped by area, from the shortcut table.
-    public static Task ShowShortcutsAsync(Window owner)
+    // Every shortcut, grouped by area; mdhub's own entries can be rebound (Components/ShortcutsDialog.cs).
+    public static Task ShowShortcutsAsync(Window owner) => Mdhub.Components.ShortcutsDialog.ShowAsync(owner);
+
+    // Item 58: About mdhub. Logo beside the name, version (from the assembly), description, GitHub and licence links,
+    // copyright and OK. The GitHub link opens the browser; "MIT License" closes the dialog with LicenseChoice so the
+    // window opens the bundled LICENSE in a read-only tab.
+    public const string LicenseChoice = "License";
+    // Test seam: receives the URI instead of the system browser.
+    public static Func<Uri, Task>? LaunchOverride { get; set; }
+
+    public static async Task LaunchAsync(TopLevel top, Uri uri)
     {
-        var mac = OperatingSystem.IsMacOS();
-        var dialog = new Window { Title = Loc.T("ShortcutsTitle"), Width = 520, Height = 560, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-        var list = new StackPanel { Name = "ShortcutList", Spacing = 4, Margin = new Thickness(20, 16) };
-        // Areas in enum order (File, Edit, View, Find, Zoom, Editor), not first-appearance order in the table.
-        foreach (var group in Shortcuts.All.GroupBy(s => s.Area).OrderBy(g => g.Key))
-        {
-            list.Children.Add(new TextBlock { Text = Loc.T("Area" + group.Key), FontWeight = Avalonia.Media.FontWeight.SemiBold, FontSize = 15, Margin = new Thickness(0, 10, 0, 2), Classes = { "shortcut-area" } });
-            foreach (var s in group)
-            {
-                var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Classes = { "shortcut-row" }, Tag = s.Id };
-                row.Children.Add(new TextBlock { Text = s.DisplayLabel });
-                var keys = new TextBlock { Text = s.Format(mac), Foreground = ThemeService.Brush("ShortcutKeyForeground"), FontFamily = new Avalonia.Media.FontFamily("Consolas, Menlo, monospace") };
-                Grid.SetColumn(keys, 1);
-                row.Children.Add(keys);
-                list.Children.Add(row);
-            }
-        }
-        var close = new Button { Content = Loc.T("Close"), IsDefault = true, IsCancel = true, MinWidth = 80, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right, Margin = new Thickness(20, 0, 20, 16) };
-        close.Click += (_, _) => dialog.Close();
-        var root = new DockPanel();
-        DockPanel.SetDock(close, Dock.Bottom);
-        root.Children.Add(close);
-        root.Children.Add(new ScrollViewer { Content = list });
-        dialog.Content = root;
-        ApplyOwnerZoom(dialog, owner);
-        return dialog.ShowDialog(owner);
+        if (LaunchOverride is { } launch) { await launch(uri); return; }
+        await top.Launcher.LaunchUriAsync(uri);
     }
 
-    public static Task<string?> ShowAsync(Window owner, string title, string message, params string[] choices)
+    private static HyperlinkButton AboutLink(string name, string text, Func<Task> click)
+    {
+        var link = ThemeService.Brush("LinkForeground");
+        var button = new HyperlinkButton
+        {
+            Name = name, Content = text, Padding = new Thickness(0), Foreground = link, Background = Brushes.Transparent,
+            Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand), VerticalAlignment = VerticalAlignment.Center
+        };
+        foreach (var state in new[] { "", "PointerOver", "Pressed" })
+        {
+            button.Resources["HyperlinkButtonForeground" + state] = link;
+            button.Resources["HyperlinkButtonBackground" + state] = Brushes.Transparent;
+        }
+        button.Click += async (_, _) => await click();
+        return button;
+    }
+
+    public static Task<string?> ShowAboutAsync(Window owner)
+    {
+        var dialog = new Window { Name = "AboutDialog", Title = Loc.T("AboutTitle"), Width = 540, SizeToContent = SizeToContent.Height, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+        var ok = new Button { Name = "AboutOk", Content = Loc.T("OK"), IsDefault = true, IsCancel = true, MinWidth = 80, MinHeight = 42, FontSize = 16, Classes = { "textAction" }, HorizontalContentAlignment = HorizontalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right };
+        ok.Click += (_, _) => dialog.Close("OK");
+        var github = AboutLink("AboutGitHubLink", AppInfo.GitHubDisplay, () => LaunchAsync(dialog, AppInfo.GitHubUri));
+        var license = AboutLink("AboutLicenseLink", Loc.T("AboutMitLicense"), () => { dialog.Close(LicenseChoice); return Task.CompletedTask; });
+        StackPanel Row(string name, string label, Control value) => new() { Name = name, Orientation = Orientation.Horizontal, Spacing = 6, Children = { new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center }, value } };
+        var text = new StackPanel
+        {
+            Spacing = 4, Margin = new Thickness(16, 0, 0, 0),
+            Children =
+            {
+                new TextBlock { Name = "AboutName", Text = "MDHub", FontSize = 20, FontWeight = FontWeight.SemiBold },
+                new TextBlock { Name = "AboutVersion", Text = Loc.F("AboutVersion", AppInfo.Version), Foreground = ThemeService.Brush("DialogHintForeground") },
+                new TextBlock { Name = "AboutDescription", Text = Loc.T("AboutDescription"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 12) },
+                Row("AboutGitHubRow", Loc.T("AboutGitHub"), github),
+                Row("AboutLicenseRow", Loc.T("AboutLicense"), license),
+                new TextBlock { Name = "AboutCopyright", Text = Loc.T("AboutCopyright"), Margin = new Thickness(0, 12, 0, 0) }
+            }
+        };
+        var logo = new Avalonia.Controls.Image { Name = "AboutLogo", Source = AppIcon.Logo(), Width = 64, Height = 64, VerticalAlignment = VerticalAlignment.Top };
+        dialog.Content = new StackPanel { Margin = new Thickness(20), Spacing = 20, Children = { new DockPanel { Children = { logo, text } }, ok } };
+        dialog.Opened += (_, _) => ok.Focus();
+        ApplyOwnerZoom(dialog, owner);
+        ThemeService.PrepareTitleBar(dialog);
+        return dialog.ShowDialog<string?>(owner);
+    }
+
+    public static Task<string?> ShowAsync(Window owner, string title, string message, params string[] choices) => ShowAsync(owner, title, message, null, choices);
+
+    private static Task<string?> ShowAsync(Window owner, string title, string message, Control? logo, params string[] choices)
     {
         var dialog = new Window { Title = title, Width = 480, SizeToContent = SizeToContent.Height, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right };
         foreach (var choice in choices)
         {
-            var button = new Button { Content = Loc.T(choice), MinWidth = 80 };
+            var button = new Button { Content = Loc.T(choice), MinWidth = 80, Classes = { "textAction" }, HorizontalContentAlignment = HorizontalAlignment.Center, MinHeight = 42, FontSize = 16 };
             button.Click += (_, _) => dialog.Close(choice);
             buttons.Children.Add(button);
         }
         dialog.Content = new StackPanel { Margin = new Thickness(20), Spacing = 20,
-            Children = { new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap }, buttons } };
+            Children = { logo is null ? new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap }
+                : new DockPanel { Children = { logo, new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(16, 0, 0, 0) } } }, buttons } };
         ApplyOwnerZoom(dialog, owner);
+        ThemeService.PrepareTitleBar(dialog);
         return dialog.ShowDialog<string?>(owner);
     }
 }

@@ -10,6 +10,36 @@ using Mdhub.Models;
 using Mdhub.Views;
 using Mdhub.Components;
 
+if (args.Contains("--encoding-only")) { EncodingTests.Run(); return; }
+if (args.Contains("--selhome-only")) { SelectionHomeTests.Run(); return; }
+if (args.Contains("--eol-only")) { LineEndingTests.Run(); return; }
+if (args.Contains("--newfile-only")) { NewFileDialogTests.Run(); return; }
+if (args.Contains("--reveal-only")) { RevealTests.Run(); return; }
+if (args.Contains("--menu-only")) { MenuTests.Run(); return; }
+if (args.Contains("--previewtoggle-only")) { PreviewToggleTests.Run(); return; }
+if (args.Contains("--createtarget-only")) { CreateTargetTests.Run(); return; }
+if (args.Contains("--searchindent-only")) { SearchIndentTests.Run(); return; }
+if (args.Contains("--tabcycle-only")) { TabCycleTests.Run(); return; }
+if (args.Contains("--formaticons-only")) { FormatIconTests.Run(); return; }
+if (args.Contains("--formatsel-only")) { FormatSelectionTests.Run(); return; }
+if (args.Contains("--norepeat-only")) { NoRepeatTests.Run(); return; }
+if (args.Contains("--previewsettings-only")) { PreviewSettingsTests.Run(); return; }
+if (args.Contains("--editorfont-only")) { EditorFontsTests.Run(); return; }
+if (args.Contains("--foldertabs-only")) { FolderTabsTests.Run(); return; }
+if (args.Contains("--overwrite-only")) { OverwriteTests.Run(); return; }
+if (args.Contains("--titlelogo-only")) { TitleLogoTests.Run(); return; }
+if (args.Contains("--lineedit-only")) { LineEditTests.Run(); return; }
+if (args.Contains("--editorcolors-only")) { EditorColorsTests.Run(); return; }
+if (args.Contains("--autocomplete-only")) { AutoCompleteTests.Run(); return; }
+if (args.Contains("--spelling-only")) { SpellCheckTests.Run(); return; }
+if (args.Contains("--tabmenu-only")) { TabMenuTests.Run(); return; }
+if (args.Contains("--tabs-only")) { TabSettingsTests.Run(); return; }
+if (args.Contains("--fileicons-only")) { FileIconTests.Run(); return; }
+if (args.Contains("--multiselect-only")) { MultiSelectTests.Run(); return; }
+if (args.Contains("--gears-only")) { GearsTests.Run(); return; }
+if (args.Contains("--export-only")) { ExportTests.Run(); return; }
+if (args.Contains("--binary-only")) { BinaryFileTests.Run(); return; }
+if (args.Contains("--strike-only")) { StrikeIconTests.Run(); return; }
 if (args.Contains("--drag-only")) { ExplorerDragTests.Run(); return; }
 if (args.Contains("--file-views")) { FileViewTests.Run(); return; }
 if (args.Contains("--image-layout")) { ImageLayoutTests.Run(); return; }
@@ -21,7 +51,18 @@ if (args.Contains("--l10n-only")) { LocalizationTests.Run(); return; }
 if (args.Contains("--selection-only")) { SelectionTests.Run(); return; }
 if (args.Contains("--quickopen-only")) { QuickOpenTests.Run(); return; }
 if (args.Contains("--syntax-only")) { SyntaxTests.Run(); return; }
-if (args.Contains("--search-only")) { WorkspaceSearchTests.Run(); return; }
+if (args.Contains("--explorerkeys-only")) { ExplorerShortcutTests.Run(); return; }
+if (args.Contains("--explorerclip-only")) { ExplorerClipboardKeyTests.Run(); return; }
+if (args.Contains("--viewerkeys-only")) { ViewerShortcutTests.Run(); return; }
+if (args.Contains("--explorerrefresh-only")) { ExplorerRefreshTests.Run(); return; }
+if (args.Contains("--menupadding-only")) { MenuPaddingTests.Run(); return; }
+if (args.Contains("--about-only")) { AboutTests.Run(); return; }
+if (args.Contains("--sidebar-only")) { SidebarPersistTests.Run(); return; }
+if (args.Contains("--longtext-only")) { LongTextLayoutTests.Run(); return; }
+if (args.Contains("--imagezoom-only")) { ImageZoomTests.Run(); return; }
+if (args.Contains("--search-bench")) { SearchBench.Run(args); return; }
+if (args.Contains("--search-only")) { SearchSpeedTests.Run(); WorkspaceSearchTests.Run(); SearchClickTests.Run(); return; }
+if (args.Contains("--shortcuts-only")) { ShortcutTests.Run(); return; }
 AppBuilder.Configure<App>().UseSkia().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).SetupWithoutStarting();
 var window = new MainWindow();
 window.Show();
@@ -152,12 +193,15 @@ EnterName("Sibling folder");
 Require(Directory.Exists(Path.Combine(creationFixture, "Sibling folder")), "New folder is created beside the selected file");
 Find<Button>("NewFolderButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 EnterName("Another folder");
-Require(Directory.Exists(Path.Combine(creationFixture, "Another folder")), "A selected folder creates a sibling at the same level");
+// Item 42: the new folder is revealed and selected, so the next New folder goes inside it.
+Require(Directory.Exists(Path.Combine(creationFixture, "Sibling folder", "Another folder")), "A selected folder creates the new item inside it");
 
-tree.SelectedItem = null;
+// Item 42: with nothing selected the target is the open folder's root (checked below and in --createtarget-only),
+// so select the seed file again to keep creating in this fixture.
+Await(explorer.RevealCreatedAsync(seed)); Pump();
 Find<Button>("NewFileButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 EnterName("fallback.txt");
-Require(File.Exists(Path.Combine(creationFixture, "fallback.txt")), "No explorer selection falls back to the active file's directory");
+Require(File.Exists(Path.Combine(creationFixture, "fallback.txt")), "A selected file creates the new file in its folder");
 // The explorer reloads asynchronously after a create; wait for the reveal instead of relying on a fixed pump.
 for (var wait = 0; wait < 40 && TreeNodes(tree.Items.OfType<TreeViewItem>()).Count(item => item.IsExpanded) < 2; wait++) Pump();
 var allNodes = TreeNodes(tree.Items.OfType<TreeViewItem>()).ToArray();
@@ -178,7 +222,7 @@ ClickDialog("Cancel");
 
 tabs.SelectedItem = second; // Untitled document and no explorer selection means opened root.
 tree.SelectedItem = null;
-Require(explorer.GetCreationDirectory(second.Path) == fixture, "An untitled active document falls back to the opened folder");
+Require(explorer.GetCreationDirectory() == fixture, "An untitled active document falls back to the opened folder");
 Find<Button>("NewFileButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 ClickDialog("Cancel");
 Require(!File.Exists(Path.Combine(fixture, "Untitled.md")), "Cancelling creation does not create a file");
@@ -317,8 +361,8 @@ RunOperation("LoadRootAsync", menuRoot);
 Pump();
 var noteItem = TreeItem(Path.Combine(menuRoot, "note.md"))!;
 var menuEntries = noteItem.ContextMenu!.Items.Cast<Control>().ToArray();
-Require(string.Join("|", menuEntries.Select(e => e is Separator ? "-" : ((MenuItem)e).Header)) == "Reveal in file explorer|-|Cut|Copy|Duplicate|-|Rename|Delete",
-    "Explorer context menu lists Reveal, Cut, Copy, Duplicate, Rename, Delete in order with separators");
+Require(string.Join("|", menuEntries.Select(e => e is Separator ? "-" : ((MenuItem)e).Header)) == "Open with default app|-|Reveal in file explorer|-|Cut|Copy|Paste|Duplicate|-|Rename|Delete",
+    "Explorer context menu lists Open with default app (item 52), Reveal, Cut, Copy, Duplicate, Rename, Delete in order with separators");
 Require(menuEntries.OfType<Separator>().All(s => s.Background is Avalonia.Media.ISolidColorBrush b && b.Color == Avalonia.Media.Colors.LightGray),
     "Explorer context menu separators are light gray");
 Require(TreeItem(Path.Combine(menuRoot, "Docs"))!.ContextMenu is not null, "Folders also have the explorer context menu");
@@ -334,11 +378,11 @@ WaitFor(() => Clipboard()!.ToString()!.EndsWith("False)"));
 Require(Clipboard()!.ToString() == $"({Path.Combine(menuRoot, "Docs")}, False)" && File.Exists(Path.Combine(menuRoot, "note.md")), "Copy stores the path and copy state without changing files");
 
 ClickContext(Path.Combine(menuRoot, "note.md"), "DuplicateMenuItem");
-WaitFor(() => SelectedPath() == Path.Combine(menuRoot, "note copy.md"));
-Require(File.ReadAllText(Path.Combine(menuRoot, "note copy.md")) == "note", "Duplicate creates '<name> copy' beside the file and reveals it");
+WaitFor(() => SelectedPath() == Path.Combine(menuRoot, "note-copy.md"));
+Require(File.ReadAllText(Path.Combine(menuRoot, "note-copy.md")) == "note", "Duplicate creates '<name>-copy' beside the file and reveals it");
 ClickContext(Path.Combine(menuRoot, "Docs"), "DuplicateMenuItem");
-WaitFor(() => SelectedPath() == Path.Combine(menuRoot, "Docs copy"));
-Require(File.Exists(Path.Combine(menuRoot, "Docs copy", "inner.md")), "Duplicate copies folders recursively");
+WaitFor(() => SelectedPath() == Path.Combine(menuRoot, "Docs-copy"));
+Require(File.Exists(Path.Combine(menuRoot, "Docs-copy", "inner.md")), "Duplicate copies folders recursively");
 
 RunOperation("OpenPathAsync", Path.Combine(menuRoot, "note.md"));
 RunOperation("OpenPathAsync", Path.Combine(menuRoot, "Docs", "inner.md"));
@@ -354,7 +398,7 @@ void SubmitRename(string name)
     box.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Enter });
     Pump();
 }
-SubmitRename("note copy.md");
+SubmitRename("note-copy.md");
 Require(explorer.IsRenaming && File.Exists(Path.Combine(menuRoot, "note.md")), "Inline rename rejects existing names");
 SubmitRename("bad/name.md");
 Require(explorer.IsRenaming, "Rename rejects names with paths");
@@ -374,7 +418,7 @@ ClickDialog("Cancel");
 Require(File.Exists(Path.Combine(menuRoot, "gone.md")), "Cancelling delete keeps the item");
 ClickContext(Path.Combine(menuRoot, "gone.md"), "DeleteMenuItem");
 WaitFor(() => window.OwnedWindows.Count == 1);
-ClickDialog("Delete");
+ClickDialog("Move the file to Recycle Bin"); // item 53: the button names the action
 WaitFor(() => !File.Exists(Path.Combine(menuRoot, "gone.md")) && TreeItem(Path.Combine(menuRoot, "gone.md")) is null);
 Require(recycled.SequenceEqual([Path.Combine(menuRoot, "gone.md")]) && !Directory.Exists(Path.Combine(menuRoot, ".md-trash")),
     "Delete confirms, sends the item to the Recycle Bin (not .md-trash), and refreshes the tree");
@@ -383,24 +427,25 @@ noteTab.Editor.Text += " edited";
 Pump();
 ClickContext(Path.Combine(menuRoot, "renamed.md"), "DeleteMenuItem");
 WaitFor(() => window.OwnedWindows.Count == 1);
-ClickDialog("Delete");
+ClickDialog("Move the file to Recycle Bin"); // item 53: the button names the action
 WaitFor(() => window.OwnedWindows.Count == 1);
 ClickDialog("Cancel");
 Require(File.Exists(Path.Combine(menuRoot, "renamed.md")) && tabs.Items.Contains(noteTab), "Cancelling the unsaved-changes prompt cancels the delete");
 ClickContext(Path.Combine(menuRoot, "renamed.md"), "DeleteMenuItem");
 WaitFor(() => window.OwnedWindows.Count == 1);
-ClickDialog("Delete");
+ClickDialog("Move the file to Recycle Bin"); // item 53: the button names the action
 WaitFor(() => window.OwnedWindows.Count == 1);
 ClickDialog("Discard");
 WaitFor(() => !tabs.Items.Contains(noteTab));
 Require(!File.Exists(Path.Combine(menuRoot, "renamed.md")), "Deleting an edited open file prompts, then closes its tab");
 ClickContext(Path.Combine(menuRoot, "Folder"), "DeleteMenuItem");
 WaitFor(() => window.OwnedWindows.Count == 1);
-ClickDialog("Delete");
+ClickDialog("Move the file to Recycle Bin"); // item 53: the button names the action
 WaitFor(() => !tabs.Items.Contains(innerTab));
 Require(!Directory.Exists(Path.Combine(menuRoot, "Folder")) && recycled.Last() == Path.Combine(menuRoot, "Folder"), "Deleting a folder closes clean tabs for files inside it");
 // Empty-space menu
 MenuItem Bg(string name) { explorer.UpdateBackgroundMenu(); return Find<TreeView>("FolderTree")!.ContextMenu!.Items.OfType<MenuItem>().Single(m => m.Name == name); }
+MenuItem RowPaste(string path) { explorer.UpdateBackgroundMenu(); return TreeItem(path)!.ContextMenu!.Items.OfType<MenuItem>().Single(m => m.Name == "PasteMenuItem"); }
 void ClickBg(string name) { Bg(name).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Pump(); }
 Require(Bg("BackgroundNewFileMenuItem").IsEnabled && Bg("BackgroundReloadMenuItem").IsEnabled, "Empty-space menu entries are enabled with a folder open");
 Directory.CreateDirectory(Path.Combine(menuRoot, "Sub"));
@@ -424,13 +469,23 @@ Require(Directory.Exists(Path.Combine(menuRoot, "Root folder")), "Empty-space Ne
 var clipProperty = typeof(MainView).GetProperty("ExplorerClipboard", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
 clipProperty.GetSetMethod(true)!.Invoke(mainView, [null]);
 Require(!Bg("BackgroundPasteMenuItem").IsEnabled, "Paste is disabled when the clipboard is empty");
+Require(!RowPaste(Path.Combine(menuRoot, "paste.md")).IsEnabled && !RowPaste(Path.Combine(menuRoot, "Sub")).IsEnabled, "Row Paste (file and folder menus) is disabled when the clipboard is empty");
 ClickContext(Path.Combine(menuRoot, "paste.md"), "CopyMenuItem");
 WaitFor(() => Clipboard() is not null);
 Require(Bg("BackgroundPasteMenuItem").IsEnabled, "Paste is enabled after Copy");
 ClickBg("BackgroundPasteMenuItem");
-WaitFor(() => SelectedPath() == Path.Combine(menuRoot, "paste copy.md"));
-Require(File.ReadAllText(Path.Combine(menuRoot, "paste copy.md")) == "paste" && File.Exists(Path.Combine(menuRoot, "paste.md")) && Clipboard() is not null,
+WaitFor(() => SelectedPath() == Path.Combine(menuRoot, "paste-copy.md"));
+Require(File.ReadAllText(Path.Combine(menuRoot, "paste-copy.md")) == "paste" && File.Exists(Path.Combine(menuRoot, "paste.md")) && Clipboard() is not null,
     "Paste after Copy copies into the root with a unique name, reveals it, and keeps the clipboard");
+Require(RowPaste(Path.Combine(menuRoot, "Sub")).IsEnabled && Mdhub.Components.ShortcutKeys.MenuText(RowPaste(Path.Combine(menuRoot, "Sub"))) == "Ctrl+V", "Row Paste is enabled after Copy and shows Ctrl+V");
+ClickContext(Path.Combine(menuRoot, "Sub"), "PasteMenuItem");
+WaitFor(() => File.Exists(Path.Combine(menuRoot, "Sub", "paste.md")));
+Require(File.ReadAllText(Path.Combine(menuRoot, "Sub", "paste.md")) == "paste", "Paste on a folder pastes inside it");
+TreeItem(Path.Combine(menuRoot, "Sub"))!.IsExpanded = true;
+WaitFor(() => TreeItem(Path.Combine(menuRoot, "Sub", "moved.md")) is not null);
+ClickContext(Path.Combine(menuRoot, "Sub", "moved.md"), "PasteMenuItem");
+WaitFor(() => File.Exists(Path.Combine(menuRoot, "Sub", "paste-copy.md")));
+Require(File.ReadAllText(Path.Combine(menuRoot, "Sub", "paste-copy.md")) == "paste", "Paste on a file pastes beside it");
 Await(explorer.RevealCreatedAsync(Path.Combine(menuRoot, "Sub", "moved.md")));
 ClickContext(Path.Combine(menuRoot, "Sub", "moved.md"), "CutMenuItem");
 WaitFor(() => Clipboard()!.ToString()!.EndsWith("True)"));
@@ -1232,9 +1287,9 @@ finally
     Require(sdlg.Title == "Shortcuts" && rows.Count == Mdhub.Services.Shortcuts.All.Count && areas.SequenceEqual(["File", "Edit", "View", "Find", "Zoom", "Editor"]),
         "The Shortcut dialog lists every shortcut grouped by area");
     var saveRow = rows.First(r => Equals(r.Tag, "file.saveAs"));
-    Require(saveRow.Children.OfType<TextBlock>().Select(b => b.Text).SequenceEqual(["Save as", "Ctrl+Shift+S"]), "Dialog rows show the label and the gesture");
-    Require(!sdlg.GetVisualDescendants().OfType<TextBox>().Any(), "The Shortcut dialog is read-only");
-    Require(sdlg.Content is LayoutTransformControl { LayoutTransform: { } sz } && Math.Abs(sz.Value.M11 - 1.2) < 1e-9 && sdlg.Width == 624 && sdlg.Height == 672, "The Shortcut dialog follows the owner window's zoom");
+    Require(saveRow.Children.OfType<TextBlock>().Where(b => b.Name != "ShortcutCustomMark").Select(b => b.Text).SequenceEqual(["Save as", "Ctrl+Shift+S"]), "Dialog rows show the label and the gesture");
+    Require(!sdlg.GetVisualDescendants().OfType<TextBox>().Any(), "The Shortcut dialog has no text fields (keys are recorded, not typed)");
+    Require(sdlg.Content is LayoutTransformControl { LayoutTransform: { } sz } && Math.Abs(sz.Value.M11 - 1.2) < 1e-9 && sdlg.Width == 672 && sdlg.Height == 720, "The Shortcut dialog follows the owner window's zoom");
     sdlg.GetVisualDescendants().OfType<Button>().First(b => Equals(b.Content, "Close")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
     Require(sw.OwnedWindows.Count == 0, "Close dismisses the Shortcut dialog");
     sw.SetZoom(100, announce: false);
@@ -1413,7 +1468,7 @@ finally
     ew.SetZoom(100, announce: false);
     etops[3].Items.OfType<MenuItem>().First().RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Pump();
     var sd = ew.OwnedWindows.Single();
-    string RowText(string id) => string.Join("|", sd.GetVisualDescendants().OfType<Grid>().First(g => Equals(g.Tag, id)).Children.OfType<TextBlock>().Select(b => b.Text));
+    string RowText(string id) => string.Join("|", sd.GetVisualDescendants().OfType<Grid>().First(g => Equals(g.Tag, id)).Children.OfType<TextBlock>().Where(b => b.Name != "ShortcutCustomMark").Select(b => b.Text));
     Require(RowText("editor.quote") == "Block quote (Markdown)|Ctrl+\"" && RowText("editor.insertTime") == "Insert date and time|Ctrl+;" && RowText("editor.goToLine") == "Go to line|Ctrl+G"
         && RowText("view.previewCaret") == "Scroll preview to caret|Ctrl+Shift+G" && RowText("editor.bold") == "Bold (Markdown)|Ctrl+B", "The Shortcut dialog lists the new shortcuts");
     sd.Close(); Pump();

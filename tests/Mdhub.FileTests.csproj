@@ -4,9 +4,13 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <DefineConstants>$(DefineConstants);FILE_TESTS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../Services/TextFileStore.cs" Link="TextFileStore.cs" />
+    <Compile Include="../Services/FileSupport.cs" Link="FileSupport.cs" />
+    <Compile Include="../Services/TextEncodings.cs" Link="TextEncodings.cs" />
+    <Compile Include="../Services/EncodingDetector.cs" Link="EncodingDetector.cs" />
     <Compile Include="../Text/TextStatistics.cs" Link="TextStatistics.cs" />
     <Compile Include="../Text/FuzzyMatch.cs" Link="FuzzyMatch.cs" />
     <Compile Include="../Services/QuickOpenIndex.cs" Link="QuickOpenIndex.cs" />
@@ -14,6 +18,7 @@
     <Compile Include="../Text/ImageAssets.cs" Link="ImageAssets.cs" />
     <Compile Include="../Text/FindReplace.cs" Link="FindReplace.cs" />
     <Compile Include="../Services/SessionStore.cs" Link="SessionStore.cs" />
+    <Compile Include="../Services/FolderTabsStore.cs" Link="FolderTabsStore.cs" />
     <Compile Include="../Services/RecentList.cs" Link="RecentList.cs" />
     <Compile Include="../Services/WindowPlacement.cs" Link="WindowPlacement.cs" />
     <Compile Include="../Rendering/PreviewSourceMap.cs" Link="PreviewSourceMap.cs" />
@@ -21,6 +26,9 @@
     <Compile Include="../Text/CaretLine.cs" Link="CaretLine.cs" />
     <Compile Include="../Services/Shortcuts.cs" Link="Shortcuts.cs" />
     <Compile Include="../Text/EditorCommands.cs" Link="EditorCommands.cs" />
+    <Compile Include="../Text/TabEditing.cs" Link="TabEditing.cs" />
+    <Compile Include="../Text/SpellTokenizer.cs" Link="SpellTokenizer.cs" />
+    <Compile Include="../Services/MarkdownAutoComplete.cs" Link="MarkdownAutoComplete.cs" />
     <Compile Include="../Rendering/PreviewEdit.cs" Link="PreviewEdit.cs" />
     <Compile Include="../Rendering/RichCopy.cs" Link="RichCopy.cs" />
     <Compile Include="../Text/CaretPosition.cs" Link="CaretPosition.cs" />
@@ -29,6 +37,10 @@
     <Compile Include="../Localization/Strings.ZhHant.cs" Link="Strings.ZhHant.cs" />
     <Compile Include="../Localization/Strings.Ja.cs" Link="Strings.Ja.cs" />
     <Compile Include="../Localization/Strings.Ko.cs" Link="Strings.Ko.cs" />
+    <Compile Include="../Localization/Strings.ZhHans.cs" Link="Strings.ZhHans.cs" />
+    <Compile Include="../Localization/Strings.De.cs" Link="Strings.De.cs" />
+    <Compile Include="../Localization/Strings.Fr.cs" Link="Strings.Fr.cs" />
+    <Compile Include="../Localization/Strings.Es.cs" Link="Strings.Es.cs" />
     <Compile Remove="Ui/**/*.cs" />
   </ItemGroup>
 </Project>

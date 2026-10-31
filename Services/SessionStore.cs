@@ -27,9 +27,64 @@ public sealed record SessionData
     public string? Language { get; init; }
     public List<string> RecentFiles { get; init; } = []; // File > Open Recent, newest first; missing in old files: empty
     public List<string> RecentFolders { get; init; } = [];
+    // Custom shortcut bindings: id -> gestures like "Command+Shift+F"; missing in old files: none (defaults).
+    public Dictionary<string, List<string>>? CustomShortcuts { get; init; }
+    // Item 35: preview fonts and spacing; missing in old files (or all defaults): null.
+    public PreviewSettingsData? Preview { get; init; }
+    // Item 57: editor fonts (separate from the preview); null when both are the default.
+    public EditorFontsData? EditorFonts { get; init; }
+    // Item 62: editor colour overrides per theme (colour id -> #AARRGGBB); null when none.
+    public EditorColorsData? EditorColors { get; init; }
+    // Item 70: editor typing behaviour (tabs); null when all defaults.
+    public EditorBehaviorData? EditorBehavior { get; init; }
+    // Item 67: the Default encoding setting (TextEncodings id); null when UTF-8.
+    public string? DefaultEncoding { get; init; }
+    // Item 68: the Default line ending of new files (os, crlf, lf); null when the OS's.
+    public string? DefaultLineEnding { get; init; }
+}
+
+// Item 70: Tab inserts spaces (default) or a tab; TabSize (1-8) = spaces per Tab and the width of a tab character.
+public sealed record EditorBehaviorData
+{
+    public bool InsertSpaces { get; init; } = true;
+    public int TabSize { get; init; } = 4;
+    // Item 71: Markdown list / table auto-complete and table column alignment (all on by default).
+    public bool AutoLists { get; init; } = true;
+    public bool AutoTables { get; init; } = true;
+    public bool AlignTables { get; init; } = true;
+    // Item 74: spell checking (off by default) and its dictionary (null: the UI language's, else English).
+    public bool SpellCheck { get; init; }
+    public string? SpellLanguage { get; init; }
 }
 
 // UI-free session file handling: atomic save, tolerant load and validation against the file system.
+// Item 57: the source editor's body and code font names (Consolas, the editor's font before item 57).
+// Item 62: per-theme editor colour overrides, keyed by EditorColors item id.
+public sealed record EditorColorsData
+{
+    public Dictionary<string, string>? Dark { get; init; }
+    public Dictionary<string, string>? Light { get; init; }
+}
+public sealed record EditorFontsData
+{
+    public string Body { get; init; } = "Consolas";
+    public string Code { get; init; } = "Consolas";
+}
+
+// Item 35: preview typography; null family = the app's UI font. Defaults match PreviewSettings.Default*.
+public sealed record PreviewSettingsData
+{
+    public string? BodyFamily { get; init; }
+    public double BodySize { get; init; } = 15;
+    public string CodeFamily { get; init; } = "Consolas";
+    public double CodeSize { get; init; } = 13;
+    public double LineHeight { get; init; } = 1.6;
+    public double ParagraphSpacing { get; init; } = 14;
+    // Item 56: gap between list items (was the nested 8 px, i.e. 14 x 8/14).
+    public double BulletSpacing { get; init; } = 0;
+    public double OrderedSpacing { get; init; } = 8;
+}
+
 public static class SessionStore
 {
     public const int CurrentVersion = 1;

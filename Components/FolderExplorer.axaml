@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.FolderExplorer">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.FolderExplorer" xmlns:c="using:Mdhub.Components">
   <UserControl.Resources>
     <!-- VS Code-like indent per level; the chevron slot stays reserved for files so same-level names align. -->
     <x:Double x:Key="TreeViewItemIndent">10</x:Double>
@@ -18,6 +18,13 @@
     </Style>
     <!-- VS Code row states. A 1px border is always reserved (transparent) so rows never shift when focus moves;
          the focused-selection colours apply while focus is anywhere inside the tree (rename box included). -->
+    <!-- Item 45: file and folder rows (chevron included) show the hand; the inline rename box keeps the I-beam. -->
+    <Style Selector="TreeView#FolderTree TreeViewItem">
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="TreeView#FolderTree TextBox">
+      <Setter Property="Cursor" Value="Ibeam" />
+    </Style>
     <Style Selector="TreeView#FolderTree TreeViewItem">
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="BorderBrush" Value="Transparent" />
@@ -25,6 +32,15 @@
     </Style>
     <Style Selector="TreeView#FolderTree TreeViewItem /template/ Border#PART_LayoutRoot:pointerover, TreeView#FolderTree TreeViewItem:pressed /template/ Border#PART_LayoutRoot:pointerover">
       <Setter Property="Background" Value="{DynamicResource ExplorerHoverBackground}" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <!-- Item 80: rows of a multi-selection use the item 29 selection colours; only the focused row (:selected, below) gets the border. -->
+    <Style Selector="TreeView#FolderTree TreeViewItem.multiSelected /template/ Border#PART_LayoutRoot, TreeView#FolderTree TreeViewItem.multiSelected /template/ Border#PART_LayoutRoot:pointerover">
+      <Setter Property="Background" Value="{DynamicResource ExplorerSelectionInactiveBackground}" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="TreeView#FolderTree:focus-within TreeViewItem.multiSelected /template/ Border#PART_LayoutRoot, TreeView#FolderTree:focus-within TreeViewItem.multiSelected /template/ Border#PART_LayoutRoot:pointerover">
+      <Setter Property="Background" Value="{DynamicResource ExplorerSelectionBackground}" />
       <Setter Property="BorderBrush" Value="Transparent" />
     </Style>
     <Style Selector="TreeView#FolderTree TreeViewItem:selected /template/ Border#PART_LayoutRoot, TreeView#FolderTree TreeViewItem:selected /template/ Border#PART_LayoutRoot:pointerover, TreeView#FolderTree TreeViewItem:pressed:selected /template/ Border#PART_LayoutRoot:pointerover">
@@ -77,6 +93,7 @@
       <Setter Property="CornerRadius" Value="4" />
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="Foreground" Value="{DynamicResource IconForeground}" />
+      <Setter Property="Cursor" Value="Hand" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
@@ -132,7 +149,7 @@
                 Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
         </Button>
         <Button x:Name="CollapseAllButton" Classes="explorerAction" Click="CollapseAll_Click" ToolTip.Tip="{DynamicResource CollapseAll}" AutomationProperties.Name="{DynamicResource CollapseAllFolders}">
-          <Path Classes="explorerIcon" Data="M 5,2 L 14,2 14,11 M 2,5 L 11,5 11,14 2,14 Z M 4.5,9.5 L 8.5,9.5"
+          <Path Classes="explorerIcon" Data="{x:Static c:SharedIcons.CollapseAll}"
                 Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
         </Button>
       </StackPanel>

@@ -31,7 +31,7 @@ public static class SessionManager
     // Called once a close has been accepted (after the unsaved prompt), so a cancelled close changes nothing.
     private static void Capture(MainWindow window)
     {
-        if (Entries.FirstOrDefault(e => e.Window == window) is { } entry) entry.Snapshot = window.CaptureSession();
+        if (Entries.FirstOrDefault(e => e.Window == window) is { } entry) FolderTabsStore.Record(FolderTabsStore.PathFor(SessionPath), entry.Snapshot = window.CaptureSession());
     }
 
     private static bool _shuttingDown;
@@ -53,18 +53,26 @@ public static class SessionManager
     public static void BeginShutdown()
     {
         if (!Enabled || Entries.Count == 0) return;
-        Write(Entries.Select(e => e.Window.CaptureSession()).ToList());
+        var windows = Entries.Select(e => e.Window.CaptureSession()).ToList();
+        foreach (var session in windows) FolderTabsStore.Record(FolderTabsStore.PathFor(SessionPath), session); // item 64
+        Write(windows);
         _shuttingDown = true;
     }
 
     private static void Write(List<WindowSession> windows)
     {
         try { SessionStore.Save(SessionPath, new SessionData { Windows = windows.Where(w => !w.IsEmpty).ToList(), Theme = ThemeService.Current.ToString(), Language = Mdhub.Localization.Loc.Chosen,
-                RecentFiles = [.. RecentService.Files], RecentFolders = [.. RecentService.Folders] }); }
+                RecentFiles = [.. RecentService.Files], RecentFolders = [.. RecentService.Folders], CustomShortcuts = Shortcuts.AnyCustomized ? Shortcuts.Export() : null,
+                Preview = PreviewSettings.IsDefault ? null : PreviewSettings.Current,
+                EditorFonts = EditorFonts.IsDefault ? null : EditorFonts.Current,
+                EditorColors = EditorColors.Export(),
+                EditorBehavior = EditorBehavior.IsDefault ? null : EditorBehavior.Current,
+                DefaultEncoding = TextEncodings.DefaultEncodingId == TextEncodings.DefaultId ? null : TextEncodings.DefaultEncodingId,
+                DefaultLineEnding = LineEndingSettings.DefaultLineEndingId == LineEndingSettings.DefaultId ? null : LineEndingSettings.DefaultLineEndingId }); }
         catch (Exception) { /* A session that cannot be written must not block closing. */ }
     }
 
-    // Theme switches are saved right away with the open windows, so a crash keeps the choice.
+    // Theme, language and shortcut changes are saved right away with the open windows, so a crash keeps the choice.
     public static void SaveSettings()
     {
         if (!Enabled) return;

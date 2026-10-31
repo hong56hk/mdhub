@@ -1,4 +1,25 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.TextFormatter">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:c="using:Mdhub.Components" x:Class="Mdhub.Components.TextFormatter">
+  <!-- Item 48: the toggle-preview button is a split-editor icon; its colour (and a subtle background) shows the state. -->
+  <UserControl.Styles>
+    <Style Selector="Button#TogglePreviewButton">
+      <Setter Property="Foreground" Value="{DynamicResource PreviewToggleOff}" />
+      <Setter Property="Padding" Value="7,5" />
+    </Style>
+    <!-- Item 50: icon buttons keep the text buttons' size: the same min width, and the icon box matches a text line's height. -->
+    <Style Selector="Button.tool.icon">
+      <Setter Property="Padding" Value="7,5" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <!-- Item 51: export buttons match the preview toggle beside them. -->
+    <Style Selector="Button.tool.export">
+      <Setter Property="Padding" Value="7,5" />
+    </Style>
+    <Style Selector="Button#TogglePreviewButton.on">
+      <Setter Property="Foreground" Value="{DynamicResource PreviewToggleOn}" />
+      <Setter Property="Background" Value="{DynamicResource PreviewToggleOnBackground}" />
+    </Style>
+  </UserControl.Styles>
   <Border BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="0,1" Padding="8,5" Background="{DynamicResource ToolbarBackground}">
     <Grid ColumnDefinitions="*,Auto">
       <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
@@ -7,20 +28,68 @@
           <Button Content="↷" Tag="redo" Classes="tool" Click="Edit_Click" ToolTip.Tip="{DynamicResource Redo}" />
           <Button Content="B" Tag="bold" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Bold}" />
           <Button Content="I" Tag="italic" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Italic}" />
-          <Button Content="S̶" Tag="strike" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Strikethrough}" />
+          <Button Tag="strike" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Strikethrough}"><c:StrikeGlyph /></Button>
           <Button Content="&lt;/&gt;" Tag="code" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource InlineCode}" />
           <Button Content="H1" Tag="h1" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Heading1}" />
           <Button Content="H2" Tag="h2" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Heading2}" />
           <Button Content="H3" Tag="h3" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Heading3}" />
-          <Button Content="{DynamicResource ListButton}" Tag="list" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource BulletList}" />
-          <Button Content="{DynamicResource NumberedButton}" Tag="ordered" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource NumberedList}" />
+          <Button Tag="list" Classes="tool icon" Click="Format_Click" ToolTip.Tip="{DynamicResource BulletList}" AutomationProperties.Name="{DynamicResource BulletList}">
+            <!-- Item 50: three short lines, each with a dot on its left. Bug 65: the icons take the button content presenter's Foreground (dimmed when disabled, like the text buttons). -->
+            <Grid Width="16" Height="14">
+              <Path x:Name="BulletIcon" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}" Data="M 6.5,2.5 H 14.5 M 6.5,7 H 14.5 M 6.5,11.5 H 14.5" />
+              <Path x:Name="BulletDots" Stretch="None" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
+                    Data="M 1.3,2.5 A 1.1,1.1 0 1 0 3.5,2.5 A 1.1,1.1 0 1 0 1.3,2.5 Z M 1.3,7 A 1.1,1.1 0 1 0 3.5,7 A 1.1,1.1 0 1 0 1.3,7 Z M 1.3,11.5 A 1.1,1.1 0 1 0 3.5,11.5 A 1.1,1.1 0 1 0 1.3,11.5 Z" />
+            </Grid>
+          </Button>
+          <Button Tag="ordered" Classes="tool icon" Click="Format_Click" ToolTip.Tip="{DynamicResource NumberedList}" AutomationProperties.Name="{DynamicResource NumberedList}">
+            <!-- Item 50: three short lines with a tiny 1, 2, 3 on their left (the digits use a finer stroke). -->
+            <Grid Width="16" Height="14">
+              <Path x:Name="OrderedIcon" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}" Data="M 6.5,2.5 H 14.5 M 6.5,7 H 14.5 M 6.5,11.5 H 14.5" />
+              <Path x:Name="OrderedDigits" Stretch="None" StrokeThickness="0.9" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}" Data="M 2,1.4 L 3,0.7 V 4.3 M 1.3,6 Q 1.6,5.2 2.5,5.2 Q 3.6,5.2 3.6,6.2 Q 3.6,7 1.3,8.8 H 3.8 M 1.3,10 Q 2.4,9.6 3.3,10.2 Q 3.6,11.2 2.2,11.5 Q 3.8,11.8 3.5,12.7 Q 2.7,13.5 1.2,12.9" />
+            </Grid>
+          </Button>
           <Button Content="❝" Tag="quote" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource BlockQuote}" />
-          <Button Content="{DynamicResource LinkButton}" Tag="link" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource InsertLink}" />
-          <Button Content="{DynamicResource TableButton}" Tag="table" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource InsertTable}" />
+          <Button x:Name="LinkButton" Tag="link" Classes="tool icon" Click="Format_Click" AutomationProperties.Name="{DynamicResource InsertLink}">
+            <!-- Item 50: two interlocking chain links, drawn horizontally. -->
+            <Path x:Name="LinkIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
+                  Data="M 7.8,9.5 H 3.5 A 2.5,2.5 0 0 1 3.5,4.5 H 7.5 A 2.5,2.5 0 0 1 9.6,8.4 M 8.2,4.5 H 12.5 A 2.5,2.5 0 0 1 12.5,9.5 H 8.5 A 2.5,2.5 0 0 1 6.4,5.6" />
+          </Button>
+          <Button Tag="table" Classes="tool icon" Click="Format_Click" ToolTip.Tip="{DynamicResource InsertTable}" AutomationProperties.Name="{DynamicResource InsertTable}">
+            <!-- Item 50: a rounded table with a (lightly filled) header row. Bug 65: a 3x3 grid. -->
+            <Grid Width="16" Height="14">
+              <Path x:Name="TableHeader" Stretch="None" Opacity="0.35" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
+                    Data="M 1.5,5.17 V 3 A 1.5,1.5 0 0 1 3,1.5 H 13 A 1.5,1.5 0 0 1 14.5,3 V 5.17 Z" />
+              <Path x:Name="TableIcon" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
+                    Data="M 3,1.5 H 13 A 1.5,1.5 0 0 1 14.5,3 V 11 A 1.5,1.5 0 0 1 13,12.5 H 3 A 1.5,1.5 0 0 1 1.5,11 V 3 A 1.5,1.5 0 0 1 3,1.5 Z M 1.5,5.17 H 14.5 M 1.5,8.83 H 14.5 M 5.83,1.5 V 12.5 M 10.17,1.5 V 12.5" />
+            </Grid>
+          </Button>
         </StackPanel>
       </ScrollViewer>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="12,0,0,0">
-        <Button x:Name="TogglePreviewButton" Content="{DynamicResource TogglePreview}" Classes="tool" Click="TogglePreview_Click" AutomationProperties.Name="{DynamicResource TogglePreview}" />
+        <Button x:Name="TogglePreviewButton" Classes="tool" Click="TogglePreview_Click" AutomationProperties.Name="{DynamicResource TogglePreview}">
+          <Path x:Name="TogglePreviewIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round"
+                Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                Data="M 3,1.5 H 13 A 1.5,1.5 0 0 1 14.5,3 V 11 A 1.5,1.5 0 0 1 13,12.5 H 3 A 1.5,1.5 0 0 1 1.5,11 V 3 A 1.5,1.5 0 0 1 3,1.5 Z M 8,1.5 V 12.5" />
+        </Button>
+        <!-- Item 51: export the Markdown note to HTML and PDF (a page with a folded corner). The HTML icon is '</>' again (20f95af restored it after bug 73); bug 82: both icons bind the ContentPresenter foreground so they dim when disabled (bug 65). -->
+        <Button x:Name="ExportHtmlButton" Classes="tool export" Click="ExportHtml_Click" ToolTip.Tip="{DynamicResource ExportHtmlTip}" AutomationProperties.Name="{DynamicResource ExportHtmlTip}">
+          <Path x:Name="ExportHtmlIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
+                Data="M 5,3.5 L 1.5,7 L 5,10.5 M 11,3.5 L 14.5,7 L 11,10.5 M 9.5,2 L 6.5,12" />
+        </Button>
+        <Button x:Name="ExportPdfButton" Classes="tool export" Click="ExportPdf_Click" ToolTip.Tip="{DynamicResource ExportPdfTip}" AutomationProperties.Name="{DynamicResource ExportPdfTip}">
+          <Path x:Name="ExportPdfIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
+                Data="M 3.5,1 H 9.5 L 13,4.5 V 13 H 3.5 Z M 9.5,1 V 4.5 H 13 M 6,8 H 10.5 M 6,10.5 H 9" />
+        </Button>
+        <!-- Item 60: editor settings (item 57 fonts) and preview settings (item 35 typography), right after Export PDF.
+             The editor gear shows for text tabs, the preview gear only for Markdown; flyouts open below their button. -->
+        <Button x:Name="EditorSettingsButton" Classes="tool export" ToolTip.Tip="{DynamicResource EditorSettings}" AutomationProperties.Name="{DynamicResource EditorSettings}">
+          <Path x:Name="EditorSettingsIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                Data="{StaticResource EditorSettingsIconGeometry}" />
+        </Button>
+        <Button x:Name="PreviewSettingsButton" Classes="tool export" ToolTip.Tip="{DynamicResource PreviewSettings}" AutomationProperties.Name="{DynamicResource PreviewSettings}">
+          <Path x:Name="PreviewSettingsIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                Data="{StaticResource PreviewSettingsIconGeometry}" />
+        </Button>
       </StackPanel>
     </Grid>
   </Border>

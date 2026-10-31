@@ -9,9 +9,9 @@ public partial class MainView
 {
     private async Task CreateExplorerItemAsync(bool isFolder)
     {
-        var directory = FolderExplorer.GetCreationDirectory(_active?.Path);
+        var directory = FolderExplorer.GetCreationDirectory();
         var name = await DialogService.PromptNameAsync(Host, Loc.T(isFolder ? "NewFolder" : "NewFile"), directory,
-            isFolder ? "New folder" : "Untitled.md");
+            isFolder ? "New folder" : "Untitled.md", FolderExplorer.DisplayDirectory(directory));
         if (name is null) return;
         var path = await FolderService.CreateAsync(directory, name, isFolder);
         await FolderExplorer.RevealCreatedAsync(path);
@@ -30,6 +30,7 @@ public partial class MainView
         var path = Path.GetFullPath(request.Path);
         var root = FolderExplorer.OpenedFolder ?? throw new InvalidOperationException(Loc.T("OpenFolderFirst"));
         var parent = Path.GetDirectoryName(path)!;
+        if (request.Paths is { Count: > 1 }) { await HandleMultiExplorerRequestAsync(request, root); return; }
         switch (request.Action)
         {
             case ExplorerAction.Reveal:
@@ -39,12 +40,15 @@ public partial class MainView
             case ExplorerAction.Cut:
             case ExplorerAction.Copy:
                 ExplorerClipboard = (path, request.Action == ExplorerAction.Cut);
+                ExplorerClipboardPaths = null;
+                await PublishClipboardFilesAsync([path]);
                 await FolderExplorer.RevealCreatedAsync(path);
                 UpdateStatus(Loc.F(request.Action == ExplorerAction.Cut ? "CutStatus" : "CopiedStatus", path));
                 break;
             case ExplorerAction.Paste:
             {
                 if (ExplorerClipboard is not { } clip) return;
+                if (ExplorerClipboardPaths is { Count: > 1 } many) { await PasteManyAsync(path, many, clip.IsCut); break; }
                 var target = Path.Combine(path, Path.GetFileName(clip.Path));
                 if (File.Exists(target) || Directory.Exists(target)) target = ExplorerFileOperations.UniqueCopyPath(target);
                 if (clip.IsCut)
@@ -66,13 +70,17 @@ public partial class MainView
                 UpdateStatus(Loc.F("Duplicated", target));
                 break;
             }
+            case ExplorerAction.CopyPath:
+                await HandleMultiExplorerRequestAsync(request with { Paths = [path] }, root);
+                break;
             case ExplorerAction.Rename:
                 FolderExplorer.BeginRename(path);
                 break;
             case ExplorerAction.Delete:
             {
-                var answer = await DialogService.ShowAsync(Host, Loc.T("Delete"), Loc.F("DeleteConfirm", Path.GetFileName(path)), "Delete", "Cancel");
-                if (answer != "Delete") return;
+                // Item 53: the button says what happens (the item goes to the Recycle Bin, it is not erased).
+                var answer = await DialogService.ShowAsync(Host, Loc.T("Delete"), Loc.F("DeleteConfirm", Path.GetFileName(path)), "MoveToRecycleBin", "Cancel");
+                if (answer != "MoveToRecycleBin") return;
                 var affected = _documents.Where(d => d.Path is not null && IsSameOrInside(path, d.Path)).ToList();
                 foreach (var document in affected)
                     if (!await ConfirmCloseAsync(document)) return;
@@ -102,12 +110,19 @@ public partial class MainView
         UpdateContentLayout();
     }
 
+    // Bug 79: switch away from the tab first, then remove it, and dispose its bitmap only once nothing shows it
+    // (disposing a bitmap the image viewer or status bar still used threw "Cannot access a disposed object").
     private void RemoveDocument(NoteDocument document)
     {
         var index = _documents.IndexOf(document);
+        if (index < 0) return;
+        if (_active == document && _documents.Count > 1) FileTabs.SelectedDocument = _documents[index + 1 < _documents.Count ? index + 1 : index - 1];
         _documents.Remove(document);
-        document.Image?.Dispose();
         if (_documents.Count == 0) AddDocument(null, "");
-        else if (_active == document) FileTabs.SelectedDocument = _documents[Math.Min(index, _documents.Count - 1)];
+        if (document.Image is { } image)
+        {
+            if (_active == document || _active?.Image != image) ImageViewer.ShowImage(_active == document ? null : _active?.Image);
+            Avalonia.Threading.Dispatcher.UIThread.Post(image.Dispose, Avalonia.Threading.DispatcherPriority.Background);
+        }
     }
 }

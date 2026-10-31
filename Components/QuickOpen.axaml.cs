@@ -166,7 +166,11 @@ public partial class QuickOpen : UserControl
             Add(0, item.NameStart - 1, ThemeService.Brush("TextMuted"), 12);
         }
         ToolTip.SetTip(text, item.RelativePath);
-        return text;
+        // Item 78: the same file-type icon as the explorer, tabs and search results.
+        var row = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = FileRowHeader.Gap };
+        row.Children.Add(new FileTypeIcon(item.RelativePath, FileSupport.IsKnownBinary(item.RelativePath)));
+        row.Children.Add(text);
+        return row;
     }
 
     public void Move(int delta)
