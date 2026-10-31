@@ -63,6 +63,9 @@ public sealed class MarkdownTextBox : TextBox
     // outdents every touched line. Each is one replacement, so one undo step.
     protected override void OnKeyDown(Avalonia.Input.KeyEventArgs e)
     {
+        if (e.Key is Avalonia.Input.Key.Home or Avalonia.Input.Key.End && e.KeyModifiers == Avalonia.Input.KeyModifiers.Shift) { ExtendToLineEdge(e); return; }
+        // Same root cause: a plain Home / End with a selection went from the selection start; VS Code moves from the caret.
+        if (e.Key is Avalonia.Input.Key.Home or Avalonia.Input.Key.End && e.KeyModifiers == Avalonia.Input.KeyModifiers.None && SelectionStart != SelectionEnd) SelectionStart = SelectionEnd;
         if (!IsReadOnly && HandleAutoComplete(e)) { e.Handled = true; return; }
         var lengthBefore = Text?.Length ?? 0;
         if (e.Key == Avalonia.Input.Key.Tab && !IsReadOnly && AcceptsTab && (e.KeyModifiers is Avalonia.Input.KeyModifiers.None or Avalonia.Input.KeyModifiers.Shift))
@@ -161,6 +164,20 @@ public sealed class MarkdownTextBox : TextBox
         _aligning = true;
         try { var sel = (SelectionStart, SelectionEnd); ApplyEdit(edit); if (sel.SelectionStart != sel.SelectionEnd) { var d = edit.Replacement.Length - (edit.End - edit.Start); SelectionStart = sel.SelectionStart >= edit.End ? sel.SelectionStart + d : sel.SelectionStart; SelectionEnd = sel.SelectionEnd >= edit.End ? sel.SelectionEnd + d : sel.SelectionEnd; } }
         finally { _aligning = false; }
+    }
+
+    // Bug 76 (VS Code): Shift+Home / Shift+End move only the caret (SelectionEnd, the active end) to the start or end
+    // of its own line; the anchor (SelectionStart) stays, whichever way the selection runs. The target comes from a
+    // plain Home / End at the caret, so wrapped (visual) lines behave as before.
+    private void ExtendToLineEdge(Avalonia.Input.KeyEventArgs e)
+    {
+        int anchor = SelectionStart, caret = SelectionEnd;
+        SelectionStart = SelectionEnd = caret;
+        base.OnKeyDown(new Avalonia.Input.KeyEventArgs { RoutedEvent = e.RoutedEvent, Source = e.Source, Key = e.Key, PhysicalKey = e.PhysicalKey, KeyModifiers = Avalonia.Input.KeyModifiers.None });
+        var target = CaretIndex;
+        SelectionStart = anchor;
+        SelectionEnd = target;
+        e.Handled = true;
     }
 
     public void ApplyEdit(Mdhub.Text.CaretEdit edit)
