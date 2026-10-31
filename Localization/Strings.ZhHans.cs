@@ -63,6 +63,7 @@ public static partial class Loc
         ["Close"] = "关闭",
         ["CloseWindow"] = "关闭窗口",
         ["CloseTab"] = "关闭标签页",
+        ["CloseOtherTabs"] = "\u5173\u95ed\u5176\u4ed6\u6807\u7b7e\u9875",
         ["NewNote"] = "新建笔记",
         ["SidebarExplorer"] = "资源管理器",
         ["SidebarSearch"] = "搜索",

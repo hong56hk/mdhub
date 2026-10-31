@@ -41,6 +41,7 @@ public partial class MainView : UserControl
         FileTabs.DocumentSelected += SelectDocument;
         FileTabs.NewRequested += () => RequestAction(WorkspaceAction.New);
         FileTabs.CloseRequested += async document => await RunAsync(() => CloseDocumentAsync(document));
+        FileTabs.TabMenu = CreateTabMenu(); // item 75
         TopMenu.ActionRequested += RequestAction;
         TopMenu.WindowActionRequested += action => WindowActionRequested?.Invoke(action);
         TopMenu.EditRequested += Edit;
