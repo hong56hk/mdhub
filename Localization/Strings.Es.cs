@@ -356,7 +356,7 @@ public static partial class Loc
         ["DefaultEncodingTip"] = "Se usa para archivos cuya codificacion no se detecta",
         ["LineEndingMenuTip"] = "Seleccionar secuencia de fin de linea",
         ["MixedLineEndings"] = "Finales de linea mixtos",
-        ["MixedLineEndingsTip"] = "Este archivo mezcla finales de linea (CRLF {0}, LF {1}, CR {2}). Haga clic para normalizarlos a {3}.",
+        ["MixedLineEndingsTip"] = "Haga clic para normalizarlos a {0}.",
         ["MixedLineEndingsReadOnlyTip"] = "Este archivo mezcla finales de linea (CRLF {0}, LF {1}, CR {2}).",
         ["LineEndingChanged"] = "Finales de linea: {0}",
         ["LineEndingsNormalized"] = "Finales de linea normalizados a {0}",

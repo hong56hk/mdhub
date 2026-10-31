@@ -356,7 +356,7 @@ public static partial class Loc
         ["DefaultEncodingTip"] = "Fuer Dateien, deren Codierung nicht erkannt wird",
         ["LineEndingMenuTip"] = "Zeilenende-Sequenz auswaehlen",
         ["MixedLineEndings"] = "Gemischte Zeilenenden",
-        ["MixedLineEndingsTip"] = "Diese Datei mischt Zeilenenden (CRLF {0}, LF {1}, CR {2}). Klicken, um sie auf {3} zu vereinheitlichen.",
+        ["MixedLineEndingsTip"] = "Klicken, um sie auf {0} zu vereinheitlichen.",
         ["MixedLineEndingsReadOnlyTip"] = "Diese Datei mischt Zeilenenden (CRLF {0}, LF {1}, CR {2}).",
         ["LineEndingChanged"] = "Zeilenenden: {0}",
         ["LineEndingsNormalized"] = "Zeilenenden auf {0} vereinheitlicht",

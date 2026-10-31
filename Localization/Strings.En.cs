@@ -353,7 +353,7 @@ public static partial class Loc
         ["DefaultEncodingTip"] = "Used for files whose encoding cannot be detected",
         ["LineEndingMenuTip"] = "Select end of line sequence",
         ["MixedLineEndings"] = "Mixed line endings",
-        ["MixedLineEndingsTip"] = "This file mixes line endings (CRLF {0}, LF {1}, CR {2}). Click to normalize them to {3}.",
+        ["MixedLineEndingsTip"] = "Click to normalize them to {0}.",
         ["MixedLineEndingsReadOnlyTip"] = "This file mixes line endings (CRLF {0}, LF {1}, CR {2}).",
         ["LineEndingChanged"] = "Line endings: {0}",
         ["LineEndingsNormalized"] = "Line endings normalized to {0}",

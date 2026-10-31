@@ -353,7 +353,7 @@ public static partial class Loc
         ["DefaultEncodingTip"] = "\uc778\ucf54\ub529\uc744 \uac10\uc9c0\ud560 \uc218 \uc5c6\ub294 \ud30c\uc77c\uc5d0 \uc0ac\uc6a9\ub429\ub2c8\ub2e4",
         ["LineEndingMenuTip"] = "\uc904 \ub05d \uc2dc\ud000\uc2a4 \uc120\ud0dd",
         ["MixedLineEndings"] = "\ud63c\ud569\ub41c \uc904 \ub05d",
-        ["MixedLineEndingsTip"] = "\uc774 \ud30c\uc77c\uc740 \uc904 \ub05d\uc774 \uc11e\uc5ec \uc788\uc2b5\ub2c8\ub2e4 (CRLF {0}, LF {1}, CR {2}). \ud074\ub9ad\ud558\uba74 {3}(\uc73c)\ub85c \ud1b5\uc77c\ud569\ub2c8\ub2e4.",
+        ["MixedLineEndingsTip"] = "\ud074\ub9ad\ud558\uba74 {0}(\uc73c)\ub85c \ud1b5\uc77c\ud569\ub2c8\ub2e4.",
         ["MixedLineEndingsReadOnlyTip"] = "\uc774 \ud30c\uc77c\uc740 \uc904 \ub05d\uc774 \uc11e\uc5ec \uc788\uc2b5\ub2c8\ub2e4 (CRLF {0}, LF {1}, CR {2}).",
         ["LineEndingChanged"] = "\uc904 \ub05d: {0}",
         ["LineEndingsNormalized"] = "\uc904 \ub05d\uc744 {0}(\uc73c)\ub85c \ud1b5\uc77c\ud588\uc2b5\ub2c8\ub2e4",

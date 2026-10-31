@@ -175,7 +175,7 @@ internal static class LineEndingTests
             {
                 var table = Loc.Table(code);
                 Check(keys.All(k => table.TryGetValue(k, out var s) && !string.IsNullOrWhiteSpace(s) && (code == Loc.English || s != Loc.Table(Loc.English)[k])), $"{code}: all item 68 strings are translated");
-                var formatted = string.Format(table["MixedLineEndingsTip"], 7, 8, 9, "CRLF");
+                var formatted = string.Format(table["MixedLineEndingsReadOnlyTip"], 7, 8, 9) + string.Format(table["MixedLineEndingsTip"], "CRLF");
                 Check(formatted.Contains('7') && formatted.Contains('8') && formatted.Contains('9') && formatted.Contains("CRLF") && string.Format(table["LineEndingOs"], "LF").Contains("LF") && string.Format(table["LineEndingsNormalized"], "LF").Contains("LF"), $"{code}: placeholders are kept");
             }
             Loc.Set("ja"); Settle();

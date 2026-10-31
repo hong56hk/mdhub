@@ -356,7 +356,7 @@ public static partial class Loc
         ["DefaultEncodingTip"] = "\u7528\u4e8e\u65e0\u6cd5\u68c0\u6d4b\u7f16\u7801\u7684\u6587\u4ef6",
         ["LineEndingMenuTip"] = "\u9009\u62e9\u884c\u5c3e\u5e8f\u5217",
         ["MixedLineEndings"] = "\u6df7\u5408\u7684\u884c\u5c3e",
-        ["MixedLineEndingsTip"] = "\u6b64\u6587\u4ef6\u6df7\u7528\u4e86\u884c\u5c3e (CRLF {0}\uff0cLF {1}\uff0cCR {2})\u3002\u5355\u51fb\u53ef\u7edf\u4e00\u4e3a {3}\u3002",
+        ["MixedLineEndingsTip"] = "\u5355\u51fb\u53ef\u7edf\u4e00\u4e3a {0}\u3002",
         ["MixedLineEndingsReadOnlyTip"] = "\u6b64\u6587\u4ef6\u6df7\u7528\u4e86\u884c\u5c3e (CRLF {0}\uff0cLF {1}\uff0cCR {2})\u3002",
         ["LineEndingChanged"] = "\u884c\u5c3e: {0}",
         ["LineEndingsNormalized"] = "\u5df2\u5c06\u884c\u5c3e\u7edf\u4e00\u4e3a {0}",

@@ -69,7 +69,7 @@ public partial class BottomStatusBar : UserControl
         var counts = document.IsViewOnly ? default : document.LineEndingCounts;
         MixedLineEndingsLabel.IsVisible = counts.IsMixed;
         MixedLineEndingsLabel.Text = counts.IsMixed ? "\u26a0 " + Loc.T("MixedLineEndings") : "";
-        ToolTip.SetTip(MixedLineEndingsLabel, counts.IsMixed ? Loc.F(document.IsReadOnlyText ? "MixedLineEndingsReadOnlyTip" : "MixedLineEndingsTip", counts.CrLf, counts.Lf, counts.Cr, ending) : null);
+        ToolTip.SetTip(MixedLineEndingsLabel, counts.IsMixed ? Loc.F("MixedLineEndingsReadOnlyTip", counts.CrLf, counts.Lf, counts.Cr) + (document.IsReadOnlyText ? "" : " " + Loc.F("MixedLineEndingsTip", ending)) : null);
         if (document.Image is { } image) SetCounts(() => Loc.F("ImagePixels", image.PixelSize.Width, image.PixelSize.Height) + ImageZoomSuffix());
     }
     // Item 37: the image zoom shown after the pixel size (null when no image is shown).
