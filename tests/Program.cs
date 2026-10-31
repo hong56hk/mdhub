@@ -374,15 +374,19 @@ try
         File.WriteAllText(sessionFile, "{ broken");
         Require(Mdhub.Services.SessionStore.Load(sessionFile) is null, "Corrupt session file loads as null");
         Mdhub.Services.SessionStore.Save(sessionFile, session);
-        var before = File.ReadAllText(sessionFile);
-        using (new FileStream(sessionFile, FileMode.Open, FileAccess.Read, FileShare.Read))
+        // Opening a file for reading does not stop rename-based replacement on Linux, so this lock is Windows-only.
+        if (OperatingSystem.IsWindows())
         {
-            var failed = false;
-            try { Mdhub.Services.SessionStore.Save(sessionFile, new Mdhub.Services.SessionData()); } catch (IOException) { failed = true; } catch (UnauthorizedAccessException) { failed = true; }
-            Require(failed, "Replacing a locked session file fails");
+            var before = File.ReadAllText(sessionFile);
+            using (new FileStream(sessionFile, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                var failed = false;
+                try { Mdhub.Services.SessionStore.Save(sessionFile, new Mdhub.Services.SessionData()); } catch (IOException) { failed = true; } catch (UnauthorizedAccessException) { failed = true; }
+                Require(failed, "Replacing a locked session file fails");
+            }
+            Require(File.ReadAllText(sessionFile) == before && Directory.GetFiles(Path.GetDirectoryName(sessionFile)!).Length == 1,
+                "A failed session write keeps the previous file intact and removes the temporary file");
         }
-        Require(File.ReadAllText(sessionFile) == before && Directory.GetFiles(Path.GetDirectoryName(sessionFile)!).Length == 1,
-            "A failed session write keeps the previous file intact and removes the temporary file");
         Mdhub.Services.SessionStore.Save(sessionFile, new Mdhub.Services.SessionData());
         Require(Mdhub.Services.SessionStore.Load(sessionFile) is { Windows.Count: 0 }, "Session save replaces an existing file");
         Directory.Delete(sessionDir, true);

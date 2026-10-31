@@ -578,13 +578,16 @@ try
         "With a folder open, Open Folder opens the picked folder in a new window");
     Require(In<TextBlock>(w1, "FolderName").Text == "First", "The current window keeps its folder when another opens in a new window");
     var w2 = createdWindows[0];
-    w1Pick = firstFolder.ToUpperInvariant() + Path.DirectorySeparatorChar;
+    // SameFolder is case-insensitive only on Windows; every OS trims a trailing separator.
+    w1Pick = (OperatingSystem.IsWindows() ? firstFolder.ToUpperInvariant() : firstFolder) + Path.DirectorySeparatorChar;
     var activationProperty = typeof(MainView).GetProperty("ActivationCount", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
     var activationsBefore = (int)activationProperty.GetValue(view1)!;
     ClickMenuIn(w1, "Open _Folder…");
     Pump();
     Require(createdWindows.Count == 1 && (int)activationProperty.GetValue(view1)! == activationsBefore + 1 && In<TextBlock>(w1, "FolderName").Text == "First",
-        "Opening the same folder (normalized, case-insensitive) focuses the current window instead of opening another");
+        OperatingSystem.IsWindows()
+            ? "Opening the same folder (normalized, case-insensitive) focuses the current window instead of opening another"
+            : "Opening the same folder (trailing separator normalized) focuses the current window instead of opening another");
     var w2Tabs = In<ListBox>(w2, "Tabs");
     var w2Doc = (NoteDocument)w2Tabs.SelectedItem!;
     w2Doc.Editor.Text = "unsaved in second window";
