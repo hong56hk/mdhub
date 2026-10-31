@@ -11,6 +11,7 @@ using Mdhub.Views;
 using Mdhub.Components;
 
 if (args.Contains("--encoding-only")) { EncodingTests.Run(); return; }
+if (args.Contains("--selhome-only")) { SelectionHomeTests.Run(); return; }
 if (args.Contains("--eol-only")) { LineEndingTests.Run(); return; }
 if (args.Contains("--newfile-only")) { NewFileDialogTests.Run(); return; }
 if (args.Contains("--reveal-only")) { RevealTests.Run(); return; }
