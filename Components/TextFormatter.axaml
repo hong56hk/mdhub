@@ -73,8 +73,8 @@
         </Button>
         <!-- Item 51: export the Markdown note to HTML and PDF (a page with a folded corner). Bug 73: the HTML icon reads '<html>' (thin strokes, same height); both icons dim when disabled. -->
         <Button x:Name="ExportHtmlButton" Classes="tool export" Click="ExportHtml_Click" ToolTip.Tip="{DynamicResource ExportHtmlTip}" AutomationProperties.Name="{DynamicResource ExportHtmlTip}">
-          <Path x:Name="ExportHtmlIcon" Width="22" Height="14" Stretch="None" StrokeThickness="1" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
-                Data="M 3,4.5 L 0.75,7 L 3,9.5 M 4.3,3 V 10 M 4.3,7 Q 4.3,5.5 5.7,5.5 Q 7.1,5.5 7.1,7 V 10 M 8.8,3.8 V 9 Q 8.8,10 9.8,10 M 7.9,5.6 H 9.9 M 11.2,5.5 V 10 M 11.2,7 Q 11.2,5.5 12.4,5.5 Q 13.6,5.5 13.6,7 V 10 M 13.6,7 Q 13.6,5.5 14.8,5.5 Q 16,5.5 16,7 V 10 M 17.4,3 V 10 M 18.8,4.5 L 21.05,7 L 18.8,9.5" />
+          <Path x:Name="ExportHtmlIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                Data="M 5,3.5 L 1.5,7 L 5,10.5 M 11,3.5 L 14.5,7 L 11,10.5 M 9.5,2 L 6.5,12" />
         </Button>
         <Button x:Name="ExportPdfButton" Classes="tool export" Click="ExportPdf_Click" ToolTip.Tip="{DynamicResource ExportPdfTip}" AutomationProperties.Name="{DynamicResource ExportPdfTip}">
           <Path x:Name="ExportPdfIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
