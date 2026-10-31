@@ -76,11 +76,14 @@ internal static class TabCycleTests
             Check(Name() == "c.txt", "Ctrl+Shift+Tab works from the explorer focus");
 
             // Plain Tab still reaches the editor (indent), so only the Ctrl combinations are taken.
+            // Bug 82: since item 70 the indent follows the editor gear (Insert spaces is on by default): spaces to the next tab stop, not a hard tab.
+            var tabSettings = EditorBehavior.Current;
             var plain = new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Tab, KeyModifiers = KeyModifiers.None };
             Active().Editor.Focus(); Pump();
             var count = Active().Editor.Text!.Length; Active().Editor.CaretIndex = count;
+            var indent = tabSettings.InsertSpaces ? new string(' ', tabSettings.TabSize - count % tabSettings.TabSize) : "\t"; // one line, so the column is count
             Active().Editor.RaiseEvent(plain); Pump();
-            Check(Name() == "c.txt" && Active().Editor.Text!.Contains('\t'), "Plain Tab still inserts a tab and does not switch tabs");
+            Check(Name() == "c.txt" && Active().Editor.Text == before[Active().Path!] + indent, $"Plain Tab still indents ({(tabSettings.InsertSpaces ? $"{indent.Length} spaces to the next tab stop" : "a tab")}) and does not switch tabs");
             Active().Editor.Text = before[Active().Path!]; Pump();
 
             // Menu items under View.

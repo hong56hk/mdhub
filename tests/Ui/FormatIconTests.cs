@@ -97,7 +97,7 @@ internal static class FormatIconTests
                         Check(brushes.Count > 0 && brushes.All(b => b is ISolidColorBrush s && s.Color == expect) && Presenter(B(tag)) == expect, $"{theme} {state}: {tag} icon strokes are {expect}, like the text buttons");
                     }
                 }
-                // Bug 73: the export icons (HTML reads '<html>') dim with the bar too.
+                // Bug 73/82: the export icons (HTML is '</>' again since 20f95af) dim with the bar too.
                 var exportHtml = bar.FindControl<Button>("ExportHtmlButton")!; var exportPdf = bar.FindControl<Button>("ExportPdfButton")!;
                 void Export(AppTheme theme, Color expect)
                 {
@@ -108,7 +108,7 @@ internal static class FormatIconTests
                     }
                 }
                 Check(exportHtml.Bounds.Height == exportPdf.Bounds.Height && exportHtml.Bounds.Width >= exportPdf.Bounds.Width && exportHtml.Bounds.Width <= 40 && exportHtml.GetVisualDescendants().OfType<Path>().Single().Bounds.Height == 14,
-                    $"<html> export button: same height as PDF, reasonable width ({exportHtml.Bounds.Size} vs {exportPdf.Bounds.Size})");
+                    $"</> export button: same height as PDF, reasonable width ({exportHtml.Bounds.Size} vs {exportPdf.Bounds.Size})");
                 foreach (var theme in new[] { AppTheme.Dark, AppTheme.Light })
                 {
                     ThemeService.Apply(theme, persist: false); Pump();
