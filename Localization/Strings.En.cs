@@ -98,6 +98,7 @@ public static partial class Loc
         ["ReloadFolder"] = "Reload folder",
         ["CollapseAll"] = "Collapse All",
         ["CollapseAllFolders"] = "Collapse all folders",
+        ["CollapseAllResults"] = "Collapse all results",
         ["Reveal"] = "Reveal in file explorer",
         ["RevealInSidebar"] = "Reveal in Side Bar", ["Sc.file.revealInSidebar"] = "Reveal active file in side bar", ["RevealNoPath"] = "Untitled notes are not in the side bar. Save the note first.", ["RevealOutsideFolder"] = "This file is not inside the open folder.",
         ["Duplicate"] = "Duplicate",

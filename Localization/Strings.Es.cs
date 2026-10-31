@@ -98,6 +98,7 @@ public static partial class Loc
         ["ReloadFolder"] = "Recargar carpeta",
         ["CollapseAll"] = "Contraer todo",
         ["CollapseAllFolders"] = "Contraer todas las carpetas",
+        ["CollapseAllResults"] = "Contraer todos los resultados",
         ["Reveal"] = "Mostrar en el Explorador de archivos",
         ["RevealInSidebar"] = "Mostrar en la barra lateral",
         ["Sc.file.revealInSidebar"] = "Mostrar el archivo activo en la barra lateral",

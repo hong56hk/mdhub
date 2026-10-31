@@ -68,6 +68,20 @@ internal static class SidebarPersistTests
             Tab("ExplorerTab"); Tab("SearchTab");
             Check(Runs() == runs2, "the new results are kept too");
 
+            // Global search Collapse All: right of Refresh, the SAME icon geometry as the explorer's Collapse All.
+            var refresh = Find<Button>("GlobalRefresh"); var searchCollapse = Find<Button>("GlobalCollapseAll");
+            Check(searchCollapse.Parent == refresh.Parent && Grid.GetColumn(searchCollapse) == Grid.GetColumn(refresh) + 1
+                  && searchCollapse.TranslatePoint(default, window)!.Value.X > refresh.TranslatePoint(default, window)!.Value.X, "Search Collapse All sits right of Refresh");
+            var searchIcon = searchCollapse.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().Single();
+            var refreshIcon = refresh.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().Single();
+            Check(ReferenceEquals(searchIcon.Data, SharedIcons.CollapseAll) && searchIcon.StrokeThickness == refreshIcon.StrokeThickness, "Search Collapse All uses the shared Collapse All icon, in the find icon style");
+            Check(ToolTip.GetTip(searchCollapse) as string == Loc.T("CollapseAll") && Avalonia.Automation.AutomationProperties.GetName(searchCollapse) == Loc.T("CollapseAllResults"), "Search Collapse All tooltip and name are localized");
+            Check(Loc.Languages.Where(l => l.Code != Loc.English).All(l => Loc.Table(l.Code).TryGetValue("CollapseAllResults", out var v) && v != Loc.En["CollapseAllResults"]), "CollapseAllResults is translated in all 8 languages");
+            var groups2 = tree.Items.OfType<TreeViewItem>().ToList();
+            Check(groups2.Count > 1 && groups2.Any(g => g.IsExpanded), "search result groups are expanded");
+            searchCollapse.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+            Check(groups2.All(g => !g.IsExpanded) && search.Result.Count == 40, "Search Collapse All collapses every result group (results kept)");
+
             // Collapse All: right of Reload, same icon style, themed, hand cursor, localized tooltip.
             Tab("ExplorerTab");
             var reload = Find<Button>("ReloadFolderButton"); var collapse = Find<Button>("CollapseAllButton");
@@ -75,6 +89,7 @@ internal static class SidebarPersistTests
                   && collapse.TranslatePoint(default, window)!.Value.X > reload.TranslatePoint(default, window)!.Value.X, "Collapse All sits right of Reload");
             var icon = collapse.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().Single();
             var reloadIcon = reload.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().Single();
+            Check(ReferenceEquals(icon.Data, SharedIcons.CollapseAll), "the explorer Collapse All uses the shared icon too (same resource as search)");
             Check(icon.Classes.Contains("explorerIcon") && icon.StrokeThickness == reloadIcon.StrokeThickness && icon.StrokeThickness <= 1.5 && icon.Fill is null
                   && (icon.Stroke as Avalonia.Media.ISolidColorBrush)?.Color == ThemeService.Lookup("IconForeground"), "Collapse All uses the thin-stroke icon style and the theme icon colour");
             Check(collapse.Cursor is not null && reload.Cursor is not null, "explorer toolbar buttons show the hand cursor");

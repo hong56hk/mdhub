@@ -40,6 +40,7 @@ public partial class GlobalSearch : UserControl
             GlobalExpandIcon.Data = expanded ? ExpandedIcon : CollapsedIcon;
         };
         GlobalRefresh.Click += async (_, _) => await SearchAsync();
+        GlobalCollapseAll.Click += (_, _) => { foreach (var group in GlobalResults.Items.OfType<TreeViewItem>()) group.IsExpanded = false; };
         GlobalQuery.KeyDown += async (_, e) => { if (e.Key == Key.Enter) { e.Handled = true; await SearchAsync(); } };
         _debounce.Tick += async (_, _) => await SearchAsync();
         GlobalResults.SelectionChanged += (_, _) =>

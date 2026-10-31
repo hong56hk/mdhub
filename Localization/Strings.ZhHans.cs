@@ -98,6 +98,7 @@ public static partial class Loc
         ["ReloadFolder"] = "重新加载文件夹",
         ["CollapseAll"] = "全部折叠",
         ["CollapseAllFolders"] = "折叠所有文件夹",
+        ["CollapseAllResults"] = "\u6298\u53e0\u6240\u6709\u7ed3\u679c",
         ["Reveal"] = "在资源管理器中显示",
         ["RevealInSidebar"] = "在侧边栏中显示",
         ["Sc.file.revealInSidebar"] = "在侧边栏中显示当前文件",

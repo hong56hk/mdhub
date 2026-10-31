@@ -98,6 +98,7 @@ public static partial class Loc
         ["ReloadFolder"] = "フォルダーを再読み込み",
         ["CollapseAll"] = "すべて折りたたむ",
         ["CollapseAllFolders"] = "すべてのフォルダーを折りたたむ",
+        ["CollapseAllResults"] = "\u3059\u3079\u3066\u306e\u7d50\u679c\u3092\u6298\u308a\u305f\u305f\u3080",
         ["Reveal"] = "エクスプローラーで表示",
         ["RevealInSidebar"] = "\u30b5\u30a4\u30c9 \u30d0\u30fc\u306b\u8868\u793a", ["Sc.file.revealInSidebar"] = "\u73fe\u5728\u306e\u30d5\u30a1\u30a4\u30eb\u3092\u30b5\u30a4\u30c9 \u30d0\u30fc\u306b\u8868\u793a", ["RevealNoPath"] = "\u7121\u984c\u306e\u30e1\u30e2\u306f\u30b5\u30a4\u30c9 \u30d0\u30fc\u306b\u3042\u308a\u307e\u305b\u3093\u3002\u5148\u306b\u4fdd\u5b58\u3057\u3066\u304f\u3060\u3055\u3044\u3002", ["RevealOutsideFolder"] = "\u3053\u306e\u30d5\u30a1\u30a4\u30eb\u306f\u958b\u3044\u3066\u3044\u308b\u30d5\u30a9\u30eb\u30c0\u30fc\u306e\u5916\u306b\u3042\u308a\u307e\u3059\u3002",
         ["Duplicate"] = "複製を作成",

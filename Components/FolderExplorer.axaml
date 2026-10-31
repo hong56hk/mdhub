@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.FolderExplorer">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.FolderExplorer" xmlns:c="using:Mdhub.Components">
   <UserControl.Resources>
     <!-- VS Code-like indent per level; the chevron slot stays reserved for files so same-level names align. -->
     <x:Double x:Key="TreeViewItemIndent">10</x:Double>
@@ -140,7 +140,7 @@
                 Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
         </Button>
         <Button x:Name="CollapseAllButton" Classes="explorerAction" Click="CollapseAll_Click" ToolTip.Tip="{DynamicResource CollapseAll}" AutomationProperties.Name="{DynamicResource CollapseAllFolders}">
-          <Path Classes="explorerIcon" Data="M 5,2 L 14,2 14,11 M 2,5 L 11,5 11,14 2,14 Z M 4.5,9.5 L 8.5,9.5"
+          <Path Classes="explorerIcon" Data="{x:Static c:SharedIcons.CollapseAll}"
                 Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
         </Button>
       </StackPanel>

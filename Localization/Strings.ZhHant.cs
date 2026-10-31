@@ -98,6 +98,7 @@ public static partial class Loc
         ["ReloadFolder"] = "重新載入資料夾",
         ["CollapseAll"] = "全部摺疊",
         ["CollapseAllFolders"] = "摺疊所有資料夾",
+        ["CollapseAllResults"] = "\u647a\u758a\u6240\u6709\u7d50\u679c",
         ["Reveal"] = "在檔案總管中顯示",
         ["RevealInSidebar"] = "\u5728\u5074\u908a\u6b04\u4e2d\u986f\u793a", ["Sc.file.revealInSidebar"] = "\u5728\u5074\u908a\u6b04\u4e2d\u986f\u793a\u76ee\u524d\u6a94\u6848", ["RevealNoPath"] = "\u672a\u547d\u540d\u7684\u7b46\u8a18\u4e0d\u5728\u5074\u908a\u6b04\u4e2d\u3002\u8acb\u5148\u5132\u5b58\u3002", ["RevealOutsideFolder"] = "\u6b64\u6a94\u6848\u4e0d\u5728\u958b\u555f\u7684\u8cc7\u6599\u593e\u4e2d\u3002",
         ["Duplicate"] = "建立複本",

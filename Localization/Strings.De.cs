@@ -98,6 +98,7 @@ public static partial class Loc
         ["ReloadFolder"] = "Ordner neu laden",
         ["CollapseAll"] = "Alle reduzieren",
         ["CollapseAllFolders"] = "Alle Ordner reduzieren",
+        ["CollapseAllResults"] = "Alle Ergebnisse reduzieren",
         ["Reveal"] = "Im Datei-Explorer anzeigen",
         ["RevealInSidebar"] = "In der Seitenleiste anzeigen",
         ["Sc.file.revealInSidebar"] = "Aktive Datei in der Seitenleiste anzeigen",
