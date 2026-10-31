@@ -52,6 +52,27 @@ public partial class MainView
             void Edit() { undo.IsEnabled = editor.CanUndo && !editor.IsReadOnly; redo.IsEnabled = editor.CanRedo && !editor.IsReadOnly; cut.IsEnabled = editor.CanCut; copy.IsEnabled = editor.CanCopy; paste.IsEnabled = !editor.IsReadOnly; }
             menu.Opening += (_, _) => Edit();
             menu.Opened += (_, _) => Edit();
+            // Item 74: a misspelled word under the click (or the caret) puts up to 5 suggestions at the top, then
+            // Add to dictionary and Ignore in this file. Rebuilt on every open; Localized() pads and relabels them.
+            var spelling = new List<Control>();
+            menu.Opening += (_, _) =>
+            {
+                foreach (var c in spelling) menu.Items.Remove(c);
+                spelling.Clear();
+                var index = (editor as MarkdownTextBox)?.ContextIndex ?? editor.CaretIndex;
+                if (_active != document || editor.IsReadOnly || TextEditor.Spelling.MisspellingAt(index) is not { } word) return;
+                foreach (var suggestion in SpellCheck.Suggest(word.Word))
+                {
+                    var fix = new MenuItem { Name = "SpellSuggestionMenuItem", Header = suggestion, FontWeight = Avalonia.Media.FontWeight.SemiBold };
+                    fix.Click += (_, _) => TextEditor.Spelling.Replace(word, suggestion);
+                    spelling.Add(fix);
+                }
+                if (spelling.Count == 0) { var none = LocResources.Item("SpellNoSuggestions"); none.Name = "SpellNoSuggestionsMenuItem"; none.IsEnabled = false; spelling.Add(none); }
+                spelling.Add(Item("SpellAddMenuItem", "SpellAddToDictionary", () => SpellCheck.AddWord(word.Word)));
+                spelling.Add(Item("SpellIgnoreMenuItem", "SpellIgnoreInFile", () => SpellCheck.Ignore(editor, word.Word)));
+                spelling.Add(Line());
+                for (var i = 0; i < spelling.Count; i++) menu.Items.Insert(i, spelling[i]);
+            };
         }
         menu.Items.Add(reveal);
         menu.Items.Add(system);

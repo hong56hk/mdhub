@@ -106,6 +106,8 @@ public static class Shortcuts
         S("editor.quote", ShortcutArea.Editor, "Block quote (Markdown)", new ShortcutGesture("OemQuotes", ShortcutMods.Command, "\""), new ShortcutGesture("OemQuotes", ShortcutMods.Command | ShortcutMods.Shift, Hidden: true)),
         S("editor.insertTime", ShortcutArea.Editor, "Insert date and time", C("OemSemicolon")),
         S("editor.goToLine", ShortcutArea.Editor, "Go to line", C("G")),
+        // Item 74: next misspelling (Markdown files, spell checking on).
+        S("editor.nextMisspelling", ShortcutArea.Editor, "Next misspelling", P("F7")),
         T("editor.wordLeft", ShortcutArea.Editor, "Move one word left", C("Left")),
         T("editor.wordRight", ShortcutArea.Editor, "Move one word right", C("Right")),
         T("editor.docStart", ShortcutArea.Editor, "Go to start of document", C("Home")),

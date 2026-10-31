@@ -31,7 +31,7 @@ public static class EditorFontsFlyout
     public static ScrollViewer Build() => new()
     {
         Name = "EditorSettingsScroll", MaxHeight = 560, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-        Content = new StackPanel { Spacing = 6, Children = { BuildFonts(), BuildTabs(), BuildAutoComplete(), BuildEncoding(), BuildColors() } },
+        Content = new StackPanel { Spacing = 6, Children = { BuildFonts(), BuildTabs(), BuildAutoComplete(), BuildSpelling(), BuildEncoding(), BuildColors() } },
     };
 
     private static TextBlock Label(string key) => new() { Text = Loc.T(key), Foreground = ThemeService.Brush("TextSecondary"), Margin = new Thickness(0, 4, 0, 0) };
@@ -81,6 +81,27 @@ public static class EditorFontsFlyout
     }
 
     // Item 67: the Default encoding used when a legacy file's encoding cannot be detected confidently.
+    // Item 74: spell checking (off by default) and its dictionary (default: the UI language's, else English).
+    public static StackPanel BuildSpelling()
+    {
+        var s = EditorBehavior.Current;
+        var panel = new StackPanel { Name = "EditorSpellingPanel", Spacing = 6, Width = 280, Margin = new Thickness(0, 8, 0, 0) };
+        panel.Children.Add(new TextBlock { Text = Loc.T("EditorSpelling"), FontWeight = FontWeight.SemiBold });
+        var check = new CheckBox { Name = "EditorSpellCheckBox", Content = new TextBlock { Text = Loc.T("EditorSpellCheck"), TextWrapping = TextWrapping.Wrap }, IsChecked = s.SpellCheck };
+        AutomationProperties.SetName(check, Loc.T("EditorSpellCheck"));
+        check.IsCheckedChanged += (_, _) => EditorBehavior.Update(d => d with { SpellCheck = check.IsChecked == true });
+        panel.Children.Add(check);
+        panel.Children.Add(Label("EditorSpellLanguage"));
+        var names = new List<string> { Loc.T("EditorSpellLanguageAuto") };
+        names.AddRange(SpellCheck.Languages.Select(l => l.Name));
+        var box = new ComboBox { Name = "EditorSpellLanguageBox", ItemsSource = names, HorizontalAlignment = HorizontalAlignment.Stretch };
+        AutomationProperties.SetName(box, Loc.T("EditorSpellLanguage"));
+        box.SelectedIndex = s.SpellLanguage is { } code ? 1 + SpellCheck.Languages.ToList().FindIndex(l => l.Code == code) : 0;
+        box.SelectionChanged += (_, _) => { if (box.SelectedIndex >= 0) EditorBehavior.Update(d => d with { SpellLanguage = box.SelectedIndex == 0 ? null : SpellCheck.Languages[box.SelectedIndex - 1].Code }); };
+        panel.Children.Add(box);
+        return panel;
+    }
+
     public static StackPanel BuildEncoding()
     {
         var panel = new StackPanel { Name = "EditorEncodingPanel", Spacing = 6, Width = 280, Margin = new Thickness(0, 8, 0, 0) };

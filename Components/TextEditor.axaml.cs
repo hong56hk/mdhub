@@ -12,7 +12,12 @@ public partial class TextEditor : UserControl
         InitializeComponent();
         FindBar.Overlay = FindHighlights;
         FindBar.Closed += FocusEditor;
+        SpellOverlay.CountChanged += count => SpellCountChanged?.Invoke(count);
     }
+    // Item 74: spell checking of the shown Markdown editor.
+    public SpellCheckOverlay Spelling => SpellOverlay;
+    public event Action<int?>? SpellCountChanged;
+    public bool NextMisspelling() => _document?.IsViewOnly == false && SpellOverlay.Next();
     public bool IsFindOpen => FindBar.IsOpen;
     public bool IsFindFocused => FindBar.IsKeyboardFocusWithin;
     public void OpenFind(bool replace) { if (_document is not null) FindBar.Open(replace); }
@@ -26,6 +31,7 @@ public partial class TextEditor : UserControl
         LineGutter.Attach(document.Editor);
         MarkdownBlocks.Attach(document.Editor);
         CurrentLine.Attach(document.Editor);
+        SpellOverlay.Attach(document.Editor);
         FindBar.Attach(document.Editor, () => document.SavedSelection);
         LineGutter.InvalidateMeasure();
         LineGutter.InvalidateVisual();

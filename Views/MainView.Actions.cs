@@ -245,6 +245,7 @@ public partial class MainView
             // Formatting and insert time act on the focused editor only; go to line / preview work anywhere but the find fields.
             "editor.bold" or "editor.italic" or "editor.link" or "editor.quote" when EditorFocused && _active!.IsMarkdown => EditorCommand(id),
             "editor.insertTime" when EditorFocused => EditorCommand(id),
+            "editor.nextMisspelling" when _active is { IsMarkdown: true } && !TextEditor.IsFindFocused => EditorCommand(id),
             "editor.toggleOverwrite" when _active is { IsViewOnly: false } && !TextEditor.IsFindFocused => () => { Mdhub.Services.EditorMode.Toggle(); return Task.CompletedTask; },
             "editor.goToLine" or "view.previewCaret" when _active is { IsViewOnly: false } && !TextEditor.IsFindFocused => EditorCommand(id),
             _ => null
@@ -288,6 +289,7 @@ public partial class MainView
         "editor.quote" => Sync(() => TextEditor.Format("quote")),
         "editor.insertTime" => Sync(InsertTime),
         "editor.goToLine" => GoToLineAsync,
+        "editor.nextMisspelling" => Sync(() => TextEditor.NextMisspelling()),
         "edit.moveLineUp" or "edit.moveLineDown" or "edit.duplicateLine" => Sync(() => LineEdit(id)),
         "view.previewCaret" => Sync(() => { if (_active is { } d) MdEditor.CenterPreviewOnLine(d.Editor.CaretIndex); }),
         _ => null

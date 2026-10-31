@@ -633,6 +633,27 @@ try
         Require(Mdhub.Services.MarkdownAutoComplete.AlignRows(["|a|\u6f22|", "|-|-|"]) == "| a   | \u6f22  |\n| --- | --- |", "Table alignment is CJK-width aware");
         Require(new EditorBehaviorData() is { AutoLists: true, AutoTables: true, AlignTables: true }, "Auto-complete defaults on");
     }
+    // Item 74: spell-check tokenizing and skip rules (prose only).
+    {
+        string Ws(string t) => string.Join(",", Mdhub.Text.SpellTokenizer.Words(t).Select(w => w.Word));
+        Require(Ws("Helo wrold, don't stop.") == "Helo,wrold,don't,stop", "Spelling: prose words, apostrophes kept, punctuation trimmed");
+        Require(Ws("a `codez` b ```x``` c") == "", "Spelling: code spans and single letters are skipped");
+        Require(Ws("```\nmisspeld\n```\nwordz") == "wordz" && Ws("~~~md\nbadd\n~~~") == "", "Spelling: fenced code blocks are skipped");
+        Require(Ws("text\n\n    indentd code\n\nnext") == "text,next", "Spelling: indented code blocks are skipped");
+        Require(Ws("- item\n\n    continud") == "item,continud", "Spelling: an indented list continuation is prose");
+        Require(Ws("---\ntitle: Foo barr\n---\nbody") == "body", "Spelling: front matter is skipped");
+        Require(Ws("see https://exampel.com/pathh and www.foo.org or me@mail.com") == "see,and,or", "Spelling: URLs and e-mail addresses are skipped");
+        Require(Ws("[link textt](docs/pagee.md) ![alt textt](imgs/picc.png)") == "link,textt,alt,textt", "Spelling: link and image targets are skipped, their text is checked");
+        Require(Ws("[ref]: http://x.y/zz \"Titel\"\nok") == "ok", "Spelling: reference definitions are skipped");
+        Require(Ws("<span class=\"foo\">wordd</span> <!-- commentt --> <https://a.b>") == "wordd", "Spelling: HTML tags, comments and autolinks are skipped");
+        Require(Ws("NASA HTTP abc123 v2 readme.md src/main.cs my_var getValue") == "", "Spelling: ALL-CAPS, digits, file names, paths and identifiers are skipped");
+        Require(Ws("\u4e2d\u6587 \u65e5\u672c\u8a9e \ud55c\uad6d\uc5b4 mixedd") == "mixedd", "Spelling: CJK text is skipped");
+        Require(Ws("well-knwon") == "well,knwon", "Spelling: hyphenated words are checked part by part");
+        var crlf = Mdhub.Text.SpellTokenizer.Words("one\r\ntwoo");
+        Require(crlf.Count == 2 && crlf[1].Start == 5 && crlf[1].Word == "twoo", "Spelling: offsets are into the raw text (CRLF)");
+        Require(Mdhub.Text.SpellTokenizer.Words("aa bb cc", 3, 5).Select(w => w.Word).SequenceEqual(["bb"]), "Spelling: a range checks only the words inside it");
+        Require(new EditorBehaviorData() is { SpellCheck: false, SpellLanguage: null }, "Spelling is off by default, dictionary follows the UI language");
+    }
     Console.WriteLine("All file tests passed.");
 }
 finally

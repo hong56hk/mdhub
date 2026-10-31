@@ -5,6 +5,8 @@
       <components:MarkdownBlockOverlay x:Name="MarkdownBlocks" Grid.Column="1" />
       <components:CurrentLineOverlay x:Name="CurrentLine" Grid.Column="1" />
       <ContentControl x:Name="EditorHost" Grid.Column="1" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
+      <!-- Item 74: spelling underlines (under the find highlights). -->
+      <components:SpellCheckOverlay x:Name="SpellOverlay" Grid.Column="1" />
       <components:FindHighlightOverlay x:Name="FindHighlights" Grid.Column="1" />
     </Grid>
     <components:FindBar x:Name="FindBar" Margin="0,0,18,0" />

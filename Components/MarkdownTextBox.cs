@@ -10,7 +10,20 @@ public sealed class MarkdownTextBox : TextBox
     protected override Type StyleKeyOverride => typeof(TextBox);
 
     // Item 68: pasted text takes the document's line ending (NewLine, which Enter types too).
-    public MarkdownTextBox() => AddHandler(PastingFromClipboardEvent, (_, e) => { if (IsReadOnly) return; e.Handled = true; _ = PasteNormalizedAsync(); });
+    public MarkdownTextBox()
+    {
+        AddHandler(PastingFromClipboardEvent, (_, e) => { if (IsReadOnly) return; e.Handled = true; _ = PasteNormalizedAsync(); });
+        // Item 74: the text offset under a right-click, so the context menu can offer spelling fixes for that word.
+        AddHandler(PointerPressedEvent, (_, e) =>
+        {
+            ContextIndex = null;
+            if (!e.GetCurrentPoint(this).Properties.IsRightButtonPressed) return;
+            if (Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(this).OfType<Avalonia.Controls.Presenters.TextPresenter>().FirstOrDefault() is { TextLayout: { } layout } presenter)
+                ContextIndex = layout.HitTestPoint(e.GetPosition(presenter)).TextPosition;
+        }, Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
+    }
+    // Item 74: set by a right-click (null after any other press); the context menu falls back to the caret.
+    public int? ContextIndex { get; set; }
     private async Task PasteNormalizedAsync()
     {
         if (TopLevel.GetTopLevel(this)?.Clipboard is not { } clipboard) return;

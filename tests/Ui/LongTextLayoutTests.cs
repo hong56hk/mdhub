@@ -100,6 +100,9 @@ internal static class LongTextLayoutTests
                     if (gearName == "EditorSettingsButton")
                         Check(new[] { "EditorAutoListsBox", "EditorAutoTablesBox", "EditorAlignTablesBox" }.All(n => content.GetVisualDescendants().OfType<CheckBox>().Any(c => c.Name == n && c.IsEffectivelyVisible)),
                             $"{code}: editor settings show the auto-complete switches (item 71)");
+                    if (gearName == "EditorSettingsButton")
+                        Check(content.GetVisualDescendants().OfType<CheckBox>().Any(c => c.Name == "EditorSpellCheckBox" && c.IsEffectivelyVisible)
+                            && content.GetVisualDescendants().OfType<ComboBox>().Any(c => c.Name == "EditorSpellLanguageBox" && c.IsEffectivelyVisible), $"{code}: editor settings show the spelling switch and dictionary (item 74)");
                     var clipped = ClippedIn(content);
                     Check(clipped.Count == 0, $"{code}: {label} flyout fits ({string.Join(" | ", clipped)})");
                     flyout.Hide(); Pump();

@@ -13,13 +13,15 @@
     </Style>
   </UserControl.Styles>
   <Border BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="0,1,0,0" Padding="12,7">
-    <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto">
+    <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
       <TextBlock x:Name="Counts" FontSize="11" Foreground="{DynamicResource TextSecondary}" />
       <Grid Grid.Column="1" ColumnDefinitions="*,Auto">
         <TextBlock x:Name="Status" Margin="20,0" FontSize="11" Foreground="{DynamicResource TextMuted}" TextTrimming="CharacterEllipsis" Background="Transparent" PointerReleased="Status_PointerReleased" />
         <!-- Item 51: an action for the current message (e.g. Open after an export). -->
         <TextBlock x:Name="StatusAction" Grid.Column="1" Margin="0,0,20,0" FontSize="11" Foreground="{DynamicResource LinkForeground}" Cursor="Hand" IsVisible="False" Background="Transparent" PointerReleased="StatusAction_PointerReleased" />
       </Grid>
+      <!-- Item 74: misspelling count (spell checking on, Markdown files). -->
+      <TextBlock x:Name="SpellCountLabel" Grid.Column="8" Margin="16,0,0,0" FontSize="11" Foreground="{DynamicResource ErrorForeground}" IsVisible="False" />
       <TextBlock x:Name="CaretLabel" Grid.Column="2" Margin="0,0,16,0" FontSize="11" Foreground="{DynamicResource TextSecondary}" IsVisible="False" />
       <!-- Item 66: INS/OVR; a click toggles insert/overwrite. -->
       <TextBlock x:Name="ModeLabel" Grid.Column="3" Margin="0,0,16,0" FontSize="11" Foreground="{DynamicResource TextSecondary}" Cursor="Hand" Background="Transparent" IsVisible="False" PointerReleased="ModeLabel_Toggle" />

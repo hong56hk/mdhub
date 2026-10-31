@@ -107,7 +107,16 @@ public partial class BottomStatusBar : UserControl
     // Kept as a function so a language switch can re-render the counts.
     private Func<string>? _counts;
     private void SetCounts(Func<string> counts) { _counts = counts; Counts.Text = counts(); }
-    public void Relocalize() { if (_counts is not null) Counts.Text = _counts(); UpdateMode(); }
+    public void Relocalize() { if (_counts is not null) Counts.Text = _counts(); UpdateMode(); SetSpellCount(_spellCount); }
+
+    // Item 74: the misspelling count; hidden when null (spell checking off or not a Markdown file).
+    private int? _spellCount;
+    public void SetSpellCount(int? count)
+    {
+        _spellCount = count;
+        SpellCountLabel.IsVisible = count is not null;
+        SpellCountLabel.Text = count is { } n ? Loc.Plural("SpellCountOne", "SpellCountMany", n) : "";
+    }
     // Item 66: INS/OVR beside Ln/Col; a click toggles the mode (app-wide).
     private void UpdateMode()
     {
