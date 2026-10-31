@@ -7,8 +7,8 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\mdhub.ico</ApplicationIcon>
     <!-- Item 58: About shows the informational version exactly; no "+commit" SourceLink suffix. -->
-    <Version>0.1.0</Version>
-    <InformationalVersion>0.1.0 (alpha)</InformationalVersion>
+    <Version>1.0.0</Version>
+    <InformationalVersion>1.0.0</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
   <ItemGroup>
