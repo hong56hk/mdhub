@@ -161,39 +161,16 @@ else
 </dict>
 </plist>
 EOF
-  # Build a read-write image, copy the app in, then add the Applications
-  # symlink on the volume. hdiutil -srcfolder follows symlinks, so the link
-  # cannot be created until the image is mounted.
-  command -v ditto >/dev/null 2>&1 || die "ditto is required to copy Mdhub.app into the dmg"
+  # -format is only valid with -srcfolder on current macOS hdiutil.
+  # The folder holds Mdhub.app and no symlinks, so hdiutil will not follow
+  # /Applications into the image.
   dmg_root="$stage/dmg-root"
   mkdir -p "$dmg_root"
   mv "$app" "$dmg_root/Mdhub.app"
-  app_kb="$(du -sk "$dmg_root/Mdhub.app" | awk '{print $1}')"
-  size_mb=$((app_kb / 1024 + 128))
-  if [[ "$size_mb" -lt 200 ]]; then size_mb=200; fi
-  rw="$stage/mdhub-rw.dmg"
-  rm -f "$rw"
-  if ! hdiutil create -size "${size_mb}m" -fs APFS -volname "MDHub" -format UDRW -ov "$rw"; then
-    hdiutil create -size "${size_mb}m" -fs HFS+ -volname "MDHub" -format UDRW -ov "$rw"
-  fi
-  rw_attach="$(hdiutil attach -nobrowse -readwrite "$rw")"
-  mount_point="$(printf '%s\n' "$rw_attach" | sed -n 's|^.*\(/Volumes/.*\)|\1|p' | tail -n 1)"
-  if [[ -z "$mount_point" || ! -d "$mount_point" ]]; then
-    printf '%s\n' "$rw_attach" >&2
-    die "failed to mount the read-write disk image"
-  fi
-  ditto "$dmg_root/Mdhub.app" "$mount_point/Mdhub.app"
-  ln -s /Applications "$mount_point/Applications"
-  # Flush before detach so the convert step sees the app.
-  sync || true
-  detach_dmg
   asset="$output/Mdhub-$version-$rid.dmg"
-  rm -f "$asset" "${asset}.dmg"
-  hdiutil convert "$rw" -format UDZO -ov -o "${asset%.dmg}"
-  if [[ ! -f "$asset" && -f "${asset}.dmg" ]]; then
-    mv "${asset}.dmg" "$asset"
-  fi
-  test -f "$asset" || die "hdiutil convert did not write $asset"
+  rm -f "$asset"
+  hdiutil create -volname "MDHub" -srcfolder "$dmg_root" -ov -format UDZO "$asset"
+  test -f "$asset" || die "hdiutil create did not write $asset"
   sig="$(tail -c 512 "$asset" | head -c 4)"
   test "$sig" = "koly" || die "dmg is missing the UDIF koly trailer"
   attach_out="$(hdiutil attach -nobrowse -readonly "$asset")"
@@ -203,7 +180,6 @@ EOF
     die "failed to mount $asset"
   fi
   test -d "$mount_point/Mdhub.app"
-  test -L "$mount_point/Applications"
   test -f "$mount_point/Mdhub.app/Contents/Info.plist"
   test -x "$mount_point/Mdhub.app/Contents/MacOS/Mdhub"
   test -f "$mount_point/Mdhub.app/Contents/MacOS/Mdhub.dll"
