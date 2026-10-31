@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
 
 namespace Mdhub.Components;
 
@@ -7,6 +8,23 @@ namespace Mdhub.Components;
 public sealed class MarkdownTextBox : TextBox
 {
     protected override Type StyleKeyOverride => typeof(TextBox);
+
+    // Item 68: pasted text takes the document's line ending (NewLine, which Enter types too).
+    public MarkdownTextBox() => AddHandler(PastingFromClipboardEvent, (_, e) => { if (IsReadOnly) return; e.Handled = true; _ = PasteNormalizedAsync(); });
+    private async Task PasteNormalizedAsync()
+    {
+        if (TopLevel.GetTopLevel(this)?.Clipboard is not { } clipboard) return;
+        if (await clipboard.TryGetTextAsync() is { Length: > 0 } text) InsertText(text);
+    }
+    public void InsertText(string text)
+    {
+        var newline = NewLine ?? System.Environment.NewLine;
+        var normalized = System.Text.RegularExpressions.Regex.Replace(text, "\r\n|\r|\n", newline.Replace("$", "$$"));
+        var start = Math.Min(SelectionStart, SelectionEnd);
+        SelectedText = normalized;
+        SelectionStart = SelectionEnd = start + normalized.Length;
+        CaretIndex = start + normalized.Length;
+    }
     public static readonly StyledProperty<bool> HighlightMarkdownProperty = AvaloniaProperty.Register<MarkdownTextBox, bool>(nameof(HighlightMarkdown));
     public bool HighlightMarkdown { get => GetValue(HighlightMarkdownProperty); set => SetValue(HighlightMarkdownProperty, value); }
 

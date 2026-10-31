@@ -18,6 +18,7 @@ public partial class MainView
             Path = path, SavedText = text, UntitledName = name ?? $"Untitled {++_untitled}.md",
             Encoding = encoding ?? TextFileStore.DefaultEncoding
         };
+        document.SetLoadedLineEnding(Mdhub.Text.LineEndings.Detect(text, LineEndingSettings.ForNewFile)); // item 68
         InitializeTextDocument(document, text);
         _documents.Add(document);
         FileTabs.SelectedDocument = document;
@@ -128,6 +129,7 @@ public partial class MainView
         var isNewPath = document.Path is null || !SamePath(document.Path, Path.GetFullPath(path));
         document.Path = path;
         document.SavedText = document.Text;
+        document.SavedLineEnding = document.LineEnding; // item 68
         document.Refresh();
         if (_active == document) MdEditor.ShowDocument(document.IsMarkdown ? document : null);
         UpdateContentLayout();

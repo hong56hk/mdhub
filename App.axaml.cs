@@ -32,6 +32,7 @@ public partial class App : Application
             Services.EditorColors.Import(saved?.EditorColors);
             Services.EditorBehavior.Import(saved?.EditorBehavior);
             Services.TextEncodings.ImportDefault(saved?.DefaultEncoding);
+            Services.LineEndingSettings.ImportDefault(saved?.DefaultLineEnding);
             // A saved choice wins; otherwise the OS language when supported, else English (not saved until picked).
             Localization.Loc.Chosen = Localization.Loc.Normalize(saved?.Language);
             Localization.Loc.Set(Localization.Loc.Chosen ?? Localization.Loc.Detect(System.Globalization.CultureInfo.CurrentUICulture.Name));

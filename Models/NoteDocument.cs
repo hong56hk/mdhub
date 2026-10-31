@@ -32,13 +32,27 @@ public sealed class NoteDocument : INotifyPropertyChanged
         VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch
     };
     public string Text => Editor.Text ?? "";
-    public bool IsDirty => Text != SavedText;
+    // Item 68: the line ending Enter, paste and Change End of Line Sequence use (detected on open: the majority);
+    // switching it marks the document modified even when the text has no line break yet.
+    private Mdhub.Text.LineEnding _lineEnding;
+    public Mdhub.Text.LineEnding LineEnding { get => _lineEnding; set { _lineEnding = value; Editor.NewLine = Mdhub.Text.LineEndings.Sequence(value); } }
+    public Mdhub.Text.LineEnding SavedLineEnding { get; set; }
+    public void SetLoadedLineEnding(Mdhub.Text.LineEnding ending) { LineEnding = ending; SavedLineEnding = ending; }
+    private string? _countedText;
+    private Mdhub.Text.LineEndingCounts _counts;
+    // Counted once per text snapshot (the status bar asks on every change).
+    public Mdhub.Text.LineEndingCounts LineEndingCounts
+    {
+        get { var text = Text; if (!ReferenceEquals(text, _countedText)) { _counts = Mdhub.Text.LineEndings.Count(text); _countedText = text; } return _counts; }
+    }
+    public bool IsDirty => Text != SavedText || (LineEnding != SavedLineEnding && !IsViewOnly);
     public bool IsMarkdown => !IsViewOnly && System.IO.Path.GetExtension(Path ?? UntitledName).ToLowerInvariant() is ".md" or ".markdown";
     public string Title => (IsDirty ? "● " : "") + (Path is null ? UntitledName : System.IO.Path.GetFileName(Path));
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public NoteDocument()
     {
+        SetLoadedLineEnding(LineEndingSettings.ForNewFile);
         // Transparent so the current-line band behind the text shows; the editor pane paints EditorBackground already.
         Editor.Resources["TextControlBackgroundFocused"] = Brushes.Transparent;
         Editor.Resources["TextControlBackgroundPointerOver"] = Brushes.Transparent;

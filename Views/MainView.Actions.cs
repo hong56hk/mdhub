@@ -301,7 +301,7 @@ public partial class MainView
         var editor = document.Editor;
         var text = editor.Text ?? "";
         int anchor = editor.SelectionStart, caret = editor.SelectionEnd;
-        var edit = id == "edit.duplicateLine" ? Mdhub.Text.LineEdits.Duplicate(text, anchor, caret) : Mdhub.Text.LineEdits.Move(text, anchor, caret, id == "edit.moveLineUp" ? -1 : 1);
+        var edit = id == "edit.duplicateLine" ? Mdhub.Text.LineEdits.Duplicate(text, anchor, caret, Mdhub.Text.LineEndings.Sequence(document.LineEnding)) : Mdhub.Text.LineEdits.Move(text, anchor, caret, id == "edit.moveLineUp" ? -1 : 1);
         if (edit is { } change)
         {
             editor.SelectionStart = change.Start; editor.SelectionEnd = change.Start + change.Length;

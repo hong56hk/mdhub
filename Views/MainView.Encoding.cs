@@ -44,6 +44,7 @@ public partial class MainView
         if (document.IsDirty && !await ConfirmAsync("ReopenEncodingTitle", Loc.T("ReopenEncodingConfirm"), "ReopenDiscard")) return false;
         document.Encoding = encoding;
         document.SavedText = text;
+        document.SetLoadedLineEnding(Mdhub.Text.LineEndings.Detect(text, LineEndingSettings.ForNewFile)); // item 68
         document.Editor.Text = text;
         document.Refresh();
         if (_active == document) MdEditor.ShowDocument(document.IsMarkdown ? document : null);

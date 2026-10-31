@@ -55,6 +55,7 @@ public partial class MainView : UserControl
         FolderExplorer.RefreshRequested += () => RequestAction(WorkspaceAction.RefreshFolder);
         WireBinaryPlaceholder();
         WireEncodingMenu();
+        WireLineEndingMenu(); // item 68
         FolderExplorer.ExplorerRequested += async request => { if (!_busy) await RunAsync(() => HandleExplorerRequestAsync(request)); };
         FolderExplorer.MoveRequested += async request => await RunAsync(() => MoveExplorerFileAsync(request));
         FolderExplorer.RenameRequested = RenameExplorerItemAsync;

@@ -62,6 +62,14 @@ public partial class BottomStatusBar : UserControl
         FileKindLabel.Text = Loc.T(document.IsImage ? "KindImage" : document.IsBinary ? "KindBinary" : document.IsMarkdown ? "KindMarkdown" : "KindPlain");
         EncodingLabel.Text = document.IsViewOnly ? "" : Mdhub.Services.TextEncodings.DisplayName(document.Encoding) + (document.IsReadOnlyText ? " \u00b7 " + Loc.T("ReadOnly") : "");
         ToolTip.SetTip(EncodingLabel, document.IsViewOnly ? null : Loc.T("EncodingMenuTip"));
+        // Item 68: the line ending, and a subtle warning when the file mixes endings.
+        var ending = LineEndings.Label(document.LineEnding);
+        LineEndingLabel.Text = document.IsViewOnly ? "" : ending;
+        ToolTip.SetTip(LineEndingLabel, document.IsViewOnly ? null : Loc.T("LineEndingMenuTip"));
+        var counts = document.IsViewOnly ? default : document.LineEndingCounts;
+        MixedLineEndingsLabel.IsVisible = counts.IsMixed;
+        MixedLineEndingsLabel.Text = counts.IsMixed ? "\u26a0 " + Loc.T("MixedLineEndings") : "";
+        ToolTip.SetTip(MixedLineEndingsLabel, counts.IsMixed ? Loc.F(document.IsReadOnlyText ? "MixedLineEndingsReadOnlyTip" : "MixedLineEndingsTip", counts.CrLf, counts.Lf, counts.Cr, ending) : null);
         if (document.Image is { } image) SetCounts(() => Loc.F("ImagePixels", image.PixelSize.Width, image.PixelSize.Height) + ImageZoomSuffix());
     }
     // Item 37: the image zoom shown after the pixel size (null when no image is shown).
@@ -112,6 +120,20 @@ public partial class BottomStatusBar : UserControl
     private void EncodingLabel_PointerReleased(object? sender, PointerReleasedEventArgs e)
     {
         if (e.InitialPressMouseButton == MouseButton.Left && EncodingLabel.Text is { Length: > 0 }) EncodingRequested?.Invoke(EncodingLabel);
+    }
+    // Item 68: the line ending label opens the line ending menu; the mixed warning asks MainView to normalize.
+    public event Action<Control>? LineEndingRequested;
+    public event Action? NormalizeLineEndingsRequested;
+    public Control LineEndingTarget => LineEndingLabel;
+    public bool ShowsMixedLineEndings => MixedLineEndingsLabel.IsVisible;
+    public string LineEndingText => LineEndingLabel.Text ?? "";
+    private void LineEndingLabel_PointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (e.InitialPressMouseButton == MouseButton.Left && LineEndingLabel.Text is { Length: > 0 }) LineEndingRequested?.Invoke(LineEndingLabel);
+    }
+    private void MixedLineEndings_PointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (e.InitialPressMouseButton == MouseButton.Left) NormalizeLineEndingsRequested?.Invoke();
     }
     private void ModeLabel_Toggle(object? sender, PointerReleasedEventArgs? e) { if (e is null || e.InitialPressMouseButton == MouseButton.Left) Mdhub.Services.EditorMode.Toggle(); }
 }

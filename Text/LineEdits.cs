@@ -77,7 +77,8 @@ public static class LineEdits
     }
 
     // Inserts a copy of the block right below it; the selection moves onto the copy with the same columns.
-    public static LineEdit Duplicate(string text, int anchor, int caret)
+    // Item 68: newline is the document's line ending, used when the last line has no terminator.
+    public static LineEdit Duplicate(string text, int anchor, int caret, string? newline = null)
     {
         var lines = Lines(text);
         var (first, last) = Block(text, anchor, caret);
@@ -89,7 +90,7 @@ public static class LineEdits
         else
         {
             // The last line has no newline: separate the copy with the text's own line ending.
-            var eol = lines.Count > 1 ? text[lines[0].ContentEnd..lines[0].End] : Environment.NewLine;
+            var eol = newline ?? (lines.Count > 1 ? text[lines[0].ContentEnd..lines[0].End] : Environment.NewLine);
             inserted = eol + block; shift = block.Length + eol.Length;
         }
         int Map(int offset) => Math.Clamp(offset, 0, text.Length) + shift;

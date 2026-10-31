@@ -13,7 +13,7 @@
     </Style>
   </UserControl.Styles>
   <Border BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="0,1,0,0" Padding="12,7">
-    <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto">
+    <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto">
       <TextBlock x:Name="Counts" FontSize="11" Foreground="{DynamicResource TextSecondary}" />
       <Grid Grid.Column="1" ColumnDefinitions="*,Auto">
         <TextBlock x:Name="Status" Margin="20,0" FontSize="11" Foreground="{DynamicResource TextMuted}" TextTrimming="CharacterEllipsis" Background="Transparent" PointerReleased="Status_PointerReleased" />
@@ -25,7 +25,11 @@
       <TextBlock x:Name="ModeLabel" Grid.Column="3" Margin="0,0,16,0" FontSize="11" Foreground="{DynamicResource TextSecondary}" Cursor="Hand" Background="Transparent" IsVisible="False" PointerReleased="ModeLabel_Toggle" />
       <TextBlock x:Name="FileKindLabel" Grid.Column="4" Margin="0,0,16,0" FontSize="11" Foreground="{DynamicResource TextMuted}" Text="Markdown" />
       <!-- Item 67: a click opens Reopen / Save with Encoding. -->
-      <TextBlock x:Name="EncodingLabel" Grid.Column="5" FontSize="11" Foreground="{DynamicResource Accent}" Text="UTF-8" Cursor="Hand" Background="Transparent" PointerReleased="EncodingLabel_PointerReleased" />
+      <TextBlock x:Name="EncodingLabel" Grid.Column="5" Margin="0,0,16,0" FontSize="11" Foreground="{DynamicResource Accent}" Text="UTF-8" Cursor="Hand" Background="Transparent" PointerReleased="EncodingLabel_PointerReleased" />
+      <!-- Item 68: CRLF/LF/CR; a click opens Change End of Line Sequence. -->
+      <TextBlock x:Name="LineEndingLabel" Grid.Column="6" FontSize="11" Foreground="{DynamicResource Accent}" Cursor="Hand" Background="Transparent" PointerReleased="LineEndingLabel_PointerReleased" />
+      <!-- Item 68: a file with mixed line endings; a click normalizes them to the majority. -->
+      <TextBlock x:Name="MixedLineEndingsLabel" Grid.Column="7" Margin="10,0,0,0" FontSize="11" Foreground="{DynamicResource ErrorForeground}" Cursor="Hand" Background="Transparent" IsVisible="False" PointerReleased="MixedLineEndings_PointerReleased" />
     </Grid>
   </Border>
 </UserControl>

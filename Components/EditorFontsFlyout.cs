@@ -93,6 +93,19 @@ public static class EditorFontsFlyout
         box.SelectedIndex = options.FindIndex(o => o.Id == TextEncodings.DefaultEncodingId);
         box.SelectionChanged += (_, _) => { if (box.SelectedIndex >= 0) TextEncodings.SetDefault(options[box.SelectedIndex].Id); };
         panel.Children.Add(box);
+        // Item 68: the line ending of new files (OS, CRLF or LF).
+        panel.Children.Add(Label("DefaultLineEnding"));
+        var endings = LineEndingSettings.Ids;
+        var eolBox = new ComboBox
+        {
+            Name = "DefaultLineEndingBox", HorizontalAlignment = HorizontalAlignment.Stretch,
+            ItemsSource = endings.Select(id => id == LineEndingSettings.DefaultId ? Loc.F("LineEndingOs", Mdhub.Text.LineEndings.Label(Mdhub.Text.LineEndings.Os)) : Mdhub.Text.LineEndings.Label(LineEndingSettings.Resolve(id))).ToList()
+        };
+        AutomationProperties.SetName(eolBox, Loc.T("DefaultLineEnding"));
+        ToolTip.SetTip(eolBox, Loc.T("DefaultLineEndingTip"));
+        eolBox.SelectedIndex = Array.IndexOf(endings, LineEndingSettings.DefaultLineEndingId);
+        eolBox.SelectionChanged += (_, _) => { if (eolBox.SelectedIndex >= 0) LineEndingSettings.SetDefault(endings[eolBox.SelectedIndex]); };
+        panel.Children.Add(eolBox);
         return panel;
     }
 
