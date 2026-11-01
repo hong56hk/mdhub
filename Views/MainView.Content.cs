@@ -9,6 +9,7 @@ public partial class MainView
 
     private void UpdateContentLayout()
     {
+        UpdateOutlineLayout();
         var hasPreview = _active?.HasPreview == true;
         var image = _active?.IsImage == true;
         var binary = _active?.IsBinary == true;

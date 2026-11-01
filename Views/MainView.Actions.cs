@@ -19,6 +19,7 @@ public partial class MainView
         if (_busy) return;
         switch (action)
         {
+            case WorkspaceAction.ToggleOutline: ToggleOutline(); return;
             case WorkspaceAction.Exit: CloseRequested?.Invoke(); return;
             case WorkspaceAction.ToggleFolders: ToggleFolders_Click(null, new RoutedEventArgs()); return;
             case WorkspaceAction.TogglePreview: TogglePreview_Click(null, new RoutedEventArgs()); return;

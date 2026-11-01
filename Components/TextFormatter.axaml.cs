@@ -52,6 +52,12 @@ public partial class TextFormatter : UserControl
     private void EditorOnly_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.EditorOnly);
     private void SplitView_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.SplitView);
     private void ViewerOnly_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.ViewerOnly);
+    public void SetOutlineState(bool available, bool visible)
+    {
+        OutlineButton.IsEnabled = available;
+        OutlineButton.Classes.Set("on", visible);
+    }
+    private void Outline_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.ToggleOutline);
     private void ExportHtml_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.ExportHtml);
     private void ExportPdf_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.ExportPdf);
     private void Edit_Click(object? sender, RoutedEventArgs e)

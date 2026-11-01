@@ -19,6 +19,7 @@ if (args.Contains("--eol-only")) { LineEndingTests.Run(); return; }
 if (args.Contains("--newfile-only")) { NewFileDialogTests.Run(); return; }
 if (args.Contains("--reveal-only")) { RevealTests.Run(); return; }
 if (args.Contains("--menu-only")) { MenuTests.Run(); return; }
+if (args.Contains("--outline-only")) { DocumentOutlineTests.Run(); return; }
 if (args.Contains("--previewtoggle-only")) { PreviewToggleTests.Run(); return; }
 if (args.Contains("--createtarget-only")) { CreateTargetTests.Run(); return; }
 if (args.Contains("--searchindent-only")) { SearchIndentTests.Run(); return; }

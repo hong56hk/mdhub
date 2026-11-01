@@ -110,6 +110,11 @@
           <Path x:Name="PreviewSettingsIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                 Data="{StaticResource PreviewSettingsIconGeometry}" />
         </Button>
+        <Button x:Name="OutlineButton" Classes="tool icon viewMode" Click="Outline_Click" ToolTip.Tip="{DynamicResource DocumentOutline}" AutomationProperties.Name="{DynamicResource DocumentOutline}">
+          <Path Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round"
+                Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
+                Data="M 2,2 H 14 M 2,2 V 12 M 2,7 H 5 M 7,7 H 14 M 2,12 H 5 M 7,12 H 14" />
+        </Button>
       </StackPanel>
     </Grid>
   </Border>

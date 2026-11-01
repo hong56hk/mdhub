@@ -16,7 +16,7 @@
     <components:TopMenu x:Name="TopMenu" />
     <components:FileTabs x:Name="FileTabs" Grid.Row="1" />
     <components:TextFormatter x:Name="TextFormatter" Grid.Row="2" />
-    <Grid x:Name="Workspace" Grid.Row="3" ColumnDefinitions="240,4,*,4,*">
+    <Grid x:Name="Workspace" Grid.Row="3" ColumnDefinitions="240,4,*,4,*,0,0">
       <Grid x:Name="Sidebar" RowDefinitions="Auto,*" Background="{DynamicResource AppBackground}">
         <StackPanel Orientation="Horizontal" Spacing="4" Margin="6,6,4,4">
           <Button x:Name="ExplorerTab" Content="{DynamicResource SidebarExplorer}" Classes="sidebarTab active" Click="ExplorerTab_Click" ToolTip.Tip="{DynamicResource SidebarExplorerTip}" />
@@ -31,6 +31,8 @@
       <components:MdEditor x:Name="MdEditor" Grid.Column="4" />
       <components:ImageViewer x:Name="ImageViewer" Grid.Column="2" Grid.ColumnSpan="3" IsVisible="False" />
       <components:BinaryPlaceholder x:Name="BinaryPlaceholder" Grid.Column="2" Grid.ColumnSpan="3" IsVisible="False" />
+      <GridSplitter x:Name="OutlineSplitter" Grid.Column="5" IsVisible="False" Background="{DynamicResource BorderSubtle}" ResizeDirection="Columns" />
+      <components:DocumentOutline x:Name="Outline" Grid.Column="6" IsVisible="False" />
       <components:QuickOpen x:Name="QuickOpenBox" Grid.Column="2" Grid.ColumnSpan="3" ZIndex="20" />
     </Grid>
     <components:BottomStatusBar x:Name="BottomStatusBar" Grid.Row="4" />

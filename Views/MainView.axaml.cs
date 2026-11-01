@@ -38,6 +38,8 @@ public partial class MainView : UserControl
         AttachedToVisualTree += (_, _) => Loc.Changed += OnLanguageChanged;
         DetachedFromVisualTree += (_, _) => Loc.Changed -= OnLanguageChanged;
         WireQuickOpen();
+        Outline.CloseRequested += ToggleOutline;
+        Outline.HeadingRequested += NavigateOutline;
         FileTabs.DocumentSelected += SelectDocument;
         FileTabs.NewRequested += () => RequestAction(WorkspaceAction.New);
         FileTabs.CloseRequested += async document => await RunAsync(() => CloseDocumentAsync(document));
@@ -93,6 +95,7 @@ public partial class MainView : UserControl
     public void StopPreview()
     {
         MdEditor.Stop();
+        _outlineTimer?.Stop();
         ImageViewer.ShowImage(null);
         foreach (var document in _documents) document.Image?.Dispose();
     }
@@ -241,6 +244,7 @@ public partial class MainView : UserControl
                 if (!await ConfirmCloseAsync(document)) return;
             _allowClose = true;
             MdEditor.Stop();
+        _outlineTimer?.Stop();
             CloseRequested?.Invoke();
         });
     }

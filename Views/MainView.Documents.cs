@@ -38,7 +38,7 @@ public partial class MainView
         {
             document.Refresh();
             if (document.IsDirty) _sessionNote = null;
-            if (_active == document) { UpdateStatus(); MdEditor.ScheduleRefresh(); }
+            if (_active == document) { UpdateStatus(); MdEditor.ScheduleRefresh(); ScheduleOutline(); }
             var textChanged = document.Editor.Text != searchedText;
             searchedText = document.Editor.Text;
             if (textChanged && GlobalSearch.IsVisible && !_busy) GlobalSearch.Schedule();
