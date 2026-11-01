@@ -231,6 +231,14 @@ public partial class MainView
             LineEdit(lineId);
             return;
         }
+        if (!_busy && EditorFocused && _active is { IsViewOnly: false } && !_active.Editor.IsReadOnly
+            && ShortcutKeys.Match(e, s => s.Id is "edit.uppercase" or "edit.lowercase") is { } caseId)
+        {
+            e.Handled = true;
+            ShortcutFired?.Invoke(caseId);
+            ChangeSelectionCase(caseId == "edit.uppercase");
+            return;
+        }
         // Built-in TextBox keys and zoom (MainWindow) are listed in the table but handled elsewhere.
         var id = ShortcutKeys.Match(e, s => !s.HandledByTextBox && s.Area != ShortcutArea.Zoom && s.Id is not ("find.next" or "find.previous" or "find.close"));
         Func<Task>? action = id switch
@@ -300,6 +308,24 @@ public partial class MainView
         _ => null
     };
     private static Func<Task> Sync(Action a) => () => { a(); return Task.CompletedTask; };
+
+    private void ChangeSelectionCase(bool uppercase)
+    {
+        if (_active is not { IsViewOnly: false } document || document.Editor.IsReadOnly) return;
+        var editor = document.Editor;
+        var anchor = editor.SelectionStart;
+        var caret = editor.SelectionEnd;
+        if (anchor == caret) return;
+        var selected = editor.SelectedText;
+        // Stable Unicode casing, independent of the UI language or machine locale.
+        var replacement = uppercase ? selected.ToUpperInvariant() : selected.ToLowerInvariant();
+        if (replacement == selected) return;
+        var start = Math.Min(anchor, caret);
+        editor.SelectedText = replacement;
+        // One replacement is one undo step; keep the selected range and direction.
+        editor.SelectionStart = anchor < caret ? start : start + replacement.Length;
+        editor.SelectionEnd = anchor < caret ? start + replacement.Length : start;
+    }
 
     // Item 72: one replacement (a single undo step), then the selection (anchor and caret) on the moved/copied lines.
     private void LineEdit(string id)

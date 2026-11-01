@@ -81,6 +81,8 @@ public static class Shortcuts
         S("edit.moveLineUp", ShortcutArea.Edit, "Move line up", new ShortcutGesture("Up", ShortcutMods.Alt)),
         S("edit.moveLineDown", ShortcutArea.Edit, "Move line down", new ShortcutGesture("Down", ShortcutMods.Alt)),
         S("edit.duplicateLine", ShortcutArea.Edit, "Duplicate line", C("D")),
+        S("edit.uppercase", ShortcutArea.Edit, "Convert selection to uppercase", C("U")),
+        S("edit.lowercase", ShortcutArea.Edit, "Convert selection to lowercase", CS("U")),
         // Item 53: after the Edit entries so a plain match of Ctrl+C/X/V still finds the editor entry first.
         E("explorer.cut", "Cut selected explorer item (explorer focused)", C("X")),
         E("explorer.copy", "Copy selected explorer item (explorer focused)", C("C")),

@@ -10,6 +10,7 @@ using Mdhub.Models;
 using Mdhub.Views;
 using Mdhub.Components;
 
+if (args.Contains("--case-only")) { try { TextCaseTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
 if (args.Contains("--import-only")) { try { ExplorerImportTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
 if (args.Contains("--html-only")) { try { HtmlFormattingTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
 if (args.Contains("--encoding-only")) { EncodingTests.Run(); return; }

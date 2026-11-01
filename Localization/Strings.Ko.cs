@@ -5,6 +5,8 @@ public static partial class Loc
 {
     public static readonly IReadOnlyDictionary<string, string> Ko = new Dictionary<string, string>
     {
+        ["Sc.edit.uppercase"] = "선택한 텍스트를 대문자로 변환",
+        ["Sc.edit.lowercase"] = "선택한 텍스트를 소문자로 변환",
         ["CannotImportHere"] = "이 위치에 파일을 복사할 수 없습니다. 원본 파일과 대상 폴더를 확인하세요.",
         ["EnableHtmlFormatting"] = "HTML 서식 사용",
         ["HtmlAlignLeft"] = "왼쪽 정렬",
