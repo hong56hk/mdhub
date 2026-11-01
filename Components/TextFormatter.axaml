@@ -25,8 +25,16 @@
     <Grid ColumnDefinitions="*,Auto">
       <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
         <StackPanel x:Name="FormatBar" Orientation="Horizontal" Spacing="2">
-          <Button Content="↶" Tag="undo" Classes="tool" Click="Edit_Click" ToolTip.Tip="{DynamicResource Undo}" />
-          <Button Content="↷" Tag="redo" Classes="tool" Click="Edit_Click" ToolTip.Tip="{DynamicResource Redo}" />
+          <Button Tag="undo" Classes="tool icon" Click="Edit_Click" ToolTip.Tip="{DynamicResource Undo}" AutomationProperties.Name="{DynamicResource Undo}">
+            <Path Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round"
+                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
+                  Data="M 5.5,2.5 L 2.5,5.5 L 5.5,8.5 M 2.5,5.5 H 9.5 A 3,3 0 0 1 9.5,11.5 H 7" />
+          </Button>
+          <Button Tag="redo" Classes="tool icon" Click="Edit_Click" ToolTip.Tip="{DynamicResource Redo}" AutomationProperties.Name="{DynamicResource Redo}">
+            <Path Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round"
+                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
+                  Data="M 10.5,2.5 L 13.5,5.5 L 10.5,8.5 M 13.5,5.5 H 6.5 A 3,3 0 0 0 6.5,11.5 H 9" />
+          </Button>
           <Button Content="B" Tag="bold" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Bold}" />
           <Button Content="I" Tag="italic" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Italic}" />
           <Button Tag="strike" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Strikethrough}"><c:StrikeGlyph /></Button>
