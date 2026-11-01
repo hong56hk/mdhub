@@ -5,6 +5,7 @@ public static partial class Loc
 {
     public static readonly IReadOnlyDictionary<string, string> Ko = new Dictionary<string, string>
     {
+        ["CannotImportHere"] = "이 위치에 파일을 복사할 수 없습니다. 원본 파일과 대상 폴더를 확인하세요.",
         ["EnableHtmlFormatting"] = "HTML 서식 사용",
         ["HtmlAlignLeft"] = "왼쪽 정렬",
         ["HtmlAlignCenter"] = "가운데 정렬",

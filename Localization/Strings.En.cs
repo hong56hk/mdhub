@@ -5,6 +5,7 @@ public static partial class Loc
 {
     public static readonly IReadOnlyDictionary<string, string> En = new Dictionary<string, string>
     {
+        ["CannotImportHere"] = "Cannot copy this file here. Check that the source file and destination folder are still available.",
         ["EnableHtmlFormatting"] = "Enable HTML formatting",
         ["HtmlAlignLeft"] = "Align left",
         ["HtmlAlignCenter"] = "Align center",

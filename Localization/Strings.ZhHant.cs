@@ -5,6 +5,7 @@ public static partial class Loc
 {
     public static readonly IReadOnlyDictionary<string, string> ZhHant = new Dictionary<string, string>
     {
+        ["CannotImportHere"] = "無法將此檔案複製到此處。請確認來源檔案和目的地資料夾仍可使用。",
         ["EnableHtmlFormatting"] = "啟用 HTML 格式",
         ["HtmlAlignLeft"] = "靠左對齊",
         ["HtmlAlignCenter"] = "置中對齊",
