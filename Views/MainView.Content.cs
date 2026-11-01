@@ -4,22 +4,27 @@ namespace Mdhub.Views;
 
 public partial class MainView
 {
-    private bool _showPreview = true;
+    private enum ViewMode { Editor, Split, Viewer }
+    private ViewMode _viewMode = ViewMode.Split;
 
     private void UpdateContentLayout()
     {
         var hasPreview = _active?.HasPreview == true;
         var image = _active?.IsImage == true;
         var binary = _active?.IsBinary == true;
-        var preview = hasPreview && _showPreview;
-        if (MdEditor.IsVisible && !preview) _previewWidth = Workspace.ColumnDefinitions[4].Width;
-        MdEditor.IsVisible = PreviewSplitter.IsVisible = preview;
-        TextFormatter.SetPreviewOn(preview);
+        var preview = hasPreview && _viewMode != ViewMode.Editor;
+        var split = preview && _viewMode == ViewMode.Split;
+        if (PreviewSplitter.IsVisible && !split) _previewWidth = Workspace.ColumnDefinitions[4].Width;
+        MdEditor.IsVisible = preview;
+        PreviewSplitter.IsVisible = split;
+        TextFormatter.SetViewMode(hasPreview ? (int)_viewMode : 0);
         TextFormatter.SetSettingsVisibility(_active is not null && !image && !binary, hasPreview);
-        Workspace.ColumnDefinitions[3].Width = new GridLength(preview ? 4 : 0);
-        Workspace.ColumnDefinitions[4].Width = preview ? _previewWidth : new GridLength(0);
+        Workspace.ColumnDefinitions[3].Width = new GridLength(split ? 4 : 0);
+        Workspace.ColumnDefinitions[4].Width = split ? _previewWidth : new GridLength(0);
         Grid.SetColumnSpan(TextEditor, preview ? 1 : 3);
-        TextEditor.IsVisible = !image && !binary;
+        Grid.SetColumn(MdEditor, split ? 4 : 2);
+        Grid.SetColumnSpan(MdEditor, split ? 1 : 3);
+        TextEditor.IsVisible = !image && !binary && (!hasPreview || _viewMode != ViewMode.Viewer);
         BinaryPlaceholder.IsVisible = binary;
         BinaryPlaceholder.ShowFile(binary ? _active!.Path : null);
         ImageViewer.IsVisible = image;

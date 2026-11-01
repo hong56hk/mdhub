@@ -22,6 +22,10 @@ public partial class MainView
             case WorkspaceAction.Exit: CloseRequested?.Invoke(); return;
             case WorkspaceAction.ToggleFolders: ToggleFolders_Click(null, new RoutedEventArgs()); return;
             case WorkspaceAction.TogglePreview: TogglePreview_Click(null, new RoutedEventArgs()); return;
+            case WorkspaceAction.ToggleEditor: SetViewMode(_viewMode == ViewMode.Split ? ViewMode.Viewer : ViewMode.Split); return;
+            case WorkspaceAction.EditorOnly: SetViewMode(ViewMode.Editor); return;
+            case WorkspaceAction.SplitView: SetViewMode(ViewMode.Split); return;
+            case WorkspaceAction.ViewerOnly: SetViewMode(ViewMode.Viewer); return;
             case WorkspaceAction.WordWrap: WordWrap_Click(null, new RoutedEventArgs()); return;
             case WorkspaceAction.Guide: Guide_Click(null, new RoutedEventArgs()); return;
             case WorkspaceAction.About: About_Click(null, new RoutedEventArgs()); return;
@@ -149,8 +153,16 @@ public partial class MainView
     private void TogglePreview_Click(object? sender, RoutedEventArgs e)
     {
         if (_active?.HasPreview != true) return;
-        _showPreview = !_showPreview;
+        SetViewMode(_viewMode == ViewMode.Split ? ViewMode.Editor : ViewMode.Split);
+    }
+
+    private void SetViewMode(ViewMode mode)
+    {
+        if (_active?.HasPreview != true) return;
+        _viewMode = mode;
         UpdateContentLayout();
+        if (mode == ViewMode.Viewer) { TextEditor.CloseFind(); MdEditor.FocusPreview(); }
+        else TextEditor.FocusEditor();
     }
 
     private void WordWrap_Click(object? sender, RoutedEventArgs e)
@@ -253,6 +265,7 @@ public partial class MainView
             "find.replace" when _active?.IsViewOnly != true => () => { TextEditor.OpenFind(true); return Task.CompletedTask; },
             "edit.paste" when _active?.Editor.IsKeyboardFocusWithin == true => PasteAsync,
             "view.wordWrap" => () => { RequestAction(WorkspaceAction.WordWrap); return Task.CompletedTask; },
+            "view.toggleEditor" => () => { RequestAction(WorkspaceAction.ToggleEditor); return Task.CompletedTask; },
             "view.togglePreview" => () => { RequestAction(WorkspaceAction.TogglePreview); return Task.CompletedTask; },
             // Formatting and insert time act on the focused editor only; go to line / preview work anywhere but the find fields.
             "editor.bold" or "editor.italic" or "editor.link" or "editor.quote" when EditorFocused && _active!.HasPreview => EditorCommand(id),
@@ -267,7 +280,7 @@ public partial class MainView
         if (!Shortcuts.BeginPress(id!, e.Key.ToString())) return; // bug 87: a held one-shot key fires once per press
         ShortcutFired?.Invoke(id!);
         if (id == "edit.paste") await PasteAsync(); // runs busy only while saving an image
-        else if (id is "find.find" or "find.replace" or "view.wordWrap" or "view.togglePreview" || id!.StartsWith("editor.") && id != "editor.goToLine" || id == "view.previewCaret") await action(); // find: focus must land in the find bar
+        else if (id is "find.find" or "find.replace" or "view.wordWrap" or "view.togglePreview" or "view.toggleEditor" || id!.StartsWith("editor.") && id != "editor.goToLine" || id == "view.previewCaret") await action(); // find: focus must land in the find bar
         else await RunAsync(action);
     }
 

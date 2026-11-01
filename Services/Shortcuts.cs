@@ -93,6 +93,7 @@ public static class Shortcuts
         E("explorer.selectAll", "Select all visible explorer items (explorer focused)", C("A")),
         Once(S("view.wordWrap", ShortcutArea.View, "Toggle word wrap", new ShortcutGesture("Z", ShortcutMods.Alt))),
         Once(S("view.togglePreview", ShortcutArea.View, "Toggle preview", C("OemPipe"), new ShortcutGesture("OemBackslash", ShortcutMods.Command, Hidden: true))),
+        Once(S("view.toggleEditor", ShortcutArea.View, "Toggle editor", new ShortcutGesture("OemPipe", ShortcutMods.Alt), new ShortcutGesture("OemBackslash", ShortcutMods.Alt, Hidden: true))),
         S("find.find", ShortcutArea.Find, "Find", C("F")),
         S("find.replace", ShortcutArea.Find, "Find and replace", C("H")),
         S("find.next", ShortcutArea.Find, "Next match", P("F3")),

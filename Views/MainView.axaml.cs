@@ -85,7 +85,11 @@ public partial class MainView : UserControl
         AddDocument(null, "", "Untitled.md");
     }
 
-    public void FocusEditor() => TextEditor.FocusEditor();
+    public void FocusEditor()
+    {
+        if (MdEditor.IsVisible && !TextEditor.IsVisible) MdEditor.FocusPreview();
+        else TextEditor.FocusEditor();
+    }
     public void StopPreview()
     {
         MdEditor.Stop();
@@ -106,7 +110,7 @@ public partial class MainView : UserControl
         MdEditor.ShowDocument(document.HasPreview ? document : null);
         UpdateContentLayout();
         UpdateStatus();
-        TextEditor.FocusEditor();
+        FocusEditor();
         document.RestoreSelection();
         Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (_active == document) document.RestoreSelection(); });
     }
@@ -167,7 +171,7 @@ public partial class MainView : UserControl
         finally
         {
             SetBusy(false);
-            if (focusEditor || _focusEditorAfterBusy) { _focusEditorAfterBusy = false; TextEditor.FocusEditor(); }
+            if (focusEditor || _focusEditorAfterBusy) { _focusEditorAfterBusy = false; FocusEditor(); }
             else if (explorerFocused && !FolderExplorer.IsKeyboardFocusWithin) FolderExplorer.FocusTree();
         }
     }

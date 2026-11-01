@@ -38,28 +38,43 @@ internal static class PreviewToggleTests
             var icon = bar.FindControl<Avalonia.Controls.Shapes.Path>("TogglePreviewIcon")!;
             var preview = (Control)typeof(MainView).GetField("MdEditor", Flags)!.GetValue(v)!;
             Wait((Task)typeof(MainView).GetMethod("OpenPathAsync", Flags)!.Invoke(v, [note])!);
-            Color Stroke() => ((ISolidColorBrush)icon.Stroke!).Color;
-            Check(button.Content == icon && icon.StrokeThickness <= 1.5, "The button shows only the thin-stroke split-editor icon (no text)");
-            var geometry = icon.Data!.Bounds;
-            Check(geometry.Width > 10 && geometry.Height > 8 && icon.Data.StrokeContains(new Pen(Brushes.Black, 1.25), new Point(8, 7)) && icon.Data.StrokeContains(new Pen(Brushes.Black, 1.25), new Point(1.5, 7)) && icon.Data.StrokeContains(new Pen(Brushes.Black, 1.25), new Point(14.5, 7)) && !icon.Data.StrokeContains(new Pen(Brushes.Black, 1.25), new Point(5, 7)), "The icon is a rounded square split by a centre line");
-            Check(AutomationProperties.GetName(button) == Loc.T("TogglePreview"), "The button keeps its accessibility name");
-            foreach (var (theme, on, off) in new[] { (AppTheme.Dark, Color.Parse("#E0E0E0"), Color.Parse("#6A6A6A")), (AppTheme.Light, Color.Parse("#1F1F1F"), Color.Parse("#A0A0A0")) })
+            var editor = v.FindControl<TextEditor>("TextEditor")!;
+            var splitter = v.FindControl<GridSplitter>("PreviewSplitter")!;
+            var editButton = bar.FindControl<Button>("EditorOnlyButton")!;
+            var viewButton = bar.FindControl<Button>("ViewerOnlyButton")!;
+            void Click(Button target) { target.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump(); }
+            void Mode(int mode)
+            {
+                Check(editor.IsVisible == (mode != 2) && preview.IsVisible == (mode != 0) && splitter.IsVisible == (mode == 1), $"Mode {mode}: correct panes and splitter");
+                Check(editButton.Classes.Contains("on") == (mode == 0) && button.Classes.Contains("on") == (mode == 1) && viewButton.Classes.Contains("on") == (mode == 2), "Exactly the selected mode is highlighted");
+                if (mode == 2) Check(Grid.GetColumn(preview) == 2 && Grid.GetColumnSpan(preview) == 3 && preview.Bounds.Width > 0, "Viewer fills the content area");
+            }
+            void Key(Avalonia.Input.RawInputModifiers mods)
+            {
+                w.KeyPress(Avalonia.Input.Key.OemPipe, mods, Avalonia.Input.PhysicalKey.None, null);
+                w.KeyRelease(Avalonia.Input.Key.OemPipe, mods, Avalonia.Input.PhysicalKey.None, null);
+                Pump();
+            }
+            foreach (var theme in new[] { AppTheme.Dark, AppTheme.Light })
             {
                 ThemeService.Apply(theme, persist: false); Pump();
-                Check(preview.IsVisible && bar.PreviewOn && Stroke() == on, $"{theme}: preview on -> icon {on}");
-                Check(button.Background is ISolidColorBrush bg && bg.Color == ThemeService.Lookup("PreviewToggleOnBackground"), $"{theme}: the on state has a subtle background");
-                button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
-                Check(!preview.IsVisible && !bar.PreviewOn && Stroke() == off, $"{theme}: clicking hides the preview and dims the icon to {off}");
-                button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
-                Check(preview.IsVisible && bar.PreviewOn && Stroke() == on, $"{theme}: clicking again shows the preview and restores {on}");
+                Click(button); Mode(1);
+                foreach (var target in new[] { editButton, button, viewButton })
+                    Check(target.Content is Avalonia.Controls.Shapes.Path path && path.StrokeThickness <= 1.5, "Mode buttons use thin paths without text or emoji");
+                Click(editButton); Mode(0); Click(editButton); Mode(0);
+                Key(Avalonia.Input.RawInputModifiers.Control); Mode(1);
+                Key(Avalonia.Input.RawInputModifiers.Control); Mode(0);
+                Key(Avalonia.Input.RawInputModifiers.Alt); Mode(1);
+                Key(Avalonia.Input.RawInputModifiers.Alt); Mode(2);
+                Key(Avalonia.Input.RawInputModifiers.Control); Mode(1);
+                Click(viewButton); Mode(2); Click(viewButton); Mode(2);
+                Key(Avalonia.Input.RawInputModifiers.Alt); Mode(1);
             }
-            ThemeService.Apply(AppTheme.Dark, persist: false); Pump();
             foreach (var code in Loc.Languages.Select(l => l.Code))
             {
                 Loc.Set(code); Pump();
-                var tip = ToolTip.GetTip(button) as string;
-                Check(tip == Loc.F("TogglePreviewTip", Shortcuts.Format("view.togglePreview", ShortcutKeys.IsMac)) && tip!.Contains(Shortcuts.Format("view.togglePreview", ShortcutKeys.IsMac)) && AutomationProperties.GetName(button) == Loc.T("TogglePreview"),
-                    $"{code}: tooltip \"{tip}\" names the action and its shortcut; the accessibility name is localized");
+                Check(AutomationProperties.GetName(button) == Loc.T("ViewModeSplit") && AutomationProperties.GetName(editButton) == Loc.T("ViewModeEditor") && AutomationProperties.GetName(viewButton) == Loc.T("ViewModeViewer"), $"{code}: accessible mode names");
+                Check(((string)ToolTip.GetTip(viewButton)!).Contains(Shortcuts.Format("view.toggleEditor", ShortcutKeys.IsMac)), "Viewer tooltip shows live shortcut");
             }
         }
         finally

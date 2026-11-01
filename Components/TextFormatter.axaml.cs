@@ -24,13 +24,15 @@ public partial class TextFormatter : UserControl
         BuildHtmlButtons();
         // Item 50: the link icon's tooltip names its (live) shortcut, e.g. "Insert link (Ctrl+L)".
         ToolTip.SetTip(LinkButton, $"{Mdhub.Localization.Loc.T("InsertLink")} ({Mdhub.Services.Shortcuts.Format("editor.link", ShortcutKeys.IsMac)})");
-        ToolTip.SetTip(TogglePreviewButton, Mdhub.Localization.Loc.F("TogglePreviewTip", Mdhub.Services.Shortcuts.Format("view.togglePreview", ShortcutKeys.IsMac)));
+        ToolTip.SetTip(EditorOnlyButton, $"{Mdhub.Localization.Loc.T("ViewModeEditor")} ({Mdhub.Services.Shortcuts.Format("view.togglePreview", ShortcutKeys.IsMac)})");
+        ToolTip.SetTip(TogglePreviewButton, Mdhub.Localization.Loc.T("ViewModeSplit"));
+        ToolTip.SetTip(ViewerOnlyButton, $"{Mdhub.Localization.Loc.T("ViewModeViewer")} ({Mdhub.Services.Shortcuts.Format("view.toggleEditor", ShortcutKeys.IsMac)})");
     }
     private void UpdateHtmlButtons() => HtmlFormatBar.IsVisible = Mdhub.Services.EditorBehavior.Current.HtmlFormatting;
     public void SetFormattingEnabled(bool enabled, bool markdown = true)
     {
         FormatBar.IsEnabled = enabled;
-        TogglePreviewButton.IsEnabled = enabled;
+        EditorOnlyButton.IsEnabled = TogglePreviewButton.IsEnabled = ViewerOnlyButton.IsEnabled = enabled;
         ExportHtmlButton.IsEnabled = enabled && markdown;
         ExportPdfButton.IsEnabled = enabled && markdown;
     }
@@ -40,10 +42,16 @@ public partial class TextFormatter : UserControl
         EditorSettingsButton.IsVisible = text;
         PreviewSettingsButton.IsVisible = text && hasPreview;
     }
-    // Item 48: on = the preview pane is showing.
-    public bool PreviewOn => TogglePreviewButton.Classes.Contains("on");
-    public void SetPreviewOn(bool on) => TogglePreviewButton.Classes.Set("on", on);
-    private void TogglePreview_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.TogglePreview);
+    public bool PreviewOn => TogglePreviewButton.Classes.Contains("on") || ViewerOnlyButton.Classes.Contains("on");
+    public void SetViewMode(int mode)
+    {
+        EditorOnlyButton.Classes.Set("on", mode == 0);
+        TogglePreviewButton.Classes.Set("on", mode == 1);
+        ViewerOnlyButton.Classes.Set("on", mode == 2);
+    }
+    private void EditorOnly_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.EditorOnly);
+    private void SplitView_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.SplitView);
+    private void ViewerOnly_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.ViewerOnly);
     private void ExportHtml_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.ExportHtml);
     private void ExportPdf_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.ExportPdf);
     private void Edit_Click(object? sender, RoutedEventArgs e)

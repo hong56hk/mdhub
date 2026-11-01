@@ -267,6 +267,8 @@ public partial class MdEditor : UserControl
         return box;
     }
 
+    public void FocusPreview() { PreviewScroll.Focusable = true; PreviewScroll.Focus(); }
+
     internal void CancelPreviewEdit() { if (EndEdit() is not null) MessageChanged?.Invoke(""); }
 
     // Applies the overlay text; returns the reason when it is rejected (the source is then unchanged).

@@ -133,7 +133,7 @@ internal static class HtmlFormattingTests
             doc.Editor.Text = "color"; doc.Editor.SelectAll(); editor.Format("html-color:#1565c0");
             Check(doc.Text == "<span style=\"color: #1565c0;\">color</span>", "Text color inserts a supported style");
             doc.Editor.Text = "<p>**literal** <strong>bold</strong></p>"; Pump();
-            formatter.FindControl<Button>("TogglePreviewButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            formatter.FindControl<Button>("EditorOnlyButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Check(!preview.IsVisible, "HTML preview toggle works");
             formatter.FindControl<Button>("TogglePreviewButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Check(preview.IsVisible, "HTML preview can be restored");

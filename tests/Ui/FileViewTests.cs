@@ -45,7 +45,7 @@ internal static class FileViewTests
             Invoke("OpenPathAsync", markdown);
             var mdDocument = (NoteDocument)tabs.SelectedItem!;
             Check(textEditor.IsVisible && preview.IsVisible && !imageViewer.IsVisible, "Markdown retains both panes");
-            var toggle = Find<Button>("TogglePreviewButton");
+            var toggle = Find<Button>("EditorOnlyButton");
             toggle.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
             Check(!preview.IsVisible && Grid.GetColumnSpan(textEditor) == 3, "toolbar toggle hides preview and expands editor");
             view.RaiseEvent(new Avalonia.Input.KeyEventArgs
