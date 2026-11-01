@@ -54,9 +54,12 @@ public partial class TextEditor : UserControl
     }
     public void Format(string action)
     {
-        if (_document?.IsMarkdown != true) return;
+        if (_document?.HasPreview != true || _document.Editor.IsReadOnly) return;
+        var html = Mdhub.Services.EditorBehavior.Current.HtmlFormatting;
+        if (!html && (_document.IsHtml || action.StartsWith("html-"))) return;
         var editor = _document.Editor;
-        var edit = MarkdownFormatting.Apply(_document.Text, editor.SelectionStart, editor.SelectionEnd, action);
+        var edit = html ? HtmlFormatting.Apply(_document.Text, editor.SelectionStart, editor.SelectionEnd, action, _document.IsHtml)
+            : MarkdownFormatting.Apply(_document.Text, editor.SelectionStart, editor.SelectionEnd, action);
         editor.SelectionStart = edit.Start;
         editor.SelectionEnd = edit.End;
         editor.SelectedText = edit.Replacement;

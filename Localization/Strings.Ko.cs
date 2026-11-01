@@ -5,6 +5,22 @@ public static partial class Loc
 {
     public static readonly IReadOnlyDictionary<string, string> Ko = new Dictionary<string, string>
     {
+        ["EnableHtmlFormatting"] = "HTML 서식 사용",
+        ["HtmlAlignLeft"] = "왼쪽 정렬",
+        ["HtmlAlignCenter"] = "가운데 정렬",
+        ["HtmlAlignRight"] = "오른쪽 정렬",
+        ["HtmlUnderline"] = "밑줄",
+        ["HtmlSuperscript"] = "위 첨자",
+        ["HtmlSubscript"] = "아래 첨자",
+        ["HtmlLineBreak"] = "HTML 줄 바꿈 삽입",
+        ["HtmlContainer"] = "HTML 컨테이너 삽입",
+        ["HtmlTable"] = "HTML 표 삽입",
+        ["HtmlTextColor"] = "텍스트 색상",
+        ["HtmlImage"] = "HTML 이미지 삽입",
+        ["HtmlApply"] = "적용",
+        ["HtmlImageSource"] = "이미지 경로",
+        ["HtmlImageAlt"] = "대체 텍스트",
+        ["HtmlImageWidth"] = "너비 (px)",
         ["MenuFile"] = "파일(_F)",
         ["MenuNew"] = "새로 만들기(_N)",
         ["MenuOpenFile"] = "파일 열기(_O)…",

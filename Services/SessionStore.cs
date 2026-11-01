@@ -46,6 +46,7 @@ public sealed record SessionData
 // Item 70: Tab inserts spaces (default) or a tab; TabSize (1-8) = spaces per Tab and the width of a tab character.
 public sealed record EditorBehaviorData
 {
+    public bool HtmlFormatting { get; init; } = true;
     public bool InsertSpaces { get; init; } = true;
     public int TabSize { get; init; } = 4;
     // Item 71: Markdown list / table auto-complete and table column alignment (all on by default).

@@ -106,7 +106,7 @@ public partial class MainView
             document.Refresh();
         }
         UpdateStatus();
-        if (_active is { } active) MdEditor.ShowDocument(active.IsMarkdown ? active : null);
+        if (_active is { } active) MdEditor.ShowDocument(active.HasPreview ? active : null);
         UpdateContentLayout();
     }
 

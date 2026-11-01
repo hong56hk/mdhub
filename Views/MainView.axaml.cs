@@ -102,7 +102,7 @@ public partial class MainView : UserControl
         _active = document;
         FolderExplorer.MarkActive(document.Path);
         TextEditor.ShowDocument(document);
-        MdEditor.ShowDocument(document.IsMarkdown ? document : null);
+        MdEditor.ShowDocument(document.HasPreview ? document : null);
         UpdateContentLayout();
         UpdateStatus();
         TextEditor.FocusEditor();
@@ -138,7 +138,7 @@ public partial class MainView : UserControl
         TitleChanged?.Invoke(DocumentTitle);
         BottomStatusBar.UpdateDocument(_active, message ?? TransientStatus ?? _sessionNote);
         if (!_active.IsMarkdown && !_active.IsViewOnly) BottomStatusBar.UpdateStatistics(Mdhub.Text.TextStatistics.Count(_active.Text));
-        TextFormatter.SetFormattingEnabled(_active.IsMarkdown && !_busy);
+        TextFormatter.SetFormattingEnabled(_active.HasPreview && !_busy, _active.IsMarkdown);
         UpdateCaretStatus();
     }
 
@@ -177,7 +177,7 @@ public partial class MainView : UserControl
         FileTabs.SetBusy(busy);
         TopMenu.IsEnabled = !busy;
         FolderExplorer.SetBusy(busy);
-        TextFormatter.SetFormattingEnabled(!busy && _active?.IsMarkdown == true);
+        TextFormatter.SetFormattingEnabled(!busy && _active?.HasPreview == true, _active?.IsMarkdown == true);
         foreach (var document in _documents) document.Editor.IsReadOnly = busy || document.IsViewOnly || document.IsReadOnlyText;
     }
     // Saved file tabs only: untitled buffers and unsaved text are never written to the session.

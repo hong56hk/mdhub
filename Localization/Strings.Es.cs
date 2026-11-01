@@ -5,6 +5,22 @@ public static partial class Loc
 {
     public static readonly IReadOnlyDictionary<string, string> Es = new Dictionary<string, string>
     {
+        ["EnableHtmlFormatting"] = "Activar formato HTML",
+        ["HtmlAlignLeft"] = "Alinear a la izquierda",
+        ["HtmlAlignCenter"] = "Centrar",
+        ["HtmlAlignRight"] = "Alinear a la derecha",
+        ["HtmlUnderline"] = "Subrayado",
+        ["HtmlSuperscript"] = "Superíndice",
+        ["HtmlSubscript"] = "Subíndice",
+        ["HtmlLineBreak"] = "Insertar salto de línea HTML",
+        ["HtmlContainer"] = "Insertar contenedor HTML",
+        ["HtmlTable"] = "Insertar tabla HTML",
+        ["HtmlTextColor"] = "Color del texto",
+        ["HtmlImage"] = "Insertar imagen HTML",
+        ["HtmlApply"] = "Aplicar",
+        ["HtmlImageSource"] = "Ruta de la imagen",
+        ["HtmlImageAlt"] = "Texto alternativo",
+        ["HtmlImageWidth"] = "Ancho (px)",
         ["MenuFile"] = "_Archivo",
         ["MenuNew"] = "_Nuevo",
         ["MenuOpenFile"] = "_Abrir archivo…",

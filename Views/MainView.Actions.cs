@@ -148,7 +148,7 @@ public partial class MainView
 
     private void TogglePreview_Click(object? sender, RoutedEventArgs e)
     {
-        if (_active?.IsMarkdown != true) return;
+        if (_active?.HasPreview != true) return;
         _showPreview = !_showPreview;
         UpdateContentLayout();
     }
@@ -247,7 +247,7 @@ public partial class MainView
             "view.wordWrap" => () => { RequestAction(WorkspaceAction.WordWrap); return Task.CompletedTask; },
             "view.togglePreview" => () => { RequestAction(WorkspaceAction.TogglePreview); return Task.CompletedTask; },
             // Formatting and insert time act on the focused editor only; go to line / preview work anywhere but the find fields.
-            "editor.bold" or "editor.italic" or "editor.link" or "editor.quote" when EditorFocused && _active!.IsMarkdown => EditorCommand(id),
+            "editor.bold" or "editor.italic" or "editor.link" or "editor.quote" when EditorFocused && _active!.HasPreview => EditorCommand(id),
             "editor.insertTime" when EditorFocused => EditorCommand(id),
             "editor.nextMisspelling" when _active is { IsMarkdown: true } && !TextEditor.IsFindFocused => EditorCommand(id),
             "editor.toggleOverwrite" when _active is { IsViewOnly: false } && !TextEditor.IsFindFocused => () => { Mdhub.Services.EditorMode.Toggle(); return Task.CompletedTask; },

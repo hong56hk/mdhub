@@ -10,7 +10,7 @@ namespace Mdhub.Views;
 // Document workflows: file dialogs, duplicate tabs, saving, and unsaved-change decisions.
 public partial class MainView
 {
-    private static FilePickerFileType TextFiles => new(Loc.T("TextAndMarkdown")) { Patterns = ["*.txt", "*.md", "*.markdown"] };
+    private static FilePickerFileType TextFiles => new(Loc.T("TextAndMarkdown")) { Patterns = ["*.txt", "*.md", "*.markdown", "*.html", "*.htm"] };
     private NoteDocument AddDocument(string? path, string text, string? name = null, System.Text.Encoding? encoding = null)
     {
         var document = new NoteDocument
@@ -114,7 +114,7 @@ public partial class MainView
                 using var file = await Host.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
                 {
                     Title = Loc.T("SaveNoteTitle"), SuggestedFileName = path is null ? document.UntitledName : Path.GetFileName(path),
-                    DefaultExtension = document.IsMarkdown ? "md" : "txt",
+                    DefaultExtension = document.IsMarkdown ? "md" : document.IsHtml ? "html" : "txt",
                     FileTypeChoices = [TextFiles, FilePickerFileTypes.All], ShowOverwritePrompt = true
                 });
                 if (file is null) return false;
@@ -131,7 +131,7 @@ public partial class MainView
         document.SavedText = document.Text;
         document.SavedLineEnding = document.LineEnding; // item 68
         document.Refresh();
-        if (_active == document) MdEditor.ShowDocument(document.IsMarkdown ? document : null);
+        if (_active == document) MdEditor.ShowDocument(document.HasPreview ? document : null);
         UpdateContentLayout();
         UpdateStatus(Loc.F("Saved", path));
         MdEditor.ScheduleRefresh();

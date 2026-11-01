@@ -171,7 +171,9 @@ public static class MarkdownPreview
                     yield return Mapped(PreviewTags.Tag(new Border { Height = 1, Background = Mdhub.Services.ThemeService.Brush("RuleForeground"), Margin = new Thickness(0, 8) }, "hr"), block);
                     break;
                 case HtmlBlock html:
-                    yield return Mapped(PreviewTags.Tag(new TextBlock { Text = html.Lines.ToString(), TextWrapping = TextWrapping.Wrap }, "html"), html);
+                    yield return Mapped(Mdhub.Services.EditorBehavior.Current.HtmlFormatting
+                        ? HtmlPreview.Render(html.Lines.ToString(), _baseDirectory)
+                        : PreviewTags.Tag(new TextBlock { Text = html.Lines.ToString(), TextWrapping = TextWrapping.Wrap }, "html"), html);
                     break;
                 case ContainerBlock container:
                     yield return Stack(Render(container));
@@ -296,10 +298,22 @@ public static class MarkdownPreview
 
     private static void AddInlines(InlineCollection target, ContainerInline container)
     {
+        if (Mdhub.Services.EditorBehavior.Current.HtmlFormatting && container.Descendants<HtmlInline>().Any())
+        {
+            using var writer = new StringWriter();
+            var renderer = new Markdig.Renderers.HtmlRenderer(writer);
+            Pipeline.Setup(renderer);
+            renderer.Render(container);
+            HtmlPreview.AddInlines(target, writer.ToString(), _baseDirectory);
+            return;
+        }
         foreach (var item in container)
         {
             switch (item)
             {
+                case HtmlEntityInline entity:
+                    target.Add(new Run(entity.Transcoded.ToString()));
+                    break;
                 case LiteralInline literal:
                     var literalRun = new Run(literal.Content.ToString());
                     target.Add(literalRun);

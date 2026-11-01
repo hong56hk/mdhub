@@ -22,6 +22,7 @@ MDHub is a desktop app for keeping personal notes and journals locally. It has n
 - **Fast search.** Find anything across all your saved notes in moments.
 - **Speaks your language and your files.** The interface comes in 8 languages. Legacy encodings such as Big5 open correctly, and LF and CRLF line endings are kept as they are.
 - **A familiar editor.** The editor works like VS Code and uses similar keyboard shortcuts.
+- **Basic HTML formatting.** Mix HTML with Markdown, or preview `.html` files using supported tags, alignment, colors, tables and lists. [Supported HTML and settings](docs/html-formatting.md).
 
 ## Download
 

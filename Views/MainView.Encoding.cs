@@ -47,7 +47,7 @@ public partial class MainView
         document.SetLoadedLineEnding(Mdhub.Text.LineEndings.Detect(text, LineEndingSettings.ForNewFile)); // item 68
         document.Editor.Text = text;
         document.Refresh();
-        if (_active == document) MdEditor.ShowDocument(document.IsMarkdown ? document : null);
+        if (_active == document) MdEditor.ShowDocument(document.HasPreview ? document : null);
         UpdateStatus(Loc.F("ReopenedEncoding", option.Name));
         return true;
     }

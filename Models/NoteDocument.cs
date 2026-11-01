@@ -47,6 +47,8 @@ public sealed class NoteDocument : INotifyPropertyChanged
     }
     public bool IsDirty => Text != SavedText || (LineEnding != SavedLineEnding && !IsViewOnly);
     public bool IsMarkdown => !IsViewOnly && System.IO.Path.GetExtension(Path ?? UntitledName).ToLowerInvariant() is ".md" or ".markdown";
+    public bool IsHtml => !IsViewOnly && System.IO.Path.GetExtension(Path ?? UntitledName).ToLowerInvariant() is ".html" or ".htm";
+    public bool HasPreview => IsMarkdown || IsHtml;
     // Item 78: the name the file-type icon is looked up by.
     public string IconName => Path ?? UntitledName;
     public string Title => (IsDirty ? "● " : "") + (Path is null ? UntitledName : System.IO.Path.GetFileName(Path));

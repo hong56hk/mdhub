@@ -30,8 +30,8 @@ public partial class MdEditor : UserControl
         InitSelection();
         // Item 35: typography changes apply live to the open preview.
         PreviewContent.Spacing = Mdhub.Services.PreviewSettings.Current.ParagraphSpacing;
-        AttachedToVisualTree += (_, _) => Mdhub.Services.PreviewSettings.Changed += OnPreviewSettingsChanged;
-        DetachedFromVisualTree += (_, _) => Mdhub.Services.PreviewSettings.Changed -= OnPreviewSettingsChanged;
+        AttachedToVisualTree += (_, _) => { Mdhub.Services.PreviewSettings.Changed += OnPreviewSettingsChanged; Mdhub.Services.EditorBehavior.Changed += OnPreviewSettingsChanged; };
+        DetachedFromVisualTree += (_, _) => { Mdhub.Services.PreviewSettings.Changed -= OnPreviewSettingsChanged; Mdhub.Services.EditorBehavior.Changed -= OnPreviewSettingsChanged; };
     }
     internal int SettingsRefreshes { get; private set; }
     private void OnPreviewSettingsChanged()
@@ -319,6 +319,14 @@ public partial class MdEditor : UserControl
                 // Follows a language switch while it is shown (resolved from the app resources once attached).
                 placeholder.Bind(TextBlock.TextProperty, placeholder.GetResourceObservable("PreviewPlaceholder"));
                 PreviewContent.Children.Add(placeholder);
+            }
+            else if (document.IsHtml && Mdhub.Services.EditorBehavior.Current.HtmlFormatting)
+            {
+                var control = HtmlPreview.Render(text, document.Path is { } htmlPath ? Path.GetDirectoryName(htmlPath) : null);
+                _render = new PreviewRender(new PreviewSourceMap(text));
+                _render.Controls.Add(control);
+                _render.Blocks[_render.Map.AddBlock(0, text.Length)] = control;
+                PreviewContent.Children.Add(control);
             }
             else if (result.Markdown is not null)
             {

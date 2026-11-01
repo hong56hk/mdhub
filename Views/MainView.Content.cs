@@ -8,14 +8,14 @@ public partial class MainView
 
     private void UpdateContentLayout()
     {
-        var markdown = _active?.IsMarkdown == true;
+        var hasPreview = _active?.HasPreview == true;
         var image = _active?.IsImage == true;
         var binary = _active?.IsBinary == true;
-        var preview = markdown && _showPreview;
+        var preview = hasPreview && _showPreview;
         if (MdEditor.IsVisible && !preview) _previewWidth = Workspace.ColumnDefinitions[4].Width;
         MdEditor.IsVisible = PreviewSplitter.IsVisible = preview;
         TextFormatter.SetPreviewOn(preview);
-        TextFormatter.SetSettingsVisibility(_active is not null && !image && !binary, markdown);
+        TextFormatter.SetSettingsVisibility(_active is not null && !image && !binary, hasPreview);
         Workspace.ColumnDefinitions[3].Width = new GridLength(preview ? 4 : 0);
         Workspace.ColumnDefinitions[4].Width = preview ? _previewWidth : new GridLength(0);
         Grid.SetColumnSpan(TextEditor, preview ? 1 : 3);

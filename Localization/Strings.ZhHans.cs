@@ -5,6 +5,22 @@ public static partial class Loc
 {
     public static readonly IReadOnlyDictionary<string, string> ZhHans = new Dictionary<string, string>
     {
+        ["EnableHtmlFormatting"] = "启用 HTML 格式",
+        ["HtmlAlignLeft"] = "左对齐",
+        ["HtmlAlignCenter"] = "居中对齐",
+        ["HtmlAlignRight"] = "右对齐",
+        ["HtmlUnderline"] = "下划线",
+        ["HtmlSuperscript"] = "上标",
+        ["HtmlSubscript"] = "下标",
+        ["HtmlLineBreak"] = "插入 HTML 换行",
+        ["HtmlContainer"] = "插入 HTML 容器",
+        ["HtmlTable"] = "插入 HTML 表格",
+        ["HtmlTextColor"] = "文字颜色",
+        ["HtmlImage"] = "插入 HTML 图片",
+        ["HtmlApply"] = "应用",
+        ["HtmlImageSource"] = "图片路径",
+        ["HtmlImageAlt"] = "替代文字",
+        ["HtmlImageWidth"] = "宽度（像素）",
         ["MenuFile"] = "文件(_F)",
         ["MenuNew"] = "新建(_N)",
         ["MenuOpenFile"] = "打开文件(_O)…",
