@@ -33,6 +33,10 @@ public partial class MainView
         if (request.Paths is { Count: > 1 }) { await HandleMultiExplorerRequestAsync(request, root); return; }
         switch (request.Action)
         {
+            case ExplorerAction.RemoveUnusedImages:
+            case ExplorerAction.RemoveUnusedImagesRecursively:
+                await RemoveUnusedImagesAsync(root, path, request.Action == ExplorerAction.RemoveUnusedImagesRecursively);
+                break;
             case ExplorerAction.Reveal:
                 (RevealOverride ?? ExplorerFileOperations.Reveal)(path);
                 await FolderExplorer.RevealCreatedAsync(path);
@@ -92,6 +96,45 @@ public partial class MainView
                 break;
             }
         }
+    }
+
+    private async Task RemoveUnusedImagesAsync(string root, string directory, bool recursive)
+    {
+        if (!ExplorerFileOperations.Contains(root, directory)) throw new IOException(Loc.T("OpenFolderFirst"));
+        Dictionary<string, string> OpenMarkdown() => _documents
+            .Where(d => d.Path is not null && d.IsMarkdown && !d.IsViewOnly)
+            .ToDictionary(d => Path.GetFullPath(d.Path!), d => d.Editor.Text ?? "",
+                OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+        UpdateStatus(Loc.T("ScanningUnusedImages"));
+        var open = OpenMarkdown();
+        var unused = await Task.Run(() => UnusedImageScanner.Scan(directory, recursive, open));
+        if (unused.Count == 0)
+        {
+            await DialogService.ShowAsync(Host, Loc.T("RemoveUnusedImages"), Loc.T("NoUnusedImages"), "OK");
+            UpdateStatus(Loc.T("NoUnusedImages"));
+            return;
+        }
+        if (!await DialogService.ConfirmUnusedImagesAsync(Host, unused.Select(p => Path.GetRelativePath(directory, p)).ToArray()))
+        {
+            UpdateStatus();
+            return;
+        }
+        // Recheck after confirmation: a note may have changed on disk while the dialog was open.
+        open = OpenMarkdown();
+        var stillUnused = await Task.Run(() => UnusedImageScanner.Scan(directory, recursive, open));
+        var targets = unused.Intersect(stillUnused, OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal).ToArray();
+        var recycle = RecycleOverride;
+        var count = 0;
+        try
+        {
+            foreach (var target in targets)
+            {
+                await Task.Run(() => { if (recycle is null) ExplorerFileOperations.Recycle(root, target); else recycle(target); });
+                count++;
+                foreach (var document in _documents.Where(d => d.Path is not null && IsSameOrInside(target, d.Path)).ToList()) RemoveDocument(document);
+            }
+        }
+        finally { await FolderExplorer.RefreshAsync(); UpdateStatus(Loc.F("UnusedImagesRecycled", count)); }
     }
 
     private static bool IsSameOrInside(string root, string path) =>

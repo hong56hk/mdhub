@@ -8,6 +8,32 @@ namespace Mdhub.Services;
 
 public static class DialogService
 {
+    public static Task<bool> ConfirmUnusedImagesAsync(Window owner, IReadOnlyList<string> relativePaths)
+    {
+        var dialog = new Window { Name = "UnusedImagesDialog", Title = Loc.T("RemoveUnusedImages"), Width = 640, Height = 480, MinWidth = 400, MinHeight = 260, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+        var confirm = new Button { Name = "RecycleUnusedImages", Content = Loc.T("MoveToRecycleBin"), Classes = { "textAction" }, MinHeight = 42 };
+        var cancel = new Button { Name = "CancelUnusedImages", Content = Loc.T("Cancel"), IsCancel = true, Classes = { "textAction" }, MinHeight = 42 };
+        confirm.Click += (_, _) => dialog.Close(true);
+        cancel.Click += (_, _) => dialog.Close(false);
+        var grid = new Grid { Margin = new Thickness(20), RowDefinitions = new RowDefinitions("Auto,*,Auto"), RowSpacing = 16 };
+        grid.Children.Add(new TextBlock { Name = "UnusedImagesCount", Text = Loc.F("UnusedImagesConfirm", relativePaths.Count), TextWrapping = TextWrapping.Wrap });
+        var list = new ScrollViewer
+        {
+            Name = "UnusedImagePaths", HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+            Content = new TextBlock { Text = string.Join(Environment.NewLine, relativePaths) }
+        };
+        Grid.SetRow(list, 1);
+        grid.Children.Add(list);
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, Children = { confirm, cancel } };
+        Grid.SetRow(buttons, 2);
+        grid.Children.Add(buttons);
+        dialog.Content = grid;
+        dialog.Opened += (_, _) => cancel.Focus();
+        ApplyOwnerZoom(dialog, owner);
+        ThemeService.PrepareTitleBar(dialog);
+        return dialog.ShowDialog<bool>(owner);
+    }
+
     // displayDirectory: how "Create in:" names the target (item 42: relative to the open folder); the tooltip has the full path.
     public static Task<string?> PromptNameAsync(Window owner, string title, string directory, string initialName, string? displayDirectory = null)
     {

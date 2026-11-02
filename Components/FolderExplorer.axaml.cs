@@ -83,6 +83,8 @@ public partial class FolderExplorer : UserControl
             {
                 if (action == ExplorerAction.Rename) BeginRename(path);
                 // Paste on a file lands beside it (its folder); on a folder, inside it.
+                else if (action is ExplorerAction.RemoveUnusedImages or ExplorerAction.RemoveUnusedImagesRecursively)
+                { if (_folder is not null) ExplorerRequested?.Invoke(new ExplorerRequest(action, PasteTarget(_folder, path, isDirectory))); }
                 else if (action == ExplorerAction.Paste) { if (_folder is not null && CanPaste?.Invoke() == true) ExplorerRequested?.Invoke(new ExplorerRequest(action, PasteTarget(_folder, path, isDirectory))); }
                 else ExplorerRequested?.Invoke(new ExplorerRequest(action, path));
             };
@@ -98,7 +100,9 @@ public partial class FolderExplorer : UserControl
                 Item("CutMenuItem", "MenuCut", ExplorerAction.Cut, "explorer.cut"), Item("CopyMenuItem", "MenuCopy", ExplorerAction.Copy, "explorer.copy"),
                 Item("PasteMenuItem", "MenuPaste", ExplorerAction.Paste, "explorer.paste"),
                 Item("DuplicateMenuItem", "Duplicate", ExplorerAction.Duplicate, "explorer.duplicate"), Line(),
-                Item("RenameMenuItem", "Rename", ExplorerAction.Rename, "explorer.rename"), Item("DeleteMenuItem", "Delete", ExplorerAction.Delete, "explorer.delete")
+                Item("RenameMenuItem", "Rename", ExplorerAction.Rename, "explorer.rename"), Item("DeleteMenuItem", "Delete", ExplorerAction.Delete, "explorer.delete"), Line(),
+                Item("RemoveUnusedImagesMenuItem", "RemoveUnusedImages", ExplorerAction.RemoveUnusedImages),
+                Item("RemoveUnusedImagesRecursivelyMenuItem", "RemoveUnusedImagesRecursively", ExplorerAction.RemoveUnusedImagesRecursively)
             }
         };
         ShortcutKeys.ApplyGestures(menu.Items.OfType<MenuItem>());
@@ -165,7 +169,9 @@ public partial class FolderExplorer : UserControl
         var paste = Item("BackgroundPasteMenuItem", "MenuPaste", () => { if (_folder is not null) ExplorerRequested?.Invoke(new ExplorerRequest(ExplorerAction.Paste, _folder)); });
         ShortcutKeys.SetId(paste, "explorer.paste");
         var reload = Item("BackgroundReloadMenuItem", "Reload", () => RefreshFolder_Click(null, new RoutedEventArgs()));
-        var menu = new ContextMenu { Items = { newFile, newFolder, Line(), paste, Line(), reload } }.Localized();
+        var cleanup = Item("BackgroundRemoveUnusedImagesMenuItem", "RemoveUnusedImages", () => { if (_folder is not null) ExplorerRequested?.Invoke(new ExplorerRequest(ExplorerAction.RemoveUnusedImages, _folder)); });
+        var cleanupRecursive = Item("BackgroundRemoveUnusedImagesRecursivelyMenuItem", "RemoveUnusedImagesRecursively", () => { if (_folder is not null) ExplorerRequested?.Invoke(new ExplorerRequest(ExplorerAction.RemoveUnusedImagesRecursively, _folder)); });
+        var menu = new ContextMenu { Items = { newFile, newFolder, Line(), paste, Line(), reload, Line(), cleanup, cleanupRecursive } }.Localized();
         ShortcutKeys.ApplyGestures([paste]);
         menu.Opening += (_, _) => UpdateBackgroundMenu(menu);
         UpdateBackgroundMenu(menu);
