@@ -37,7 +37,8 @@
                 </Grid>
               </ControlTemplate>
             </ScrollViewer.Template>
-            <c:MarkdownTextPresenter Name="PART_TextPresenter"
+            <c:ScrollPastEnd>
+              <c:MarkdownTextPresenter Name="PART_TextPresenter"
                 HighlightMarkdown="{TemplateBinding HighlightMarkdown}"
                 Text="{TemplateBinding Text, Mode=TwoWay}"
                 CaretIndex="{TemplateBinding CaretIndex}" CaretBlinkInterval="{TemplateBinding CaretBlinkInterval}"
@@ -47,6 +48,7 @@
                 TextAlignment="{TemplateBinding TextAlignment}" LineHeight="{TemplateBinding LineHeight}"
                 LetterSpacing="{TemplateBinding LetterSpacing}"
                 HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+            </c:ScrollPastEnd>
           </ScrollViewer>
         </Border>
       </ControlTemplate>
