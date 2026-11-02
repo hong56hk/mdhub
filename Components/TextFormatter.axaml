@@ -106,10 +106,10 @@
           </Button>
           </StackPanel>
         </Border>
-        <!-- Item 51: export the Markdown note to HTML and PDF (a page with a folded corner). The HTML icon is '</>' again (20f95af restored it after bug 73); bug 82: both icons bind the ContentPresenter foreground so they dim when disabled (bug 65). -->
+        <!-- Export icons use folded pages; HTML adds code brackets. Both bind the ContentPresenter foreground so they dim when disabled. -->
         <Button x:Name="ExportHtmlButton" Classes="tool export" Click="ExportHtml_Click" ToolTip.Tip="{DynamicResource ExportHtmlTip}" AutomationProperties.Name="{DynamicResource ExportHtmlTip}">
           <Path x:Name="ExportHtmlIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
-                Data="M 5,3.5 L 1.5,7 L 5,10.5 M 11,3.5 L 14.5,7 L 11,10.5 M 9.5,2 L 6.5,12" />
+                Data="M 4,6 V 2 A 1,1 0 0 1 5,1 H 9.5 L 13,4.5 V 12 A 1,1 0 0 1 12,13 H 10 M 9.5,1 V 4.5 H 13 M 4,8 L 1.5,10.5 L 4,13 M 6.5,8 L 9,10.5 L 6.5,13" />
         </Button>
         <Button x:Name="ExportPdfButton" Classes="tool export" Click="ExportPdf_Click" ToolTip.Tip="{DynamicResource ExportPdfTip}" AutomationProperties.Name="{DynamicResource ExportPdfTip}">
           <Path x:Name="ExportPdfIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
