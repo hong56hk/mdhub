@@ -22,5 +22,12 @@
     <PackageReference Include="WeCantSpell.Hunspell" Version="7.0.1" />
     <None Include="Dictionaries\**" CopyToOutputDirectory="PreserveNewest" />
     <None Include="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Single-file Windows publish embeds these inside Mdhub.exe. Names must match SpellCheck and scripts/verify-single-file.py. -->
+    <EmbeddedResource Include="Dictionaries\**\*" Condition="'$(PublishSingleFile)' == 'true'">
+      <LogicalName>mdhub.bundle.dictionaries.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="THIRD-PARTY-NOTICES.md" Condition="'$(PublishSingleFile)' == 'true'">
+      <LogicalName>mdhub.bundle.THIRD-PARTY-NOTICES.md</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>

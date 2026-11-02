@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using Mdhub.Text;
 using WeCantSpell.Hunspell;
@@ -19,7 +20,54 @@ public static class SpellCheck
         new("es_ES", "Espa\u00f1ol (Espa\u00f1a)"),
     ];
 
-    public static string DictionaryFolder { get; set; } = Path.Combine(AppContext.BaseDirectory, "Dictionaries");
+    // Dev builds and the macOS app copy Dictionaries next to the binary. The single-file Windows exe embeds them
+    // (see Mdhub.csproj) and the first use extracts them under local app data.
+    public static string DictionaryFolder { get; set; } = ResolveDictionaryFolder();
+    const string BundlePrefix = "mdhub.bundle.dictionaries.";
+    const string BundleNotices = "mdhub.bundle.THIRD-PARTY-NOTICES.md";
+
+    static string ResolveDictionaryFolder()
+    {
+        var beside = Path.Combine(AppContext.BaseDirectory, "Dictionaries");
+        if (File.Exists(Path.Combine(beside, "en_US.dic")) && File.Exists(Path.Combine(beside, "en_US.aff"))) return beside;
+        return ExtractBundledDictionaries() ?? beside;
+    }
+
+    static string? ExtractBundledDictionaries()
+    {
+        try
+        {
+            var assembly = typeof(SpellCheck).Assembly;
+            var names = assembly.GetManifestResourceNames().Where(n => n.StartsWith(BundlePrefix, StringComparison.Ordinal)).ToList();
+            if (names.Count == 0) return null;
+            var root = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            if (string.IsNullOrEmpty(root)) return null;
+            var version = AppInfo.Version;
+            if (string.IsNullOrWhiteSpace(version)) version = "unknown";
+            var dest = Path.Combine(root, "mdhub", "bundled-dictionaries", version);
+            Directory.CreateDirectory(dest);
+            foreach (var name in names)
+            {
+                var fileName = name[BundlePrefix.Length..];
+                if (fileName is "." or ".." || fileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) continue;
+                ExtractResource(assembly, name, Path.Combine(dest, fileName));
+            }
+            ExtractResource(assembly, BundleNotices, Path.Combine(dest, "THIRD-PARTY-NOTICES.md"));
+            return File.Exists(Path.Combine(dest, "en_US.dic")) && File.Exists(Path.Combine(dest, "en_US.aff")) ? dest : null;
+        }
+        catch (Exception) { return null; }
+    }
+
+    static void ExtractResource(Assembly assembly, string name, string path)
+    {
+        using var source = assembly.GetManifestResourceStream(name);
+        if (source is null) return;
+        if (source.CanSeek && File.Exists(path) && new FileInfo(path).Length == source.Length) return;
+        var partial = path + ".partial";
+        using (var output = File.Create(partial)) source.CopyTo(output);
+        File.Move(partial, path, true);
+    }
+
     public static string CustomWordsPath { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "mdhub", "dictionary.txt");
     // Custom words or ignores changed: open editors re-check.
     public static event Action? Changed;
