@@ -11,7 +11,7 @@ public readonly record struct ShortcutGesture(string Key, ShortcutMods Mods, str
 {
     private static readonly Dictionary<string, string> KeyNames = new()
     {
-        ["OemPlus"] = "=", ["OemMinus"] = "-", ["OemPipe"] = "\\", ["Add"] = "Num +", ["Subtract"] = "Num -", ["NumPad0"] = "Num 0",
+        ["OemPeriod"] = ".", ["OemPlus"] = "=", ["OemMinus"] = "-", ["OemPipe"] = "\\", ["Add"] = "Num +", ["Subtract"] = "Num -", ["NumPad0"] = "Num 0",
         ["D0"] = "0", ["OemQuotes"] = "'", ["OemSemicolon"] = ";", ["Escape"] = "Esc", ["Delete"] = "Del", ["Left"] = "Left", ["Right"] = "Right", ["Up"] = "Up", ["Down"] = "Down"
     };
 
@@ -116,6 +116,7 @@ public static class Shortcuts
         S("editor.link", ShortcutArea.Editor, "Insert link (Markdown)", C("L")),
         // Ctrl+" is Shift+' on most layouts: accept both and show it as Ctrl+".
         S("editor.quote", ShortcutArea.Editor, "Block quote (Markdown)", new ShortcutGesture("OemQuotes", ShortcutMods.Command, "\""), new ShortcutGesture("OemQuotes", ShortcutMods.Command | ShortcutMods.Shift, Hidden: true)),
+        Once(S("editor.emoji", ShortcutArea.Editor, "Open emoji picker", C("OemPeriod"))),
         S("editor.insertTime", ShortcutArea.Editor, "Insert date and time", C("OemSemicolon")),
         Once(S("editor.goToLine", ShortcutArea.Editor, "Go to line", C("G"))),
         // Item 74: next misspelling (Markdown files, spell checking on).

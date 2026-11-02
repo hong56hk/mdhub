@@ -9,6 +9,7 @@ using Mdhub;
 using Mdhub.Models;
 using Mdhub.Views;
 using Mdhub.Components;
+if (args.Contains("--emoji-picker-only")) { try { EmojiPickerTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
 if (args.Contains("--split-editor-only")) { try { SplitEditorTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
 if (args.Contains("--unused-images-only")) { UnusedImageTests.Run(); return; }
 if (args.Contains("--reopentab-only")) { ReopenTabTests.Run(); return; }

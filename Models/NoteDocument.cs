@@ -130,6 +130,7 @@ public sealed class NoteDocument : INotifyPropertyChanged, IDisposable
 
     private bool _restoring;
     public (int Start, int End) SavedSelection { get; private set; }
+    internal void RememberSelection() => SavedSelection = (Editor.SelectionStart, Editor.SelectionEnd);
     public void RestoreSelection()
     {
         var length = Text.Length;

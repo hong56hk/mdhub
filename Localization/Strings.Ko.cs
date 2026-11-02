@@ -5,6 +5,21 @@ public static partial class Loc
 {
     public static readonly IReadOnlyDictionary<string, string> Ko = new Dictionary<string, string>
     {
+        ["EmojiCategoryRecent"] = "최근 사용",
+        ["EmojiNoRecents"] = "최근에 사용한 이모지가 여기에 표시됩니다.",
+        ["Sc.editor.emoji"] = "이모지 선택기 열기",
+        ["EmojiSearch"] = "이름이나 의미로 이모지 검색",
+        ["EmojiNoResults"] = "이모지를 찾을 수 없습니다",
+        ["EmojiCategoryAll"] = "모든 이모지",
+        ["EmojiCategorySmileys"] = "표정과 감정",
+        ["EmojiCategoryPeople"] = "사람과 신체",
+        ["EmojiCategoryNature"] = "동물과 자연",
+        ["EmojiCategoryFood"] = "음식과 음료",
+        ["EmojiCategoryTravel"] = "여행과 장소",
+        ["EmojiCategoryActivities"] = "활동",
+        ["EmojiCategoryObjects"] = "사물",
+        ["EmojiCategorySymbols"] = "기호",
+        ["EmojiCategoryFlags"] = "깃발",
         ["OpenToSide"] = "옆에서 열기",
         ["SplitRight"] = "오른쪽으로 분할",
         ["SplitEditorRight"] = "편집기를 오른쪽으로 분할",

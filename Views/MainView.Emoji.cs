@@ -1,6 +1,5 @@
-using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Automation;
+using Mdhub.Components;
 using Mdhub.Localization;
 using Mdhub.Models;
 using Mdhub.Services;
@@ -13,47 +12,50 @@ public partial class MainView
         && !document.IsViewOnly && !document.IsReadOnlyText && !document.Editor.IsReadOnly
         && TextEncodings.SupportsEmoji(document.Encoding);
 
+    private Flyout? _emojiPicker;
+
     private void ShowEmojiPicker(Control target)
     {
         if (_active is not { } document || !CanInsertEmoji(document)) return;
-        BuildEmojiPicker(document).ShowAt(target);
+        if (_emojiPicker?.IsOpen == true) return;
+        var flyout = _emojiPicker = BuildEmojiPicker(document);
+        flyout.Closed += (_, _) => { if (_emojiPicker == flyout) _emojiPicker = null; Shortcuts.ReleaseAll(); };
+        flyout.ShowAt(target);
     }
 
     internal Flyout BuildEmojiPicker(NoteDocument document)
     {
-        var grid = new WrapPanel { Width = 320 };
-        var flyout = new Flyout
+        var picker = new EmojiPicker();
+        var flyout = new Flyout { Content = picker };
+        picker.EmojiSelected += emoji => InsertEmojiCore(document, emoji, focusEditor: false);
+        picker.DismissRequested += () =>
         {
-            Content = new StackPanel { Spacing = 8, Children =
-            {
-                new TextBlock { Text = Loc.T("EmojiInput") }, grid
-            } }
+            flyout.Hide();
+            if (CanInsertEmoji(document)) FocusEditor();
         };
-        foreach (var emoji in "😀 😃 😄 😁 😆 😅 😂 🙂 😉 😊 😍 🥰 😎 🤔 😢 😭 😡 😱 😴 🤗 👍 👎 👏 🙌 👋 🙏 💪 ✌️ ❤️ 💔 ⭐ ✨ 🔥 🎉 🎊 🎁 ✅ ❌ ⚠️ ❓ 💡 📌 📝 📚 💻 🚀 🌍 🌈 ☀️ 🌙 🌸 🌳 🐱 🐶 🦋 🍎 🍕 ☕ ⚽ 🎵 👩‍💻 👨‍💻 👍🏽 🏳️‍🌈".Split(' '))
-        {
-            var button = new Button { Content = emoji, Width = 40, Height = 40, Padding = new Thickness(2), FontSize = 22 };
-            AutomationProperties.SetName(button, emoji);
-            button.Click += (_, _) =>
-            {
-                flyout.Hide();
-                InsertEmoji(document, emoji);
-            };
-            grid.Children.Add(button);
-        }
+        flyout.Opened += (_, _) => picker.FocusSearch();
         return flyout;
     }
 
-    internal void InsertEmoji(NoteDocument document, string emoji)
+    internal void InsertEmoji(NoteDocument document, string emoji) => InsertEmojiCore(document, emoji, focusEditor: true);
+
+    private void InsertEmojiCore(NoteDocument document, string emoji, bool focusEditor)
     {
         // A flyout can outlive a tab/encoding change. Never edit the wrong or newly read-only document.
         if (!CanInsertEmoji(document)) return;
-        if (!TextEditor.IsVisible) SetViewMode(ViewMode.Split);
-        document.Editor.Focus();
+        if (!TextEditor.IsVisible)
+        {
+            _viewMode = ViewMode.Split;
+            UpdateContentLayout();
+        }
+        if (focusEditor) document.Editor.Focus();
         document.RestoreSelection();
         var start = Math.Min(document.Editor.SelectionStart, document.Editor.SelectionEnd);
         document.Editor.SelectedText = emoji;
         document.Editor.SelectionStart = document.Editor.SelectionEnd = start + emoji.Length;
-        document.Editor.Focus();
+        document.RememberSelection();
+        EmojiRecents.Add(emoji);
+        if (focusEditor) document.Editor.Focus();
         UpdateStatus();
     }
 }

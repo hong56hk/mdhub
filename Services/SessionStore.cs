@@ -27,6 +27,7 @@ public sealed record SessionData
     public string? Language { get; init; }
     public List<string> RecentFiles { get; init; } = []; // File > Open Recent, newest first; missing in old files: empty
     public List<string> RecentFolders { get; init; } = [];
+    public List<string> RecentEmojis { get; init; } = [];
     // Custom shortcut bindings: id -> gestures like "Command+Shift+F"; missing in old files: none (defaults).
     public Dictionary<string, List<string>>? CustomShortcuts { get; init; }
     // Item 35: preview fonts and spacing; missing in old files (or all defaults): null.

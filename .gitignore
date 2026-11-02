@@ -11,3 +11,6 @@ obj/
 artifacts/
 .artifacts/
 *.user
+
+# ignore log
+*.log

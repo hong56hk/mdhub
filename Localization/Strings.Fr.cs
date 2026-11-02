@@ -5,6 +5,21 @@ public static partial class Loc
 {
     public static readonly IReadOnlyDictionary<string, string> Fr = new Dictionary<string, string>
     {
+        ["EmojiCategoryRecent"] = "Récents",
+        ["EmojiNoRecents"] = "Les emojis récemment utilisés apparaîtront ici.",
+        ["Sc.editor.emoji"] = "Ouvrir le sélecteur d’emojis",
+        ["EmojiSearch"] = "Rechercher par nom ou signification",
+        ["EmojiNoResults"] = "Aucun emoji trouvé",
+        ["EmojiCategoryAll"] = "Tous les emojis",
+        ["EmojiCategorySmileys"] = "Visages et émotions",
+        ["EmojiCategoryPeople"] = "Personnes et corps",
+        ["EmojiCategoryNature"] = "Animaux et nature",
+        ["EmojiCategoryFood"] = "Nourriture et boissons",
+        ["EmojiCategoryTravel"] = "Voyages et lieux",
+        ["EmojiCategoryActivities"] = "Activités",
+        ["EmojiCategoryObjects"] = "Objets",
+        ["EmojiCategorySymbols"] = "Symboles",
+        ["EmojiCategoryFlags"] = "Drapeaux",
         ["OpenToSide"] = "Ouvrir sur le côté",
         ["SplitRight"] = "Scinder à droite",
         ["SplitEditorRight"] = "Scinder l’éditeur à droite",

@@ -294,6 +294,7 @@ public partial class MainView
             "view.togglePreview" => () => { RequestAction(WorkspaceAction.TogglePreview); return Task.CompletedTask; },
             // Formatting and insert time act on the focused editor only; go to line / preview work anywhere but the find fields.
             "editor.bold" or "editor.italic" or "editor.link" or "editor.quote" when EditorFocused && _active!.HasPreview => EditorCommand(id),
+            "editor.emoji" when _active is { } emojiDocument && CanInsertEmoji(emojiDocument) => Sync(() => ShowEmojiPicker(TextFormatter.EmojiButton)),
             "editor.insertTime" when EditorFocused => EditorCommand(id),
             "editor.nextMisspelling" when _active is { IsMarkdown: true } && !TextEditor.IsFindFocused => EditorCommand(id),
             "editor.toggleOverwrite" when _active is { IsViewOnly: false } && !TextEditor.IsFindFocused => () => { Mdhub.Services.EditorMode.Toggle(); return Task.CompletedTask; },

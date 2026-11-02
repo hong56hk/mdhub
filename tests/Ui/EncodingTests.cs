@@ -140,10 +140,10 @@ internal static class EncodingTests
             emojiDoc.Editor.SelectionEnd = 11;
             var picker = (Flyout)typeof(MainView).GetMethod("BuildEmojiPicker", Flags)!.Invoke(v, [emojiDoc])!;
             picker.ShowAt(emojiButton); Pump();
-            var emojiGrid = (WrapPanel)((StackPanel)picker.Content!).Children[1];
-            var emojiKey = emojiGrid.Children.OfType<Button>().Single(b => Equals(b.Content, "👩‍💻"));
+            var emojiKey = ((Control)picker.Content!).GetVisualDescendants().OfType<Button>().Single(b => Equals(b.Content, "👩‍💻"));
             emojiKey.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent)); Pump();
             Check(emojiDoc.Text == "hello 👩‍💻" && emojiDoc.Editor.SelectionStart == emojiDoc.Text.Length && emojiDoc.IsDirty, "Emoji picker replaces the saved selection and leaves the caret after the full sequence");
+            picker.Hide();
             emojiDoc.Editor.Undo();
             Check(emojiDoc.Text == "hello world", "Emoji insertion can be undone");
             emojiDoc.Encoding = TextEncodings.Strict(1252)!;

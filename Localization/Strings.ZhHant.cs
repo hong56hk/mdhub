@@ -5,6 +5,21 @@ public static partial class Loc
 {
     public static readonly IReadOnlyDictionary<string, string> ZhHant = new Dictionary<string, string>
     {
+        ["EmojiCategoryRecent"] = "最近使用",
+        ["EmojiNoRecents"] = "最近使用的表情符號將顯示於此處。",
+        ["Sc.editor.emoji"] = "開啟表情符號選擇器",
+        ["EmojiSearch"] = "依名稱或含義搜尋表情符號",
+        ["EmojiNoResults"] = "找不到表情符號",
+        ["EmojiCategoryAll"] = "全部表情符號",
+        ["EmojiCategorySmileys"] = "笑臉與情感",
+        ["EmojiCategoryPeople"] = "人物與身體",
+        ["EmojiCategoryNature"] = "動物與自然",
+        ["EmojiCategoryFood"] = "食物與飲料",
+        ["EmojiCategoryTravel"] = "旅行與地點",
+        ["EmojiCategoryActivities"] = "活動",
+        ["EmojiCategoryObjects"] = "物品",
+        ["EmojiCategorySymbols"] = "符號",
+        ["EmojiCategoryFlags"] = "旗幟",
         ["OpenToSide"] = "在側邊開啟",
         ["SplitRight"] = "向右分割",
         ["SplitEditorRight"] = "向右分割編輯器",
