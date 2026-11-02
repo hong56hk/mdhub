@@ -50,10 +50,10 @@ internal static class FileViewTests
             Check(!preview.IsVisible && Grid.GetColumnSpan(textEditor) == 3, "toolbar toggle hides preview and expands editor");
             view.RaiseEvent(new Avalonia.Input.KeyEventArgs
             {
-                RoutedEvent = Avalonia.Input.InputElement.KeyDownEvent, Key = Avalonia.Input.Key.OemPipe,
+                RoutedEvent = Avalonia.Input.InputElement.KeyDownEvent, Key = Avalonia.Input.Key.M,
                 KeyModifiers = Avalonia.Input.KeyModifiers.Control
             });
-            Check(preview.IsVisible && Grid.GetColumnSpan(textEditor) == 1, "Ctrl+backslash restores preview");
+            Check(preview.IsVisible && Grid.GetColumnSpan(textEditor) == 1, "Ctrl+M restores preview");
             foreach (var extension in new[] { ".txt", ".cs", ".json", ".csv", ".py", "" })
             {
                 var path = Path.Combine(root, "text" + extension);

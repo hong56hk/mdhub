@@ -55,8 +55,8 @@ internal static class PreviewToggleTests
             }
             void Key(Avalonia.Input.RawInputModifiers mods)
             {
-                w.KeyPress(Avalonia.Input.Key.OemPipe, mods, Avalonia.Input.PhysicalKey.None, null);
-                w.KeyRelease(Avalonia.Input.Key.OemPipe, mods, Avalonia.Input.PhysicalKey.None, null);
+                w.KeyPress(Avalonia.Input.Key.M, mods, Avalonia.Input.PhysicalKey.None, null);
+                w.KeyRelease(Avalonia.Input.Key.M, mods, Avalonia.Input.PhysicalKey.None, null);
                 Pump();
             }
             foreach (var theme in new[] { AppTheme.Dark, AppTheme.Light })
