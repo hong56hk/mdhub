@@ -13,6 +13,7 @@ public partial class FileTabs : UserControl
     public FileTabs()
     {
         InitializeComponent();
+        InitializeReordering();
         // Item 75: the tab context menu opens only over a tab, and remembers which one (not necessarily the active tab).
         Tabs.AddHandler(ContextRequestedEvent, (_, e) =>
         {
@@ -25,8 +26,8 @@ public partial class FileTabs : UserControl
     public ContextMenu? TabMenu { get => Tabs.ContextMenu; set => Tabs.ContextMenu = value; }
     public NoteDocument? MenuTarget { get; private set; }
     public NoteDocument? SelectedDocument { get => Tabs.SelectedItem as NoteDocument; set => Tabs.SelectedItem = value; }
-    public void SetDocuments(ObservableCollection<NoteDocument> documents) => Tabs.ItemsSource = documents;
-    public void SetBusy(bool busy) => Tabs.IsEnabled = !busy;
+    public void SetDocuments(ObservableCollection<NoteDocument> documents) { ClearTabDrag(); Tabs.ItemsSource = documents; }
+    public void SetBusy(bool busy) { if (busy) ClearTabDrag(); Tabs.IsEnabled = !busy; }
     private void New_Click(object? sender, RoutedEventArgs e) => NewRequested?.Invoke();
     // Double-clicking the empty strip past the last tab opens a new note (same path as + and Ctrl+N).
     private void Tabs_DoubleTapped(object? sender, Avalonia.Input.TappedEventArgs e)
@@ -38,7 +39,7 @@ public partial class FileTabs : UserControl
     }
     private void Tabs_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (SelectedDocument is { } document) DocumentSelected?.Invoke(document);
+        if (!_reordering && SelectedDocument is { } document) DocumentSelected?.Invoke(document);
     }
     private void TabClose_Click(object? sender, RoutedEventArgs e)
     {
