@@ -428,7 +428,166 @@ public partial class MainView
 
     private async void Guide_Click(object? sender, RoutedEventArgs e) => await RunAsync(() =>
     {
-        AddDocument(null, "# Welcome to mdhub\n\nYour notes, on your computer.\n\n## Make it yours\n\nOpen a folder from **File → Open Folder**, then select a note. Each file opens in its own tab.\n\n- Write Markdown in the editor\n- See the formatted preview beside it\n- Save with Ctrl+S (Command+S on Mac)\n\n> The toolbar inserts Markdown into your source text.\n\n### Formatting\n\nTry **bold**, *italic*, ~~strikethrough~~, and `inline code`.\n\n| Feature | Shortcut |\n| --- | --- |\n| Open file | Ctrl+O |\n| Open folder | Ctrl+Shift+O |\n| Save | Ctrl+S |\n| Close tab | Ctrl+W |\n\n```csharp\nConsole.WriteLine(\"Hello world!\");\n```\n", "Markdown guide.md");
+        AddDocument(null, """
+            # Welcome to mdhub
+
+            Your notes, on your computer.
+
+            ## Make it yours
+
+            Open a folder from **File → Open Folder**, then select a note. Each file opens in its own tab.
+
+            - Write Markdown in the editor
+            - See the formatted preview beside it
+            - Save with Ctrl+S (Command+S on Mac)
+
+            > The toolbar inserts Markdown and HTML into your source text. Compare the editor with the preview to try these samples.
+
+            ## Markdown formatting
+
+            ### Text styles
+
+            Try **bold**, *italic*, ***bold italic***, ~~strikethrough~~, and `inline code`.
+
+            ```markdown
+            **bold** *italic* ***bold italic*** ~~strikethrough~~ `inline code`
+            ```
+
+            ### Headings, lists, and quotes
+
+            Start a heading with `#`, `##`, or `###` followed by a space.
+
+            - A bullet item
+              - A nested item
+            - Another item
+
+            1. First step
+            2. Second step
+
+            > A blockquote starts with `>` followed by a space.
+
+            Separate sections with a horizontal rule: `---` on its own line.
+
+            ---
+
+            ### Links and images
+
+            [Visit mdhub on GitHub](https://github.com/hong56hk/mdhub)
+
+            Use `[link text](https://example.com)` for a link.
+
+            ```markdown
+            ![A description of the image](images/photo.png)
+            ```
+
+            Save this guide, then replace `images/photo.png` with a local image path relative to the saved file. Absolute local paths also work. Remote or missing images display alternative text in the offline preview.
+
+            ### Tables and code
+
+            | Feature | Shortcut |
+            | --- | --- |
+            | Open file | Ctrl+O |
+            | Open folder | Ctrl+Shift+O |
+            | Save | Ctrl+S |
+            | Close tab | Ctrl+W |
+
+            Use pipes (`|`) between table columns and a separator row (`| --- | --- |`) below the header.
+
+            Fenced code blocks use three backticks and an optional language name:
+
+            ```csharp
+            Console.WriteLine("Hello world!");
+            ```
+
+            ## HTML formatting
+
+            Turn on **Editor Settings → Enable HTML formatting** to render these examples. Inline HTML can appear within a Markdown paragraph. HTML inside code spans and fenced blocks stays literal.
+
+            ### Font color
+
+            <span style="color: #1565c0;">Blue text</span> and <span style="color: tomato;">tomato text</span> use hex or named colors.
+
+            ```html
+            <span style="color: #1565c0;">Blue text</span>
+            <span style="color: tomato;">Tomato text</span>
+            ```
+
+            ### Underline, superscript, and subscript
+
+            Try <u>underlined text</u>, x<sup>2</sup> + y<sup>2</sup>, and H<sub>2</sub>O.
+
+            ```html
+            <u>underlined text</u>
+            x<sup>2</sup> + y<sup>2</sup>
+            H<sub>2</sub>O
+            ```
+
+            HTML also supports <strong>bold</strong>, <em>italic</em>, <del>deleted text</del>, and <code>inline code</code> with the tags `strong`, `em`, `del`, and `code`.
+
+            ### Line breaks and special characters
+
+            First line<br>Second line, using an HTML line break.
+
+            Use `First line<br>Second line` for an explicit break. Entities also work: `&amp;` → &amp;, `&lt;` → &lt;, `&gt;` → &gt;, and `&copy;` → &copy;.
+
+            ### Alignment and containers
+
+            Put blank lines before and after an HTML block. Use HTML tags for formatting inside the block; Markdown syntax inside it stays literal.
+
+            <div style="text-align: center; color: #1565c0;">
+              <p>A centered paragraph with <strong>bold</strong> blue text.</p>
+            </div>
+
+            ```html
+            <div style="text-align: center; color: #1565c0;">
+              <p>A centered paragraph with <strong>bold</strong> blue text.</p>
+            </div>
+            ```
+
+            Alignment supports `left`, `center`, and `right`. Color and alignment inherit through containers.
+
+            ### HTML images with a size
+
+            <img src="images/photo.png" alt="Replace images/photo.png with a local image to preview it" width="240">
+
+            ```html
+            <img src="images/photo.png" alt="A description of the image" width="240">
+            ```
+
+            Use numeric `width` and/or `height` attributes in pixels. HTML images follow the same local path rules as Markdown images.
+
+            ### HTML tables and lists
+
+            <table>
+              <tr><th>Format</th><th>Example</th></tr>
+              <tr><td>Superscript</td><td>10<sup>3</sup></td></tr>
+              <tr><td colspan="2">A cell spanning two columns</td></tr>
+            </table>
+
+            ```html
+            <table>
+              <tr><th>Format</th><th>Example</th></tr>
+              <tr><td>Superscript</td><td>10<sup>3</sup></td></tr>
+              <tr><td colspan="2">A cell spanning two columns</td></tr>
+            </table>
+            ```
+
+            <ol start="3">
+              <li>A numbered HTML item</li>
+              <li>Another item with <u>underline</u></li>
+            </ol>
+
+            Use `<ol start="3"><li>Item</li></ol>` for a numbered list or `<ul><li>Item</li></ul>` for bullets. HTML tables also support `rowspan`.
+
+            The preview supports basic HTML text formatting, lists, tables, and local images. Stylesheets, scripts, and browser layouts are not supported.
+
+            ## Emoji
+
+            😀 Welcome! 🚀 Ready to write? ✅ Done. 💡 An idea. 🎉 Celebrate!
+
+            Paste Unicode emoji directly or use the toolbar's emoji picker. Emoji are regular text; shortcodes such as `:smile:` stay literal. Their appearance depends on your installed fonts.
+
+            """, "Markdown guide.md");
         return Task.CompletedTask;
     });
 
