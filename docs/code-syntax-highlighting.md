@@ -31,4 +31,6 @@ Source files select their language by extension. Markdown fenced code blocks sel
 
 Inline code in backticks gets a distinct text color, code font, and subtle background only in `.md` files. Source-language backticks, such as JavaScript template strings, follow their language's string rules.
 
+HTML tags embedded directly in Markdown also highlight tag names, attributes, quoted values, and single-line comments using the HTML colors. Text between tags keeps its Markdown formatting.
+
 The highlighter runs offline and uses the app's light/dark theme colors. It provides lexical highlighting, rather than compiler diagnostics or semantic analysis.
