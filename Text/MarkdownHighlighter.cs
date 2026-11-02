@@ -34,7 +34,7 @@ public sealed record SyntaxResult(IReadOnlyList<SyntaxSpan> Spans, IReadOnlyList
 public sealed class MarkdownHighlighter
 {
     // Block state carried from one line to the next.
-    internal readonly record struct LineState(byte Mode, string? Lang, char FenceChar, int FenceLength, bool CodeComment, bool InTable, int Index0)
+    internal readonly record struct LineState(byte Mode, string? Lang, char FenceChar, int FenceLength, CodeHighlighter.State CodeComment, bool InTable, int Index0)
     {
         public const byte Normal = 0, Fence = 1, FrontMatter = 2;
     }
@@ -51,7 +51,7 @@ public sealed class MarkdownHighlighter
         if (_cache.Count > 50_000) _cache.Clear();
         var spans = new List<SyntaxSpan>();
         var blocks = new List<SyntaxBlock>();
-        var state = new LineState(LineState.Normal, null, '\0', 0, false, false, 1);
+        var state = new LineState(LineState.Normal, null, '\0', 0, default, false, 1);
         var lineStart = 0;
         var first = true;
         while (lineStart <= text.Length)
@@ -121,7 +121,7 @@ public sealed class MarkdownHighlighter
             if (indent <= 3 && run >= state.FenceLength && t[run..].Trim().Length == 0)
             {
                 if (line.Length > 0) o.Add(new(0, line.Length, SyntaxColor.Marker));
-                return new(o.ToArray(), new LineState(LineState.Normal, null, '\0', 0, false, false, 0), SyntaxBlockKind.Code);
+                return new(o.ToArray(), new LineState(LineState.Normal, null, '\0', 0, default, false, 0), SyntaxBlockKind.Code);
             }
             var inComment = CodeHighlighter.Line(line, state.Lang, state.CodeComment, o);
             return new(o.ToArray(), next with { CodeComment = inComment }, SyntaxBlockKind.Code);
@@ -137,7 +137,7 @@ public sealed class MarkdownHighlighter
         {
             o.Add(new(0, line.Length, SyntaxColor.Marker));
             var lang = fence.Groups[2].Value;
-            return new(o.ToArray(), new LineState(LineState.Fence, lang.Length > 0 ? lang.ToLowerInvariant() : null, fence.Groups[1].Value[0], fence.Groups[1].Length, false, false, 0), SyntaxBlockKind.Code);
+            return new(o.ToArray(), new LineState(LineState.Fence, lang.Length > 0 ? lang.ToLowerInvariant() : null, fence.Groups[1].Value[0], fence.Groups[1].Length, default, false, 0), SyntaxBlockKind.Code);
         }
         if (Heading.Match(line) is { Success: true } h)
         {

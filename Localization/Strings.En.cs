@@ -392,6 +392,7 @@ public static partial class Loc
         ["SpellCountMany"] = "{0} misspellings",
         ["EditorTabSettings"] = "Tabs",
         ["EditorInsertSpaces"] = "Insert spaces",
+        ["EditorCodeSyntaxHighlighting"] = "Code syntax highlighting",
         ["EditorTabSize"] = "Tab size",
         ["EditorCodeFont"] = "Code font",
         ["EncodingMenuTip"] = "Select encoding",

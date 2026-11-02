@@ -395,6 +395,7 @@ public static partial class Loc
         ["SpellCountMany"] = "{0} \u4e2a\u62fc\u5199\u9519\u8bef",
         ["EditorTabSettings"] = "\u5236\u8868\u7b26",
         ["EditorInsertSpaces"] = "\u63d2\u5165\u7a7a\u683c",
+        ["EditorCodeSyntaxHighlighting"] = "代码语法高亮",
         ["EditorTabSize"] = "\u5236\u8868\u7b26\u5bbd\u5ea6",
         ["EditorCodeFont"] = "代码字体",
         ["EncodingMenuTip"] = "\u9009\u62e9\u7f16\u7801",

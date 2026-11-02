@@ -392,6 +392,7 @@ public static partial class Loc
         ["SpellCountMany"] = "\ub9de\ucda4\ubc95 \uc624\ub958 {0}\uac1c",
         ["EditorTabSettings"] = "\ud0ed",
         ["EditorInsertSpaces"] = "\uacf5\ubc31 \uc0bd\uc785",
+        ["EditorCodeSyntaxHighlighting"] = "코드 구문 강조 표시",
         ["EditorTabSize"] = "\ud0ed \ud06c\uae30",
         ["EditorCodeFont"] = "\ucf54\ub4dc \uae00\uaf34",
         ["EncodingMenuTip"] = "\uc778\ucf54\ub529 \uc120\ud0dd",

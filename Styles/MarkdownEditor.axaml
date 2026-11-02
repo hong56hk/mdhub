@@ -41,6 +41,8 @@
             <c:ScrollPastEnd>
               <c:MarkdownTextPresenter Name="PART_TextPresenter"
                 HighlightMarkdown="{TemplateBinding HighlightMarkdown}"
+                SourceLanguage="{TemplateBinding SourceLanguage}"
+                StyleInlineCode="{TemplateBinding StyleInlineCode}"
                 Text="{TemplateBinding Text, Mode=TwoWay}"
                 CaretIndex="{TemplateBinding CaretIndex}" CaretBlinkInterval="{TemplateBinding CaretBlinkInterval}"
                 SelectionStart="{TemplateBinding SelectionStart}" SelectionEnd="{TemplateBinding SelectionEnd}"

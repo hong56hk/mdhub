@@ -332,7 +332,8 @@ public partial class MdEditor : UserControl
             }
             else if (result.Markdown is not null)
             {
-                _render = MarkdownPreview.RenderMapped(result.Markdown, text, document.Path is { } notePath ? Path.GetDirectoryName(notePath) : null);
+                _render = MarkdownPreview.RenderMapped(result.Markdown, text, document.Path is { } notePath ? Path.GetDirectoryName(notePath) : null,
+                    Path.GetExtension(document.Path ?? document.UntitledName).Equals(".md", StringComparison.OrdinalIgnoreCase));
                 foreach (var control in _render.Controls) PreviewContent.Children.Add(control);
             }
             else PreviewContent.Children.Add(new SelectableTextBlock { Text = text, TextWrapping = TextWrapping.Wrap, FontSize = Mdhub.Services.PreviewSettings.Current.BodySize });

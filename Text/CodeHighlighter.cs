@@ -5,7 +5,7 @@ namespace Mdhub.Text;
 /// <summary>
 /// Small offline highlighter for fenced code blocks: keywords, strings, comments, numbers, types and a few
 /// language-specific constructs (JSON/YAML keys, XML tags/attributes, CSS properties, shell variables).
-/// Line-based; the only state carried between lines is "inside a block comment".
+/// Line-based, with state for block comments and multiline strings.
 /// </summary>
 public static class CodeHighlighter
 {
@@ -42,15 +42,45 @@ public static class CodeHighlighter
     private static readonly Lang Yaml = new(W("true false null yes no on off ~"), W(""), ["#"], null, "\"'");
     private static readonly Lang Xml = new(W(""), W(""), [], ("<!--", "-->"), "\"'");
 
-    private static Lang? For(string? name) => name switch
+    private static readonly Lang C = new(
+        W("auto break case const continue default do else enum extern for goto if inline register restrict return sizeof static struct switch typedef union volatile while _Alignas _Alignof _Atomic _Generic _Noreturn _Static_assert _Thread_local"),
+        W("void char short int long float double signed unsigned bool size_t ptrdiff_t FILE"), ["//"], ("/*", "*/"), "\"'");
+    private static readonly Lang Cpp = new(
+        W("alignas alignof and asm auto break case catch class concept const consteval constexpr constinit const_cast continue co_await co_return co_yield decltype default delete do dynamic_cast else enum explicit export extern false for friend goto if inline mutable namespace new noexcept not nullptr operator or private protected public register reinterpret_cast requires return sizeof static static_assert static_cast struct switch template this thread_local throw true try typedef typeid typename union using virtual volatile while xor"),
+        W("void char char8_t char16_t char32_t wchar_t short int long float double signed unsigned bool size_t string vector map set unique_ptr shared_ptr std"), ["//"], ("/*", "*/"), "\"'");
+    private static readonly Lang Java = new(
+        W("abstract assert boolean break byte case catch char class const continue default do double else enum exports extends final finally float for if implements import instanceof int interface long module native new non-sealed null open opens package permits private protected provides public record requires return sealed short static strictfp super switch synchronized this throw throws to transient transitive true false try uses var void volatile when while with yield"),
+        W("String Object Integer Long Double Float Boolean Character List Map Set ArrayList HashMap System Math Exception"), ["//"], ("/*", "*/"), "\"'", Decorators: true);
+    private static readonly Lang Go = new(
+        W("break case chan const continue default defer else fallthrough for func go goto if import interface map package range return select struct switch type var true false nil iota"),
+        W("bool byte rune string int int8 int16 int32 int64 uint uint8 uint16 uint32 uint64 uintptr float32 float64 complex64 complex128 error any comparable append cap close complex copy delete imag len make new panic print println real recover"), ["//"], ("/*", "*/"), "\"'`");
+    private static readonly Lang Swift = new(
+        W("actor any as associatedtype async await borrowing break case catch class consuming continue convenience default defer deinit didSet distributed do dynamic else enum extension fallthrough false fileprivate final for func get guard if import in indirect infix init inout internal is isolated lazy let macro mutating nil nonisolated nonmutating open operator optional override package postfix precedencegroup prefix private protocol public repeat required rethrows return self Self set some static struct subscript super switch throw throws true try typealias unowned var weak where while willSet"),
+        W("Int Int8 Int16 Int32 Int64 UInt Float Double Bool String Character Array Dictionary Set Optional Void Never Any AnyObject"), ["//"], ("/*", "*/"), "\"", Decorators: true);
+    private static readonly Lang FSharp = new(
+        W("abstract and as assert async base begin class default delegate do done downcast downto elif else end exception extern false finally fixed for fun function global if in inherit inline interface internal lazy let match member module mutable namespace new not null of open or override private public rec return sig static struct then to true try type upcast use val void when while with yield"),
+        W("bool byte char decimal double float float32 int int16 int64 list obj option seq set string unit uint32 uint64"), ["//"], ("(*", "*)"), "\"'");
+    private static readonly Lang VisualBasic = new(
+        W("AddHandler AddressOf And AndAlso As Async Await ByRef ByVal Call Case Catch Class Const Continue Default Delegate Dim DirectCast Do Each Else ElseIf End Enum Event Exit False Finally For Friend Function Get GetType Handles If Implements Imports In Inherits Interface Is IsNot Let Loop Me Mod Module MustInherit MustOverride MyBase MyClass Namespace New Next Not Nothing Of On Operator Optional Or OrElse Overloads Overridable Overrides ParamArray Partial Private Property Protected Public RaiseEvent ReadOnly ReDim RemoveHandler Resume Return Select Set Shared Static Step Stop Structure Sub SyncLock Then Throw To True Try TryCast Using When While With WithEvents WriteOnly Xor Yield", true),
+        W("Boolean Byte Char Date Decimal Double Integer Long Object SByte Short Single String UInteger ULong UShort", true), ["'", "REM "], null, "\"", CaseInsensitive: true);
+
+    private static Lang? For(string? name) => name?.Trim().TrimStart('.').ToLowerInvariant() switch
     {
         "c#" or "cs" or "csharp" => CSharp,
+        "c" or "h" => C,
+        "cpp" or "c++" or "cc" or "cxx" or "hpp" or "hh" or "hxx" => Cpp,
+        "java" => Java,
+        "go" or "golang" => Go,
+        "swift" => Swift,
+        "f#" or "fs" or "fsx" or "fsharp" => FSharp,
+        "vb" or "vbnet" or "visualbasic" => VisualBasic,
+        "mongo" or "mongodb" or "mongosh" => Js,
         "js" or "javascript" or "jsx" or "mjs" or "cjs" or "ts" or "typescript" or "tsx" => Js,
         "json" or "jsonc" or "json5" => Json,
-        "py" or "python" or "python3" => Python,
+        "py" or "pyw" or "python" or "python3" => Python,
         "sql" or "mysql" or "postgresql" or "postgres" or "sqlite" or "tsql" => Sql,
         "bash" or "sh" or "shell" or "zsh" or "console" => Shell,
-        "powershell" or "ps1" or "pwsh" or "ps" => PowerShell,
+        "powershell" or "ps1" or "psm1" or "psd1" or "pwsh" or "ps" => PowerShell,
         "css" => Css,
         "yaml" or "yml" => Yaml,
         "xml" or "html" or "htm" or "xhtml" or "xaml" or "axaml" or "svg" or "csproj" => Xml,
@@ -59,15 +89,54 @@ public static class CodeHighlighter
 
     public static bool IsSupported(string? language) => For(language?.ToLowerInvariant()) is not null;
 
+    public static string? LanguageForExtension(string extension)
+    {
+        var language = extension.TrimStart('.').ToLowerInvariant();
+        return IsSupported(language) ? language : null;
+    }
+
+    public readonly record struct State(string? Close = null, bool Comment = false, bool Raw = false);
+
+    // Cache includes incoming state, so editing a multiline delimiter correctly invalidates later lines.
+    public sealed class Tokenizer
+    {
+        private readonly Dictionary<(string, string?, State), (SyntaxSpan[], State)> _cache = [];
+        public SyntaxResult Run(string text, string? language)
+        {
+            if (_cache.Count > 50_000) _cache.Clear();
+            var spans = new List<SyntaxSpan>();
+            var state = default(State);
+            var offset = 0;
+            foreach (var line in text.Split('\n'))
+            {
+                var content = line.TrimEnd('\r');
+                var key = (content, language, state);
+                if (!_cache.TryGetValue(key, out var entry))
+                {
+                    var tokens = new List<SyntaxSpan>();
+                    var next = Line(content, language, state, tokens);
+                    _cache[key] = entry = (tokens.ToArray(), next);
+                }
+                foreach (var span in entry.Item1) spans.Add(span with { Start = span.Start + offset });
+                state = entry.Item2;
+                offset += line.Length + 1;
+            }
+            return new(spans, []);
+        }
+    }
+
     private static readonly Regex Number = new(@"\G(0[xX][0-9a-fA-F_]+|\d[\d_]*(\.\d+)?([eE][+-]?\d+)?[a-zA-Z]{0,2})", RegexOptions.Compiled);
     private static readonly Regex YamlKey = new(@"^(\s*(?:-\s+)?)([^\s#:'""][^:#]*?|""[^""]*""|'[^']*')\s*:(?=\s|$)", RegexOptions.Compiled);
     private static readonly Regex CssProperty = new(@"^\s*((?:--)?[a-zA-Z][\w-]*)\s*:(?![^{]*\{)", RegexOptions.Compiled);
 
     /// <summary>Appends spans for one code line (offsets relative to the line); returns whether a block comment is still open.</summary>
     public static bool Line(string s, string? language, bool inComment, List<SyntaxSpan> o)
+        => Line(s, language, inComment ? new State(For(language)?.Block?.Close, true) : default, o).Comment;
+
+    public static State Line(string s, string? language, State state, List<SyntaxSpan> o)
     {
         var lang = For(language);
-        if (lang is null) { if (s.Length > 0) o.Add(new(0, s.Length, SyntaxColor.CodeText)); return false; }
+        if (lang is null) { if (s.Length > 0) o.Add(new(0, s.Length, SyntaxColor.CodeText)); return default; }
         var i = 0;
         var textStart = 0;
         void Add(int start, int length, SyntaxColor color)
@@ -76,15 +145,16 @@ public static class CodeHighlighter
             if (length > 0) o.Add(new(start, length, color));
             textStart = start + length;
         }
-        if (inComment && lang.Block is { } bc)
+        if (state.Close is { } continuation)
         {
-            var end = s.IndexOf(bc.Close, StringComparison.Ordinal);
-            if (end < 0) { Add(0, s.Length, SyntaxColor.CodeComment); return true; }
-            Add(0, end + bc.Close.Length, SyntaxColor.CodeComment);
-            i = end + bc.Close.Length;
+            var end = FindClose(s, 0, continuation, state.Raw || state.Comment);
+            var color = state.Comment ? SyntaxColor.CodeComment : SyntaxColor.CodeString;
+            if (end < 0) { Add(0, s.Length, color); return state; }
+            Add(0, end + continuation.Length, color);
+            i = end + continuation.Length;
         }
         if (lang == Yaml && YamlKey.Match(s, i) is { Success: true } yk && yk.Index == i) { Add(yk.Groups[2].Index, yk.Groups[2].Length, SyntaxColor.CodeProperty); i = yk.Groups[2].Index + yk.Groups[2].Length; }
-        if (lang == Css && CssProperty.Match(s) is { Success: true } cp) { Add(cp.Groups[1].Index, cp.Groups[1].Length, SyntaxColor.CodeProperty); i = cp.Groups[1].Index + cp.Groups[1].Length; }
+        if (lang == Css && CssProperty.Match(s) is { Success: true } cp && cp.Groups[1].Index >= i) { Add(cp.Groups[1].Index, cp.Groups[1].Length, SyntaxColor.CodeProperty); i = cp.Groups[1].Index + cp.Groups[1].Length; }
         var inTag = false;
         while (i < s.Length)
         {
@@ -92,12 +162,12 @@ public static class CodeHighlighter
             if (lang.Block is { } b && string.CompareOrdinal(s, i, b.Open, 0, b.Open.Length) == 0)
             {
                 var end = s.IndexOf(b.Close, i + b.Open.Length, StringComparison.Ordinal);
-                if (end < 0) { Add(i, s.Length - i, SyntaxColor.CodeComment); return true; }
+                if (end < 0) { Add(i, s.Length - i, SyntaxColor.CodeComment); return new(b.Close, true); }
                 Add(i, end + b.Close.Length - i, SyntaxColor.CodeComment); i = end + b.Close.Length; continue;
             }
             if (lang.LineComments.Any(p => string.CompareOrdinal(s, i, p, 0, p.Length) == 0) && (lang != Shell || i == 0 || char.IsWhiteSpace(s[i - 1])))
             {
-                Add(i, s.Length - i, SyntaxColor.CodeComment); return false;
+                Add(i, s.Length - i, SyntaxColor.CodeComment); return default;
             }
             if (lang == Xml)
             {
@@ -121,7 +191,21 @@ public static class CodeHighlighter
             }
             if (lang.Quotes.Contains(c))
             {
-                var e = c == '"' && lang == Python && string.CompareOrdinal(s, i, "\"\"\"", 0, 3) == 0 ? (s.IndexOf("\"\"\"", i + 3, StringComparison.Ordinal) is var t and >= 0 ? t + 3 : s.Length) : StringEnd(s, i, c);
+                string? multiline = null;
+                var raw = false;
+                if ((lang == Python && c is '\'' or '"' || (lang == Java || lang == Swift || lang == CSharp || lang == FSharp) && c == '"')
+                    && s.AsSpan(i).StartsWith(new string(c, 3))) multiline = new string(c, 3);
+                if ((lang == Js || lang == Go) && c == '`') { multiline = "`"; raw = lang == Go; }
+                if ((lang == CSharp || lang == FSharp) && c == '"' && i > 0 && s[i - 1] == '@') { multiline = "\""; raw = true; }
+                if (multiline is not null)
+                {
+                    var closeAt = FindClose(s, i + multiline.Length, multiline, raw);
+                    if (closeAt < 0) { Add(i, s.Length - i, SyntaxColor.CodeString); return new(multiline, Raw: raw); }
+                    Add(i, closeAt + multiline.Length - i, SyntaxColor.CodeString);
+                    i = closeAt + multiline.Length;
+                    continue;
+                }
+                var e = StringEnd(s, i, c);
                 // JSON keys: a string followed by ':'.
                 var after = e; while (after < s.Length && s[after] == ' ') after++;
                 var isKey = lang == Json && after < s.Length && s[after] == ':';
@@ -164,7 +248,19 @@ public static class CodeHighlighter
             i++;
         }
         Add(s.Length, 0, SyntaxColor.CodeText);
-        return false;
+        return default;
+    }
+
+    private static int FindClose(string s, int start, string close, bool raw)
+    {
+        for (var i = start; i < s.Length; i++)
+        {
+            if (!raw && s[i] == '\\') { i++; continue; }
+            if (!s.AsSpan(i).StartsWith(close)) continue;
+            if (raw && close == "\"" && i + 1 < s.Length && s[i + 1] == '"') { i++; continue; }
+            return i;
+        }
+        return -1;
     }
 
     private static int StringEnd(string s, int i, char quote)

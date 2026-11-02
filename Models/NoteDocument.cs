@@ -96,6 +96,10 @@ public sealed class NoteDocument : INotifyPropertyChanged
     public void Refresh()
     {
         ((Mdhub.Components.MarkdownTextBox)Editor).HighlightMarkdown = IsMarkdown;
+        var box = (Mdhub.Components.MarkdownTextBox)Editor;
+        var extension = System.IO.Path.GetExtension(Path ?? UntitledName);
+        box.SourceLanguage = !IsViewOnly && !IsMarkdown ? Mdhub.Text.CodeHighlighter.LanguageForExtension(extension) : null;
+        box.StyleInlineCode = extension.Equals(".md", StringComparison.OrdinalIgnoreCase);
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Title)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IconName)));
     }

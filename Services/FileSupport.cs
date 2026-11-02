@@ -20,6 +20,7 @@ public static class FileSupport
         ".txt", ".md", ".markdown", ".json", ".jsonc", ".yaml", ".yml", ".log", ".csv", ".tsv", ".ini", ".cfg", ".conf", ".toml", ".env", ".properties",
         ".xml", ".xaml", ".axaml", ".csproj", ".props", ".targets", ".sln", ".config", ".html", ".htm", ".css", ".scss", ".svg",
         ".cs", ".fs", ".vb", ".js", ".mjs", ".ts", ".tsx", ".jsx", ".py", ".rb", ".go", ".rs", ".java", ".kt", ".c", ".h", ".cpp", ".hpp", ".swift",
+        ".pyw", ".cc", ".cxx", ".hh", ".hxx", ".fsx", ".cjs", ".json5", ".zsh", ".psd1",
         ".php", ".sql", ".sh", ".bash", ".ps1", ".psm1", ".bat", ".cmd", ".lua", ".r", ".tex", ".rst", ".adoc", ".gitignore", ".gitattributes", ".editorconfig",
     };
     public static bool IsTextByExtension(string path) => TextExtensions.Contains(Path.GetExtension(path));

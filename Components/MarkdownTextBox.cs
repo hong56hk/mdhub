@@ -40,6 +40,10 @@ public sealed class MarkdownTextBox : TextBox
     }
     public static readonly StyledProperty<bool> HighlightMarkdownProperty = AvaloniaProperty.Register<MarkdownTextBox, bool>(nameof(HighlightMarkdown));
     public bool HighlightMarkdown { get => GetValue(HighlightMarkdownProperty); set => SetValue(HighlightMarkdownProperty, value); }
+    public static readonly StyledProperty<string?> SourceLanguageProperty = AvaloniaProperty.Register<MarkdownTextBox, string?>(nameof(SourceLanguage));
+    public string? SourceLanguage { get => GetValue(SourceLanguageProperty); set => SetValue(SourceLanguageProperty, value); }
+    public static readonly StyledProperty<bool> StyleInlineCodeProperty = AvaloniaProperty.Register<MarkdownTextBox, bool>(nameof(StyleInlineCode), true);
+    public bool StyleInlineCode { get => GetValue(StyleInlineCodeProperty); set => SetValue(StyleInlineCodeProperty, value); }
 
     // Item 66: overwrite mode replaces the characters under the caret, never a line break; a selection or paste works as usual.
     protected override void OnTextInput(Avalonia.Input.TextInputEventArgs e)

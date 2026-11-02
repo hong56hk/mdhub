@@ -395,6 +395,7 @@ public static partial class Loc
         ["SpellCountMany"] = "{0} Rechtschreibfehler",
         ["EditorTabSettings"] = "Tabulatoren",
         ["EditorInsertSpaces"] = "Leerzeichen einf\u00fcgen",
+        ["EditorCodeSyntaxHighlighting"] = "Syntaxhervorhebung für Code",
         ["EditorTabSize"] = "Tabulatorbreite",
         ["EditorCodeFont"] = "Code-Schriftart",
         ["EncodingMenuTip"] = "Codierung auswaehlen",
