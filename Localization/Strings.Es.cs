@@ -5,6 +5,7 @@ public static partial class Loc
 {
     public static readonly IReadOnlyDictionary<string, string> Es = new Dictionary<string, string>
     {
+        ["EditorMinimap"] = "Mostrar minimapa",
         ["EmojiInput"] = "Insertar emoji",
         ["EmojiUnsupported"] = "Esta codificación no permite guardar emojis. Guarda con UTF-8 para habilitar su entrada.",
         ["Sc.edit.uppercase"] = "Convertir selección a mayúsculas",
