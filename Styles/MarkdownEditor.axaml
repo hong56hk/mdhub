@@ -4,8 +4,9 @@
     <Setter Property="Cursor" Value="Ibeam" />
     <Setter Property="Template">
       <ControlTemplate TargetType="c:MarkdownTextBox">
-        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+        <Border Background="{TemplateBinding Background}">
           <ScrollViewer Name="PART_ScrollViewer"
+                        Padding="{TemplateBinding Padding}"
                         AllowAutoHide="False"
                         HorizontalScrollBarVisibility="{TemplateBinding (ScrollViewer.HorizontalScrollBarVisibility)}"
                         VerticalScrollBarVisibility="{TemplateBinding (ScrollViewer.VerticalScrollBarVisibility)}">
