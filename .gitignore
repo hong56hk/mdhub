@@ -9,4 +9,5 @@ obj/
 .dotnet-home/
 .nuget/
 artifacts/
+.artifacts/
 *.user
