@@ -117,15 +117,28 @@ internal static class PreviewToggleTests
             document.Editor.CaretIndex = 0;
             var editorScroll = document.Editor.GetVisualDescendants().OfType<ScrollViewer>().First();
             editorScroll.Offset = default;
+            Pump(); // Let opening the preview edit settle before measuring its scroll position.
+            var previewScroll = md.FindControl<ScrollViewer>("PreviewScroll")!;
+            var previewOffset = previewScroll.Offset;
+            void CheckEditorCentered()
+            {
+                var presenter = document.Editor.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.TextPresenter>().First();
+                var rect = presenter.TextLayout.HitTestTextPosition(document.Editor.CaretIndex);
+                var point = presenter.TranslatePoint(rect.Center, editorScroll)!.Value;
+                Check(Math.Abs(point.Y - (editorScroll.Padding.Top + editorScroll.Viewport.Height / 2)) < 1, "Preview sync centers the source caret line in the editor");
+            }
             Click(sync);
             var expected = source.IndexOf("Paragraph 80", StringComparison.Ordinal) + "Paragraph 80 with **bold ".Length;
             Check(document.Editor.CaretIndex == expected && editorScroll.Offset.Y > 0, "Preview caret maps through bold markup and scrolls source");
+            CheckEditorCentered();
+            Check(previewScroll.Offset == previewOffset, "Preview-to-editor sync preserves preview scroll position");
             Check(box.IsFocused && Prop<bool>("IsEditingPreview"), "Button leaves preview editing active");
             box.Text = "NEW " + box.Text;
             box.CaretIndex = "NEW Paragraph 80 with bold ".Length;
             document.Editor.CaretIndex = 0;
             SyncKey();
             Check(document.Editor.CaretIndex == expected && box.IsFocused && document.Text == source, "Shortcut maps pending preview edits without committing or stealing focus");
+            CheckEditorCentered();
             typeof(MdEditor).GetMethod("CancelPreviewEdit", Flags)!.Invoke(md, []);
             var codeBlock = Prop<IEnumerable<Control>>("PreviewBlocks").First(c => PreviewTags.Kind(c) == "pre");
             Check((bool)typeof(MdEditor).GetMethod("BeginPreviewEdit", Flags)!.Invoke(md, [codeBlock])!, "Open code preview edit");
@@ -138,6 +151,7 @@ internal static class PreviewToggleTests
             md.FocusPreview();
             SyncKey();
             Check(document.Editor.CaretIndex == source.IndexOf("Paragraph 80", StringComparison.Ordinal) + 5, "Rendered preview selection caret also syncs to source");
+            CheckEditorCentered();
             var codePosition = new PreviewPosition(selection.IndexOf(codeBlock), "first code line".Length + PreviewSelection.LineBreakLength + 6);
             typeof(MdEditor).GetMethod("SetPreviewSelection", Flags)!.Invoke(md, [codePosition, codePosition]);
             SyncKey();

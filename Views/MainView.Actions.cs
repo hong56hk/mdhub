@@ -345,9 +345,19 @@ public partial class MainView
             if (MdEditor.SourceCaret() is not { } caret) return;
             var editor = document.Editor;
             editor.SelectionStart = editor.SelectionEnd = editor.CaretIndex = caret;
-            // Bring the actual wrapped caret rectangle into view without moving keyboard focus.
+            // Center the actual wrapped caret line without moving keyboard focus.
             if (Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(editor).OfType<Avalonia.Controls.Presenters.TextPresenter>().FirstOrDefault() is { } presenter)
-                presenter.BringIntoView(presenter.TextLayout.HitTestTextPosition(caret));
+            {
+                var rect = presenter.TextLayout.HitTestTextPosition(caret);
+                if (Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(editor).OfType<ScrollViewer>().FirstOrDefault() is { } scroll
+                    && scroll.Content is Control content
+                    && presenter.TranslatePoint(rect.Center, content) is { } point)
+                {
+                    var targetY = Math.Max(0, point.Y - scroll.Viewport.Height / 2);
+                    presenter.BringIntoView(rect);
+                    scroll.Offset = new Vector(scroll.Offset.X, targetY);
+                }
+            }
         }
         else MdEditor.CenterPreviewOnLine(document.Editor.CaretIndex);
     }
