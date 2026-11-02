@@ -117,7 +117,7 @@ public partial class MainView
     // Item 64: reopen the folder's saved tabs (existing files only, silently) when nothing is open in this window yet.
     private async Task RestoreFolderTabsAsync(string folder)
     {
-        if (!SessionManager.Enabled || _documents.Any(d => d.Path is not null || d.IsDirty)) return;
+        if (!SessionManager.Enabled || AllDocuments.Any(d => d.Path is not null || d.IsDirty)) return;
         if (FolderTabsStore.Recall(FolderTabsStore.Load(FolderTabsStore.PathFor(SessionManager.SessionPath)), folder, File.Exists) is not { Tabs.Count: > 0 } saved) return;
         await RestoreSessionAsync(new WindowSession { Tabs = saved.Tabs, ActiveTab = saved.ActiveTab }, null);
     }
@@ -170,7 +170,7 @@ public partial class MainView
     private void WordWrap_Click(object? sender, RoutedEventArgs e)
     {
         _wrap = !_wrap;
-        foreach (var doc in _documents) doc.Editor.TextWrapping = _wrap ? TextWrapping.Wrap : TextWrapping.NoWrap;
+        foreach (var doc in AllDocuments) doc.Editor.TextWrapping = _wrap ? TextWrapping.Wrap : TextWrapping.NoWrap;
     }
 
     // Ctrl+Shift+E/F/H. MainWindow calls this from a window-level tunnelled KeyDown, so it works whatever has
@@ -241,12 +241,21 @@ public partial class MainView
             else TextEditor.FindNext();
             return;
         }
+        // Once a file has several views, undo belongs to the shared buffer, including after a pane closes.
+        if (!_busy && _active is { Buffer.HasSharedHistory: true } shared && (EditorFocused || MdEditor.IsKeyboardFocusWithin && !MdEditor.IsEditingPreview)
+            && ShortcutKeys.Match(e, s => s.Id is "edit.undo" or "edit.redo") is { } sharedUndo)
+        {
+            e.Handled = true;
+            ShortcutFired?.Invoke(sharedUndo);
+            if (sharedUndo == "edit.undo") shared.Undo(); else shared.Redo();
+            return;
+        }
         // Focus in the preview (not its edit box): undo/redo act on the note's source.
         if (MdEditor.IsKeyboardFocusWithin && !MdEditor.IsEditingPreview && _active is { } undoDoc && ShortcutKeys.Match(e, s => s.Id is "edit.undo" or "edit.redo") is { } undoId)
         {
             e.Handled = true;
             ShortcutFired?.Invoke(undoId);
-            if (undoId == "edit.undo") undoDoc.Editor.Undo(); else undoDoc.Editor.Redo();
+            if (undoId == "edit.undo") undoDoc.Undo(); else undoDoc.Redo();
             return;
         }
         // Alt+Up/Down and Ctrl+D act on the focused editor only; elsewhere Ctrl+D falls through to Duplicate.
@@ -269,6 +278,7 @@ public partial class MainView
         var id = ShortcutKeys.Match(e, s => !s.HandledByTextBox && s.Area != ShortcutArea.Zoom && s.Id is not ("find.next" or "find.previous" or "find.close"));
         Func<Task>? action = id switch
         {
+            "view.splitEditor" => () => OpenToSideAsync(),
             "file.new" => () => { AddDocument(null, ""); return Task.CompletedTask; },
             "file.open" => OpenAsync,
             "file.openFolder" => OpenFolderAsync,
@@ -316,6 +326,7 @@ public partial class MainView
     private async void RunMenuCommand(string id)
     {
         if (id is "view.nextTab" or "view.previousTab") { CycleTab(id == "view.nextTab" ? 1 : -1); return; }
+        if (id == "view.splitEditor") { if (!_busy) await RunAsync(() => OpenToSideAsync()); return; }
         if (id == "file.quickOpen") { if (!_busy) OpenQuickOpen(); return; }
         if (id == "file.revealInSidebar") { await RevealInSidebarAsync(); return; }
         if (_busy || _active is null || _active.IsViewOnly || EditorCommand(id) is not { } action) return;

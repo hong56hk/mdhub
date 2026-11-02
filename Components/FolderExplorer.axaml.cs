@@ -12,6 +12,7 @@ public partial class FolderExplorer : UserControl
     private bool _busy;
     private readonly Dictionary<TreeViewItem, Func<Task>> _loadChildren = [];
     public event Action<string>? FileRequested;
+    public event Action<string>? OpenToSideRequested;
     // Enter or double-click on a file: open it and move focus to the editor.
     public event Action<string>? FileActivated;
     // Item 52: launch a file with the system default app (context menu, or double-click on a binary).
@@ -110,11 +111,15 @@ public partial class FolderExplorer : UserControl
         menu.Opening += (_, _) => UpdateItemPaste(menu);
         if (!isDirectory)
         {
+            var side = LocResources.Item("OpenToSide");
+            side.Name = "OpenToSideMenuItem";
+            side.Click += (_, _) => OpenToSideRequested?.Invoke(path);
+            menu.Items.Insert(0, side);
             var open = LocResources.Item("OpenWithDefaultApp");
             open.Name = "OpenDefaultMenuItem";
             open.Click += (_, _) => DefaultAppRequested?.Invoke(path);
             menu.Items.Insert(0, open);
-            menu.Items.Insert(1, Line());
+            menu.Items.Insert(2, Line());
         }
         return menu.Localized();
     }

@@ -22,6 +22,7 @@ MDHub is a desktop app for keeping personal notes and journals locally. It has n
 - **Fast search.** Find anything across all your saved notes in moments.
 - **Speaks your language and your files.** The interface comes in 8 languages. Legacy encodings such as Big5 open correctly, and LF and CRLF line endings are kept as they are.
 - **A familiar editor.** The editor works like VS Code and uses similar keyboard shortcuts. Hold **Alt+Shift** and press **Up/Down** to add carets on adjacent lines, then release the modifiers to edit them together. Navigation keys move every caret; hold **Shift** while navigating to select text at each caret. **Esc** returns to one caret. Move whole lines with **Alt+Up/Down**.
+- **Side-by-side editors.** Press `Ctrl+\` (or `Ctrl+Shift+\`) to split the current note to the right, with up to five panes. Each pane has its own tabs, cursor and scroll position; views of the same note share edits, undo and saved state. In Quick Open, **Ctrl+Enter** opens the selected file in a new pane. Explorer files also offer **Open to the side** on right-click.
 - **Code syntax colors.** Highlight source files and Markdown code blocks, with inline code styling in `.md` files. The editor gear's **Code syntax highlighting** option is on by default and applies immediately. [Languages and settings](docs/code-syntax-highlighting.md).
 - **Basic HTML formatting.** Mix HTML with Markdown, or preview `.html` files using supported tags, alignment, colors, tables and lists. [Supported HTML and settings](docs/html-formatting.md).
 

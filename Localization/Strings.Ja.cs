@@ -5,6 +5,11 @@ public static partial class Loc
 {
     public static readonly IReadOnlyDictionary<string, string> Ja = new Dictionary<string, string>
     {
+        ["OpenToSide"] = "横に開く",
+        ["SplitRight"] = "右に分割",
+        ["SplitEditorRight"] = "エディターを右に分割",
+        ["Sc.view.splitEditor"] = "エディターを右に分割",
+        ["SplitLimitReached"] = "エディターは最大 {0} 個まで開けます。",
         ["EditorMinimap"] = "ミニマップを表示",
         ["EmojiInput"] = "絵文字を挿入",
         ["EmojiUnsupported"] = "この文字コードでは絵文字を保存できません。UTF-8で保存すると絵文字を入力できます。",

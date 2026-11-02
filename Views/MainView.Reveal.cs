@@ -38,18 +38,19 @@ public partial class MainView
         var reveal = Item("RevealInSidebarMenuItem", "RevealInSidebar", () => _ = RevealInSidebarAsync(), "file.revealInSidebar");
         var system = Item("RevealInSystemMenuItem", "Reveal", () => { if (_active?.Path is { } p) ExplorerFileOperations.Reveal(p); });
         var menu = new ContextMenu();
+        if (document is not null) menu.Opening += (_, _) => { if (!_busy) ActivateDocumentPane(document); };
         if (document is not null)
         {
             var editor = document.Editor;
             // Item 45: Undo and Redo come first, with their gestures and live enabled state.
-            var undo = Item("EditorUndoMenuItem", "MenuUndo", () => editor.Undo(), "edit.undo");
-            var redo = Item("EditorRedoMenuItem", "MenuRedo", () => editor.Redo(), "edit.redo");
+            var undo = Item("EditorUndoMenuItem", "MenuUndo", () => document.Undo(), "edit.undo");
+            var redo = Item("EditorRedoMenuItem", "MenuRedo", () => document.Redo(), "edit.redo");
             var cut = Item("EditorCutMenuItem", "MenuCut", () => editor.Cut());
             var copy = Item("EditorCopyMenuItem", "MenuCopy", () => editor.Copy());
             var paste = Item("EditorPasteMenuItem", "MenuPaste", () => _ = PasteAsync());
             var all = Item("EditorSelectAllMenuItem", "MenuSelectAll", () => editor.SelectAll());
             foreach (var item in new Control[] { undo, redo, Line(), cut, copy, paste, all, Line() }) menu.Items.Add(item);
-            void Edit() { undo.IsEnabled = editor.CanUndo && !editor.IsReadOnly; redo.IsEnabled = editor.CanRedo && !editor.IsReadOnly; cut.IsEnabled = editor.CanCut; copy.IsEnabled = editor.CanCopy; paste.IsEnabled = !editor.IsReadOnly; }
+            void Edit() { undo.IsEnabled = document.CanUndo && !editor.IsReadOnly; redo.IsEnabled = document.CanRedo && !editor.IsReadOnly; cut.IsEnabled = editor.CanCut; copy.IsEnabled = editor.CanCopy; paste.IsEnabled = !editor.IsReadOnly; }
             menu.Opening += (_, _) => Edit();
             menu.Opened += (_, _) => Edit();
             // Item 74: a misspelled word under the click (or the caret) puts up to 5 suggestions at the top, then

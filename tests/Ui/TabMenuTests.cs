@@ -49,7 +49,7 @@ internal static class TabMenuTests
                 Settle();
             }
 
-            Check(menu is not null && menu.Items.OfType<MenuItem>().Select(i => i.Name).SequenceEqual(["TabCloseMenuItem", "TabCloseOthersMenuItem"]), "The tab strip has a context menu: Close tab, Close other tabs");
+            Check(menu is not null && menu.Items.OfType<MenuItem>().Select(i => i.Name).SequenceEqual(["TabCloseMenuItem", "TabCloseOthersMenuItem", "TabSplitRightMenuItem"]), "The tab strip has a context menu: Close tab, Close other tabs, Split Right");
             Check(tabs.SelectedDocument == c, "c is active");
             RightClick(TabOf(a));
             Check(menu.IsOpen && tabs.MenuTarget == a, "Right-clicking a tab opens the menu for that tab");
@@ -104,6 +104,24 @@ internal static class TabMenuTests
             finally { foreach (var o in w.OwnedWindows.ToList()) o.Close(); try { Directory.Delete(dir, true); } catch { } }
 
             Check(Loc.Languages.Where(l => l.Code != Loc.English).All(l => Loc.Table(l.Code).TryGetValue("CloseOtherTabs", out var v) && v != Loc.En["CloseOtherTabs"]), "Close other tabs is translated in all 8 languages");
+            var splitTarget = Open("unsaved content", "split.md");
+            splitTarget.Editor.SelectedText = "changed ";
+            var different = Open("different content", "different.md");
+            RightClick(TabOf(splitTarget));
+            Check(Item("TabSplitRightMenuItem").Header as string == "Split Right"
+                && Item("TabSplitRightMenuItem").InputGesture?.ToString() == ShortcutKeys.Gesture("view.splitEditor")?.ToString(), "Split Right displays its label and existing split shortcut");
+            Click("TabSplitRightMenuItem");
+            var panes = w.GetVisualDescendants().OfType<EditorPane>().OrderBy(p => Grid.GetColumn(p)).ToList();
+            var right = panes.Last().Active!;
+            Check(panes.Count == 2 && tabs.SelectedDocument == splitTarget && right.Buffer == splitTarget.Buffer
+                && right.Editor != splitTarget.Editor && right.Text == splitTarget.Text && right.IsDirty,
+                "Split Right splits the clicked inactive tab, including its unsaved content");
+            Check(Docs().Contains(different), "Splitting retains the other source tabs");
+            var closeSplit = (Task)typeof(MainView).GetMethod("CloseDocumentAsync", flags)!.Invoke(view, [right])!;
+            for (var i = 0; i < 100 && !closeSplit.IsCompleted; i++) Pump();
+            closeSplit.GetAwaiter().GetResult(); Settle();
+            Check(w.GetVisualDescendants().OfType<EditorPane>().Count() == 1, "Closing the split tab collapses its empty pane");
+            Check(Loc.Languages.Where(l => l.Code != Loc.English).All(l => Loc.Table(l.Code).ContainsKey("SplitRight")), "Split Right is translated in every language");
             foreach (var d in Docs()) d.SavedText = d.Text;
         }
         finally { foreach (var o in w.OwnedWindows.ToList()) o.Close(); w.Close(); }

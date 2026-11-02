@@ -20,6 +20,7 @@ public partial class MainView
         };
         document.SetLoadedLineEnding(Mdhub.Text.LineEndings.Detect(text, LineEndingSettings.ForNewFile)); // item 68
         InitializeTextDocument(document, text);
+        document.Buffer.ResetHistory();
         _documents.Add(document);
         FileTabs.SelectedDocument = document;
         return document;
@@ -38,7 +39,8 @@ public partial class MainView
         {
             document.Refresh();
             if (document.IsDirty) _sessionNote = null;
-            if (_active == document) { UpdateStatus(); MdEditor.ScheduleRefresh(); ScheduleOutline(); }
+            foreach (var pane in _panes.Where(p => p.Active == document)) pane.MdEditor.ScheduleRefresh();
+            if (_active == document) { UpdateStatus(); ScheduleOutline(); }
             var textChanged = document.Editor.Text != searchedText;
             searchedText = document.Editor.Text;
             if (textChanged && GlobalSearch.IsVisible && !_busy) GlobalSearch.Schedule();
@@ -71,6 +73,8 @@ public partial class MainView
         path = Path.GetFullPath(path);
         var existing = _documents.FirstOrDefault(d => SamePath(d.Path, path));
         if (existing is not null) { FileTabs.SelectedDocument = existing; if (recent) RecentService.AddFile(path); return; }
+        var shared = AllDocuments.FirstOrDefault(d => SamePath(d.Path, path));
+        if (shared is not null) { AddDocumentView(shared); if (recent) RecentService.AddFile(path); return; }
         var kind = await Task.Run(() => FileSupport.Detect(path));
         if (kind == SupportedFileKind.Unsupported) { AddBinaryDocument(path, recent); return; }
         if (kind == SupportedFileKind.Image)
@@ -121,7 +125,7 @@ public partial class MainView
                 path = file.TryGetLocalPath() ?? throw new IOException(Loc.T("ChooseLocalFile"));
             }
             if (path is null) return false;
-            if (_documents.Any(d => d != document && SamePath(d.Path, path)))
+            if (AllDocuments.Any(d => d.Buffer != document.Buffer && SamePath(d.Path, path)))
                 throw new IOException(Loc.T("AlreadyOpenSaveAs"));
         }
         if (!await EnsureEncodableAsync(document)) return false; // item 67
@@ -131,8 +135,7 @@ public partial class MainView
         document.SavedText = document.Text;
         document.SavedLineEnding = document.LineEnding; // item 68
         document.Refresh();
-        if (_active == document) MdEditor.ShowDocument(document.HasPreview ? document : null);
-        UpdateContentLayout();
+        RefreshPaneDocuments();
         UpdateStatus(Loc.F("Saved", path));
         MdEditor.ScheduleRefresh();
         if (isNewPath && FolderExplorer.Contains(path)) await FolderExplorer.RevealCreatedAsync(path);
@@ -142,6 +145,7 @@ public partial class MainView
     private async Task<bool> ConfirmCloseAsync(NoteDocument document)
     {
         if (!document.IsDirty) return true;
+        ActivateDocumentPane(document);
         FileTabs.SelectedDocument = document;
         var answer = await DialogService.ShowAsync(Host, Loc.T("UnsavedTitle"), Loc.F("SaveChangesTo", document.Title.TrimStart('●', ' ')), "Save", "Discard", "Cancel");
         return answer == "Discard" || (answer == "Save" && await SaveAsync(document, false));
@@ -149,7 +153,7 @@ public partial class MainView
 
     private async Task CloseDocumentAsync(NoteDocument document)
     {
-        if (!await ConfirmCloseAsync(document)) return;
+        if (!AllDocuments.Any(d => d != document && d.Buffer == document.Buffer) && !await ConfirmCloseAsync(document)) return;
         RememberClosedTab(document);
         RemoveDocument(document);
     }

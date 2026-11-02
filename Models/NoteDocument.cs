@@ -8,19 +8,19 @@ using Avalonia.Media;
 
 namespace Mdhub.Models;
 
-public sealed class NoteDocument : INotifyPropertyChanged
+public sealed class NoteDocument : INotifyPropertyChanged, IDisposable
 {
-    public string? Path { get; set; }
-    public string UntitledName { get; init; } = "Untitled.md";
-    public string SavedText { get; set; } = "";
-    public Encoding Encoding { get; set; } = TextFileStore.DefaultEncoding;
-    public Avalonia.Media.Imaging.Bitmap? Image { get; init; }
+    // A document is a view. Buffer owns file identity and content shared by every view.
+    public NoteBuffer Buffer { get; }
+    public string? Path { get => Buffer.Path; set { Buffer.Path = value; Buffer.Notify(); } }
+    public string UntitledName { get => Buffer.UntitledName; init => Buffer.UntitledName = value; }
+    public string SavedText { get => Buffer.SavedText; set { Buffer.SavedText = value; Buffer.Notify(); } }
+    public Encoding Encoding { get => Buffer.Encoding; set { Buffer.Encoding = value; Buffer.Notify(); } }
+    public Avalonia.Media.Imaging.Bitmap? Image { get => Buffer.Image; init => Buffer.Image = value; }
     public bool IsImage => Image is not null;
-    // Item 52: a placeholder tab for a binary (or undecodable) file; no editor text.
-    public bool IsBinary { get; init; }
+    public bool IsBinary { get => Buffer.IsBinary; init => Buffer.IsBinary = value; }
     public bool IsViewOnly => IsImage || IsBinary;
-    // Text opened anyway from a binary with lossy decoding: read-only so saving cannot corrupt the file.
-    public bool IsReadOnlyText { get; init; }
+    public bool IsReadOnlyText { get => Buffer.IsReadOnlyText; init => Buffer.IsReadOnlyText = value; }
     public TextBox Editor { get; } = new Mdhub.Components.MarkdownTextBox()
     {
         Classes = { "noteEditor" },
@@ -31,12 +31,11 @@ public sealed class NoteDocument : INotifyPropertyChanged
         HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
         VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch
     };
-    public string Text => Editor.Text ?? "";
+    public string Text => Buffer.Text;
     // Item 68: the line ending Enter, paste and Change End of Line Sequence use (detected on open: the majority);
     // switching it marks the document modified even when the text has no line break yet.
-    private Mdhub.Text.LineEnding _lineEnding;
-    public Mdhub.Text.LineEnding LineEnding { get => _lineEnding; set { _lineEnding = value; Editor.NewLine = Mdhub.Text.LineEndings.Sequence(value); } }
-    public Mdhub.Text.LineEnding SavedLineEnding { get; set; }
+    public Mdhub.Text.LineEnding LineEnding { get => Buffer.LineEnding; set { Buffer.LineEnding = value; Buffer.Notify(); } }
+    public Mdhub.Text.LineEnding SavedLineEnding { get => Buffer.SavedLineEnding; set { Buffer.SavedLineEnding = value; Buffer.Notify(); } }
     public void SetLoadedLineEnding(Mdhub.Text.LineEnding ending) { LineEnding = ending; SavedLineEnding = ending; }
     private string? _countedText;
     private Mdhub.Text.LineEndingCounts _counts;
@@ -54,9 +53,19 @@ public sealed class NoteDocument : INotifyPropertyChanged
     public string Title => (IsDirty ? "● " : "") + (Path is null ? UntitledName : System.IO.Path.GetFileName(Path));
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public NoteDocument()
+    public NoteDocument() : this(new NoteBuffer()) { }
+    public NoteDocument(NoteBuffer buffer)
     {
-        SetLoadedLineEnding(LineEndingSettings.ForNewFile);
+        Buffer = buffer;
+        Buffer.Attach();
+        Editor.Text = buffer.Text;
+        Editor.NewLine = Mdhub.Text.LineEndings.Sequence(buffer.LineEnding);
+        Buffer.Changed += OnBufferChanged;
+        Editor.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == TextBox.TextProperty && !_receiving)
+                Buffer.UpdateText(Editor.Text ?? "", this);
+        };
         // Transparent so the current-line band behind the text shows; the editor pane paints EditorBackground already.
         Editor.Resources["TextControlBackgroundFocused"] = Brushes.Transparent;
         Editor.Resources["TextControlBackgroundPointerOver"] = Brushes.Transparent;
@@ -76,6 +85,47 @@ public sealed class NoteDocument : INotifyPropertyChanged
             if (e.Property == TextBox.TextWrappingProperty)
                 ScrollViewer.SetHorizontalScrollBarVisibility(Editor, Editor.TextWrapping == TextWrapping.NoWrap ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled);
         };
+    }
+
+    private bool _receiving;
+    private void OnBufferChanged(NoteDocument? source)
+    {
+        Editor.NewLine = Mdhub.Text.LineEndings.Sequence(Buffer.LineEnding);
+        if (source != this && Editor.Text != Buffer.Text)
+        {
+            var old = Editor.Text ?? "";
+            var next = Buffer.Text;
+            var prefix = 0;
+            while (prefix < old.Length && prefix < next.Length && old[prefix] == next[prefix]) prefix++;
+            var suffix = 0;
+            while (suffix < old.Length - prefix && suffix < next.Length - prefix && old[^(suffix + 1)] == next[^(suffix + 1)]) suffix++;
+            int Map(int offset) => offset <= prefix ? offset : offset >= old.Length - suffix
+                ? offset + next.Length - old.Length : prefix + next.Length - prefix - suffix;
+            var start = Map(Editor.SelectionStart);
+            var end = Map(Editor.SelectionEnd);
+            _receiving = true;
+            try
+            {
+                Editor.Text = next;
+                Editor.SelectionStart = Math.Clamp(start, 0, next.Length);
+                Editor.SelectionEnd = Math.Clamp(end, 0, next.Length);
+                SavedSelection = (Editor.SelectionStart, Editor.SelectionEnd);
+            }
+            finally { _receiving = false; }
+        }
+        Refresh();
+    }
+    public bool CanUndo => Buffer.HasSharedHistory ? Buffer.CanUndo : Editor.CanUndo;
+    public bool CanRedo => Buffer.HasSharedHistory ? Buffer.CanRedo : Editor.CanRedo;
+    public void Undo() { if (Editor.IsReadOnly) return; if (Buffer.HasSharedHistory) Buffer.Undo(); else Editor.Undo(); }
+    public void Redo() { if (Editor.IsReadOnly) return; if (Buffer.HasSharedHistory) Buffer.Redo(); else Editor.Redo(); }
+    private bool _disposed;
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        Buffer.Changed -= OnBufferChanged;
+        Buffer.Detach();
     }
 
     private bool _restoring;

@@ -9,7 +9,7 @@ public partial class MainView
     private async Task ImportExplorerFilesAsync(ExplorerImportRequest request)
     {
         var root = FolderExplorer.OpenedFolder ?? throw new InvalidOperationException(Loc.T("OpenFolderFirst"));
-        var openPaths = _documents.Select(d => d.Path).OfType<string>().ToHashSet(
+        var openPaths = AllDocuments.Select(d => d.Path).OfType<string>().ToHashSet(
             OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
         string? last = null;
         var copied = 0;
@@ -43,7 +43,7 @@ public partial class MainView
         if (request.Sources is { Count: > 1 } sources) { await MoveManyAsync(root, sources, request.Directory); return; }
         var target = ExplorerMove.Destination(root, request.Source, request.Directory)
             ?? throw new IOException(Loc.T("CannotMoveHere"));
-        if (_documents.Any(document => document.Path is not null && SamePath(document.Path, target)))
+        if (AllDocuments.Any(document => document.Path is not null && SamePath(document.Path, target)))
             throw new IOException(Loc.T("DestinationOpen"));
         await Task.Run(() => ExplorerFileOperations.Move(request.Source, target));
         UpdateMovedDocuments(request.Source, target);

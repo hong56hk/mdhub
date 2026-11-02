@@ -30,6 +30,7 @@ public partial class QuickOpen : UserControl
     public Func<IReadOnlyList<string>>? RecentFiles { get; set; }
     // (full path or null for the current file, line or null).
     public Func<string?, int?, Task>? Accept { get; set; }
+    public Func<string?, int?, Task>? AcceptToSide { get; set; }
     public IReadOnlyList<QuickOpenItem> Items => _items;
     public int SelectedIndex => QuickOpenList.SelectedIndex;
     public bool IsOpen => IsVisible;
@@ -191,7 +192,7 @@ public partial class QuickOpen : UserControl
             case Key.PageDown: e.Handled = true; Move(Math.Min(10, Math.Max(1, _items.Count - 1 - SelectedIndex))); break;
             case Key.PageUp: e.Handled = true; Move(-Math.Min(10, Math.Max(1, SelectedIndex))); break;
             case Key.Escape: e.Handled = true; Close(); break;
-            case Key.Enter: e.Handled = true; await AcceptAsync(); break;
+            case Key.Enter: e.Handled = true; await AcceptAsync(e.KeyModifiers == (ShortcutKeys.IsMac ? KeyModifiers.Meta : KeyModifiers.Control)); break;
         }
     }
 
@@ -205,7 +206,7 @@ public partial class QuickOpen : UserControl
     }
 
     // Enter: the selected file (and line); with no file part, ":line" in the current file.
-    public async Task AcceptAsync()
+    public async Task AcceptAsync(bool toSide = false)
     {
         await Pending;
         var (pattern, line) = QuickOpenRanker.Parse(Text);
@@ -216,6 +217,7 @@ public partial class QuickOpen : UserControl
             path = Path.Combine(_index.Root, _items[QuickOpenList.SelectedIndex].RelativePath);
         else if (pattern.Length > 0 || line is null) return;
         Close();
-        if (Accept is not null) await Accept(path, line);
+        var accept = toSide ? AcceptToSide : Accept;
+        if (accept is not null) await accept(path, line);
     }
 }

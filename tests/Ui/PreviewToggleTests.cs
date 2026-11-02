@@ -39,10 +39,10 @@ internal static class PreviewToggleTests
             var bar = w.GetVisualDescendants().OfType<TextFormatter>().Single();
             var button = bar.FindControl<Button>("TogglePreviewButton")!;
             var icon = bar.FindControl<Avalonia.Controls.Shapes.Path>("TogglePreviewIcon")!;
-            var preview = (Control)typeof(MainView).GetField("MdEditor", Flags)!.GetValue(v)!;
+            var preview = (Control)typeof(MainView).GetProperty("MdEditor", Flags)!.GetValue(v)!;
             Wait((Task)typeof(MainView).GetMethod("OpenPathAsync", Flags)!.Invoke(v, [note])!);
-            var editor = v.FindControl<TextEditor>("TextEditor")!;
-            var splitter = v.FindControl<GridSplitter>("PreviewSplitter")!;
+            var editor = v.GetVisualDescendants().OfType<TextEditor>().Single(c => c.Name == "TextEditor");
+            var splitter = v.GetVisualDescendants().OfType<GridSplitter>().Single(c => c.Name == "PreviewSplitter");
             var editButton = bar.FindControl<Button>("EditorOnlyButton")!;
             var viewButton = bar.FindControl<Button>("ViewerOnlyButton")!;
             var sync = bar.FindControl<Button>("SyncButton")!;

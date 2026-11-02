@@ -43,7 +43,7 @@ internal static class DocumentOutlineTests
             Check(((TreeViewItem)tree.Items[1]!).Items.Count == 1, "Code fences do not create headings");
             using (var frame = window.CaptureRenderedFrame())
                 frame?.Save(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "mdhub-outline-preview.png"), Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
-            var preview = view.FindControl<MdEditor>("MdEditor")!;
+            var preview = view.GetVisualDescendants().OfType<MdEditor>().Single();
             foreach (var mode in new[] { "EditorOnlyButton", "TogglePreviewButton", "ViewerOnlyButton" })
             {
                 Click(mode);

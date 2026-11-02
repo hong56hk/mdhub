@@ -31,13 +31,6 @@ public partial class MainView
         if (recent) RecentService.AddFile(path);
     }
 
-    private void WireBinaryPlaceholder()
-    {
-        BinaryPlaceholder.OpenDefaultRequested += async () => { if (_active is { IsBinary: true, Path: { } path }) await OpenWithDefaultAppAsync(path); };
-        BinaryPlaceholder.OpenAsTextRequested += async () => { if (_active is { IsBinary: true } document && !_busy) await RunAsync(() => OpenAsTextAsync(document)); };
-        FolderExplorer.DefaultAppRequested += async path => await OpenWithDefaultAppAsync(path);
-    }
-
     internal async Task OpenWithDefaultAppAsync(string path)
     {
         if (_busy) return;
@@ -55,8 +48,10 @@ public partial class MainView
         var document = new NoteDocument { Path = path, SavedText = text, Encoding = encoding, IsReadOnlyText = lossy };
         document.SetLoadedLineEnding(Mdhub.Text.LineEndings.Detect(text, LineEndingSettings.ForNewFile)); // item 68
         InitializeTextDocument(document, text);
+        document.Buffer.ResetHistory();
         _documents.Insert(index, document);
         _documents.Remove(placeholder);
+        placeholder.Dispose();
         FileTabs.SelectedDocument = document;
         if (document.IsReadOnlyText) UpdateStatus(Loc.T("OpenedReadOnly"));
     }

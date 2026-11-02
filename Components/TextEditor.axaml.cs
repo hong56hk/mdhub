@@ -43,8 +43,8 @@ public partial class TextEditor : UserControl
         var editor = _document.Editor;
         switch (action)
         {
-            case "undo": editor.Undo(); break;
-            case "redo": editor.Redo(); break;
+            case "undo": _document.Undo(); break;
+            case "redo": _document.Redo(); break;
             case "cut": editor.Cut(); break;
             case "copy": editor.Copy(); break;
             case "paste": editor.Paste(); break;

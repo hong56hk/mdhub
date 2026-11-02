@@ -85,8 +85,8 @@ public partial class MainView
                 // Item 53: the button says what happens (the item goes to the Recycle Bin, it is not erased).
                 var answer = await DialogService.ShowAsync(Host, Loc.T("Delete"), Loc.F("DeleteConfirm", Path.GetFileName(path)), "MoveToRecycleBin", "Cancel");
                 if (answer != "MoveToRecycleBin") return;
-                var affected = _documents.Where(d => d.Path is not null && IsSameOrInside(path, d.Path)).ToList();
-                foreach (var document in affected)
+                var affected = AllDocuments.Where(d => d.Path is not null && IsSameOrInside(path, d.Path)).ToList();
+                foreach (var document in affected.DistinctBy(d => d.Buffer))
                     if (!await ConfirmCloseAsync(document)) return;
                 var recycle = RecycleOverride;
                 await Task.Run(() => { if (recycle is null) ExplorerFileOperations.Recycle(root, path); else recycle(path); });
@@ -101,7 +101,7 @@ public partial class MainView
     private async Task RemoveUnusedImagesAsync(string root, string directory, bool recursive)
     {
         if (!ExplorerFileOperations.Contains(root, directory)) throw new IOException(Loc.T("OpenFolderFirst"));
-        Dictionary<string, string> OpenMarkdown() => _documents
+        Dictionary<string, string> OpenMarkdown() => UniqueDocuments
             .Where(d => d.Path is not null && d.IsMarkdown && !d.IsViewOnly)
             .ToDictionary(d => Path.GetFullPath(d.Path!), d => d.Editor.Text ?? "",
                 OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
@@ -131,7 +131,7 @@ public partial class MainView
             {
                 await Task.Run(() => { if (recycle is null) ExplorerFileOperations.Recycle(root, target); else recycle(target); });
                 count++;
-                foreach (var document in _documents.Where(d => d.Path is not null && IsSameOrInside(target, d.Path)).ToList()) RemoveDocument(document);
+                foreach (var document in AllDocuments.Where(d => d.Path is not null && IsSameOrInside(target, d.Path)).ToList()) RemoveDocument(document);
             }
         }
         finally { await FolderExplorer.RefreshAsync(); UpdateStatus(Loc.F("UnusedImagesRecycled", count)); }
@@ -142,29 +142,35 @@ public partial class MainView
 
     private void UpdateMovedDocuments(string oldPath, string newPath)
     {
-        foreach (var document in _documents.Where(d => d.Path is not null && IsSameOrInside(oldPath, d.Path)))
+        foreach (var document in UniqueDocuments.Where(d => d.Path is not null && IsSameOrInside(oldPath, d.Path)).ToArray())
         {
             var relative = Path.GetRelativePath(oldPath, document.Path!);
             document.Path = relative == "." ? newPath : Path.Combine(newPath, relative);
             document.Refresh();
         }
         UpdateStatus();
-        if (_active is { } active) MdEditor.ShowDocument(active.HasPreview ? active : null);
-        UpdateContentLayout();
+        RefreshPaneDocuments();
     }
 
     // Bug 79: switch away from the tab first, then remove it, and dispose its bitmap only once nothing shows it
     // (disposing a bitmap the image viewer or status bar still used threw "Cannot access a disposed object").
     private void RemoveDocument(NoteDocument document)
     {
+        var owner = _panes.FirstOrDefault(p => p.Documents.Contains(document));
+        if (owner is null) return;
+        ActivatePane(owner);
         var index = _documents.IndexOf(document);
-        if (index < 0) return;
         if (_active == document && _documents.Count > 1) FileTabs.SelectedDocument = _documents[index + 1 < _documents.Count ? index + 1 : index - 1];
         _documents.Remove(document);
-        if (_documents.Count == 0) AddDocument(null, "");
-        if (document.Image is { } image)
+        document.Dispose();
+        if (_documents.Count == 0)
         {
-            if (_active == document || _active?.Image != image) ImageViewer.ShowImage(_active == document ? null : _active?.Image);
+            if (_panes.Count > 1) RemovePane(owner);
+            else AddDocument(null, "");
+        }
+        if (document.Image is { } image && !AllDocuments.Any(d => d.Image == image))
+        {
+            owner.ImageViewer.ShowImage(owner.Active == document ? null : owner.Active?.Image);
             Avalonia.Threading.Dispatcher.UIThread.Post(image.Dispose, Avalonia.Threading.DispatcherPriority.Background);
         }
     }

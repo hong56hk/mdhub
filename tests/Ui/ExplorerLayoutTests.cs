@@ -115,7 +115,7 @@ internal static class ExplorerLayoutTests
         var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
         void Open(string p) { var t = (Task)typeof(Mdhub.Views.MainView).GetMethod("OpenPathAsync", flags)!.Invoke(view, [p])!; var end = DateTime.UtcNow.AddSeconds(10); while (!t.IsCompleted && DateTime.UtcNow < end) pump(); Pump(); }
         var tabs = window.GetVisualDescendants().OfType<ListBox>().First(c => c.Name == "Tabs");
-        TextBox Editor() => view.FindControl<TextEditor>("TextEditor")!.GetVisualDescendants().OfType<TextBox>().First(b => b.IsEffectivelyVisible && b.Name != "FindBox" && b.Name != "ReplaceBox" && b.AcceptsReturn);
+        TextBox Editor() => view.GetVisualDescendants().OfType<TextEditor>().Single(c => c.Name == "TextEditor").GetVisualDescendants().OfType<TextBox>().First(b => b.IsEffectivelyVisible && b.Name != "FindBox" && b.Name != "ReplaceBox" && b.AcceptsReturn);
         Border Root(TreeViewItem i) => i.GetVisualDescendants().OfType<Border>().First(b => b.Name == "PART_LayoutRoot");
         Color? Bg(TreeViewItem i) => (Root(i).Background as ISolidColorBrush)?.Color;
         Color? Line(TreeViewItem i) => (Root(i).BorderBrush as ISolidColorBrush)?.Color;

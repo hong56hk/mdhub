@@ -117,7 +117,7 @@ internal static class MultiSelectTests
 
             // Ctrl+A in the editor is the editor's.
             Click(P("c.md"));
-            var editorBox = view.FindControl<TextEditor>("TextEditor")!.GetVisualDescendants().OfType<TextBox>().First(b => b.IsEffectivelyVisible && b.AcceptsReturn);
+            var editorBox = view.GetVisualDescendants().OfType<TextEditor>().Single(c => c.Name == "TextEditor").GetVisualDescendants().OfType<TextBox>().First(b => b.IsEffectivelyVisible && b.AcceptsReturn);
             editorBox.Focus(); Pump();
             Key(Avalonia.Input.Key.A, ctrlMod);
             Check(!explorer.IsMultiSelect && editorBox.SelectionStart == 0 && editorBox.SelectionEnd == (editorBox.Text ?? "").Length && editorBox.SelectionEnd > 0, "Ctrl+A in the editor selects the editor text, not explorer rows");

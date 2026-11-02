@@ -5,6 +5,11 @@ public static partial class Loc
 {
     public static readonly IReadOnlyDictionary<string, string> Fr = new Dictionary<string, string>
     {
+        ["OpenToSide"] = "Ouvrir sur le côté",
+        ["SplitRight"] = "Scinder à droite",
+        ["SplitEditorRight"] = "Scinder l’éditeur à droite",
+        ["Sc.view.splitEditor"] = "Scinder l’éditeur à droite",
+        ["SplitLimitReached"] = "Vous pouvez ouvrir jusqu’à {0} volets d’éditeur.",
         ["EditorMinimap"] = "Afficher la minicarte",
         ["EmojiInput"] = "Insérer un emoji",
         ["EmojiUnsupported"] = "Cet encodage ne permet pas d’enregistrer les emojis. Enregistrez en UTF-8 pour les saisir.",

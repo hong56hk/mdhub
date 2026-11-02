@@ -5,6 +5,11 @@ public static partial class Loc
 {
     public static readonly IReadOnlyDictionary<string, string> ZhHans = new Dictionary<string, string>
     {
+        ["OpenToSide"] = "在侧边打开",
+        ["SplitRight"] = "向右拆分",
+        ["SplitEditorRight"] = "向右拆分编辑器",
+        ["Sc.view.splitEditor"] = "向右拆分编辑器",
+        ["SplitLimitReached"] = "最多可打开 {0} 个编辑器窗格。",
         ["EditorMinimap"] = "显示缩略图",
         ["EmojiInput"] = "插入表情符号",
         ["EmojiUnsupported"] = "此编码无法保存表情符号。请使用 UTF-8 保存以启用表情符号输入。",

@@ -65,6 +65,7 @@ public static class Shortcuts
         Once(S("file.openFolder", ShortcutArea.File, "Open folder", CS("O"), CS("N"))),
         Once(S("file.save", ShortcutArea.File, "Save", C("S"))),
         Once(S("file.saveAs", ShortcutArea.File, "Save as", CS("S"))),
+        Once(S("view.splitEditor", ShortcutArea.View, "Split editor right", C("OemPipe"), CS("OemPipe"))),
         Once(S("file.closeTab", ShortcutArea.File, "Close tab", C("W"))),
         Once(S("file.reopenTab", ShortcutArea.File, "Reopen closed tab", CS("T"))),
         Once(S("explorer.rename", ShortcutArea.File, "Rename selected explorer item (explorer focused)", P("F2"))),
