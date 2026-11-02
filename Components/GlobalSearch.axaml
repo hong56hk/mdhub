@@ -4,7 +4,7 @@
     <Grid ColumnDefinitions="Auto,*,Auto,Auto">
       <ToggleButton x:Name="GlobalExpandReplace" Classes="findAction" VerticalAlignment="Stretch" Height="NaN" Width="18" MinWidth="18" Padding="1"
                     ToolTip.Tip="{DynamicResource GlobalToggleReplaceTip}" AutomationProperties.Name="{DynamicResource ToggleReplace}">
-        <Path x:Name="GlobalExpandIcon" Classes="findIcon" Data="M 6,4 L 10,8 6,12" Stroke="{DynamicResource IconForeground}" />
+        <Path x:Name="GlobalExpandIcon" Classes="findIcon" Data="M 6,4 L 10,8 6,12" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}" />
       </ToggleButton>
       <TextBox x:Name="GlobalQuery" Grid.Column="1" Classes="findField" Width="NaN" MinWidth="50" Margin="3,0,0,0" Watermark="{DynamicResource GlobalWatermark}" AutomationProperties.Name="{DynamicResource GlobalSearchName}">
         <TextBox.InnerRightContent>

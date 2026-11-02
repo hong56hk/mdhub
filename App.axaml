@@ -14,5 +14,6 @@
     <StyleInclude Source="avares://Mdhub/Styles/WorkspaceStyles.axaml" />
     <StyleInclude Source="avares://Mdhub/Styles/MarkdownEditor.axaml" />
     <StyleInclude Source="avares://Mdhub/Styles/FindStyles.axaml" />
+    <StyleInclude Source="avares://Mdhub/Styles/ButtonStyles.axaml" />
   </Application.Styles>
 </Application>

@@ -131,7 +131,7 @@ internal static class EncodingTests
                 bool roundTrips;
                 try { roundTrips = encoding.GetString(encoding.GetBytes(sample)) == sample; }
                 catch (EncoderFallbackException) { roundTrips = false; }
-                Check(emojiButton.IsEnabled == roundTrips && emojiButton.Opacity == (roundTrips ? 1 : 0.35), $"{encoding.WebName}: emoji button follows lossless emoji support");
+                Check(emojiButton.IsEnabled == roundTrips && emojiButton.Opacity == 1, $"{encoding.WebName}: emoji button follows lossless emoji support without dimming its background");
             }
             emojiDoc.Encoding = TextFileStore.DefaultEncoding;
             emojiDoc.Editor.Text = "hello world";

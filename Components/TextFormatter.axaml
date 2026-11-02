@@ -23,6 +23,9 @@
       <Setter Property="Foreground" Value="{DynamicResource AccentStrong}" />
       <Setter Property="Background" Value="{DynamicResource PreviewToggleOnBackground}" />
     </Style>
+    <Style Selector="Button.viewMode:disabled">
+      <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundDisabled}" />
+    </Style>
   </UserControl.Styles>
   <Border BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="0,1" Padding="8,5" Background="{DynamicResource ToolbarBackground}">
     <Grid ColumnDefinitions="*,Auto">

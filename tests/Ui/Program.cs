@@ -11,6 +11,7 @@ using Mdhub.Views;
 using Mdhub.Components;
 if (args.Contains("--minimap-only")) { MinimapTests.Run(); return; }
 if (args.Contains("--scrollpastend-only")) { ScrollPastEndTests.Run(); return; }
+if (args.Contains("--disabled-buttons-only")) { DisabledButtonTests.Run(); return; }
 
 if (args.Contains("--case-only")) { try { TextCaseTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
 if (args.Contains("--import-only")) { try { ExplorerImportTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }

@@ -11,7 +11,6 @@ public partial class TextFormatter : UserControl
     public void UpdateEmoji(Mdhub.Models.NoteDocument document)
     {
         EmojiButton.IsEnabled = !document.IsViewOnly && !document.IsReadOnlyText && !document.Editor.IsReadOnly && Mdhub.Services.TextEncodings.SupportsEmoji(document.Encoding);
-        EmojiButton.Opacity = EmojiButton.IsEnabled ? 1 : 0.35;
         ToolTip.SetTip(EmojiButton, Mdhub.Localization.Loc.T(Mdhub.Services.TextEncodings.SupportsEmoji(document.Encoding) ? "EmojiInput" : "EmojiUnsupported"));
     }
 
