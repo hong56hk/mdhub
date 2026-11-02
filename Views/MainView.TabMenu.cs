@@ -41,6 +41,7 @@ public partial class MainView
             var close = await ConfirmCloseAsync(document);
             FileTabs.SelectedDocument = keep;
             if (!close) return;
+            RememberClosedTab(document);
             RemoveDocument(document);
         }
     }

@@ -274,6 +274,7 @@ public partial class MainView
             "file.save" => async () => { if (_active is not null) await SaveAsync(_active, false); },
             "file.saveAs" => async () => { if (_active is not null) await SaveAsync(_active, true); },
             "file.closeTab" => async () => { if (_active is not null) await CloseDocumentAsync(_active); },
+            "file.reopenTab" => ReopenClosedTabAsync,
             "find.find" when _active?.IsViewOnly != true => () => { TextEditor.OpenFind(false); return Task.CompletedTask; },
             "find.replace" when _active?.IsViewOnly != true => () => { TextEditor.OpenFind(true); return Task.CompletedTask; },
             "edit.paste" when _active?.Editor.IsKeyboardFocusWithin == true => PasteAsync,

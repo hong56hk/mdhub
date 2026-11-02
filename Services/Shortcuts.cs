@@ -59,13 +59,14 @@ public static class Shortcuts
 
     public static readonly IReadOnlyList<Shortcut> All =
     [
-        Once(S("file.new", ShortcutArea.File, "New note", C("N"))),
+        Once(S("file.new", ShortcutArea.File, "New note", C("N"), C("T"))),
         Once(S("file.open", ShortcutArea.File, "Open file", C("O"))),
         Once(S("file.quickOpen", ShortcutArea.File, "Go to file", C("P"))),
         Once(S("file.openFolder", ShortcutArea.File, "Open folder", CS("O"), CS("N"))),
         Once(S("file.save", ShortcutArea.File, "Save", C("S"))),
         Once(S("file.saveAs", ShortcutArea.File, "Save as", CS("S"))),
         Once(S("file.closeTab", ShortcutArea.File, "Close tab", C("W"))),
+        Once(S("file.reopenTab", ShortcutArea.File, "Reopen closed tab", CS("T"))),
         Once(S("explorer.rename", ShortcutArea.File, "Rename selected explorer item (explorer focused)", P("F2"))),
         S("sidebar.explorer", ShortcutArea.View, "Show explorer", CS("E")),
         S("file.revealInSidebar", ShortcutArea.View, "Reveal active file in side bar", C("E")),

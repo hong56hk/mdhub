@@ -296,6 +296,7 @@ public static partial class Loc
         ["Sc.file.save"] = "儲存",
         ["Sc.file.saveAs"] = "另存新檔",
         ["Sc.file.closeTab"] = "關閉分頁",
+        ["Sc.file.reopenTab"] = "重新開啟已關閉的分頁",
         ["Sc.explorer.rename"] = "重新命名檔案總管中選取的項目 (檔案總管具有焦點時)",
         ["Sc.explorer.cut"] = "剪下檔案總管中選取的項目 (檔案總管具有焦點時)",
         ["Sc.explorer.copy"] = "複製檔案總管中選取的項目 (檔案總管具有焦點時)",

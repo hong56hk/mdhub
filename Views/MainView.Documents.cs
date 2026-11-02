@@ -150,6 +150,40 @@ public partial class MainView
     private async Task CloseDocumentAsync(NoteDocument document)
     {
         if (!await ConfirmCloseAsync(document)) return;
+        RememberClosedTab(document);
         RemoveDocument(document);
+    }
+
+    // Keep lightweight snapshots, never editor controls or disposed image bitmaps.
+    private sealed record ClosedTab(string? Path, string Name, string Text, System.Text.Encoding Encoding, Mdhub.Text.LineEnding LineEnding, int Index);
+    private readonly List<ClosedTab> _closedTabs = [];
+
+    private void RememberClosedTab(NoteDocument document)
+    {
+        var index = _documents.IndexOf(document);
+        if (index < 0) return;
+        _closedTabs.Add(new(document.Path, document.UntitledName, document.Path is null ? document.Text : "", document.Encoding, document.LineEnding, index));
+        if (_closedTabs.Count > 20) _closedTabs.RemoveAt(0);
+    }
+
+    private async Task ReopenClosedTabAsync()
+    {
+        if (_closedTabs.Count == 0) return;
+        var tab = _closedTabs[^1];
+        NoteDocument? document;
+        if (tab.Path is { } path)
+        {
+            await OpenPathAsync(path);
+            document = _documents.FirstOrDefault(d => SamePath(d.Path, path));
+            if (document is null) return; // Opening a large file may have been cancelled.
+        }
+        else
+        {
+            document = AddDocument(null, tab.Text, tab.Name, tab.Encoding);
+            document.SetLoadedLineEnding(tab.LineEnding);
+        }
+        _closedTabs.RemoveAt(_closedTabs.Count - 1);
+        _documents.Move(_documents.IndexOf(document), Math.Min(tab.Index, _documents.Count - 1));
+        FileTabs.SelectedDocument = document;
     }
 }

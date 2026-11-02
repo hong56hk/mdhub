@@ -296,6 +296,7 @@ public static partial class Loc
         ["Sc.file.save"] = "Save",
         ["Sc.file.saveAs"] = "Save as",
         ["Sc.file.closeTab"] = "Close tab",
+        ["Sc.file.reopenTab"] = "Reopen closed tab",
         ["Sc.explorer.rename"] = "Rename selected explorer item (explorer focused)",
         ["Sc.explorer.cut"] = "Cut selected explorer item (explorer focused)",
         ["Sc.explorer.copy"] = "Copy selected explorer item (explorer focused)",

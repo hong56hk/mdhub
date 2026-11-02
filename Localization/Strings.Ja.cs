@@ -296,6 +296,7 @@ public static partial class Loc
         ["Sc.file.save"] = "保存",
         ["Sc.file.saveAs"] = "名前を付けて保存",
         ["Sc.file.closeTab"] = "タブを閉じる",
+        ["Sc.file.reopenTab"] = "閉じたタブを開く",
         ["Sc.explorer.rename"] = "エクスプローラーで選択した項目の名前を変更 (エクスプローラーにフォーカスがあるとき)",
         ["Sc.explorer.cut"] = "エクスプローラーで選択した項目を切り取り (エクスプローラーにフォーカスがあるとき)",
         ["Sc.explorer.copy"] = "エクスプローラーで選択した項目をコピー (エクスプローラーにフォーカスがあるとき)",

@@ -299,6 +299,7 @@ public static partial class Loc
         ["Sc.file.save"] = "保存",
         ["Sc.file.saveAs"] = "另存为",
         ["Sc.file.closeTab"] = "关闭标签页",
+        ["Sc.file.reopenTab"] = "重新打开已关闭的标签页",
         ["Sc.explorer.rename"] = "重命名资源管理器中选择的项目 (资源管理器具有焦点时)",
         ["Sc.explorer.cut"] = "剪切资源管理器中选择的项目 (资源管理器具有焦点时)",
         ["Sc.explorer.copy"] = "复制资源管理器中选择的项目 (资源管理器具有焦点时)",

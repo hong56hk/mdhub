@@ -299,6 +299,7 @@ public static partial class Loc
         ["Sc.file.save"] = "Enregistrer",
         ["Sc.file.saveAs"] = "Enregistrer sous",
         ["Sc.file.closeTab"] = "Fermer l'onglet",
+        ["Sc.file.reopenTab"] = "Rouvrir l'onglet fermé",
         ["Sc.explorer.rename"] = "Renommer l'élément sélectionné de l'explorateur (explorateur actif)",
         ["Sc.explorer.cut"] = "Couper l'élément sélectionné de l'explorateur (explorateur actif)",
         ["Sc.explorer.copy"] = "Copier l'élément sélectionné de l'explorateur (explorateur actif)",
