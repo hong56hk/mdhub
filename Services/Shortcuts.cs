@@ -76,6 +76,7 @@ public static class Shortcuts
         T("edit.cut", ShortcutArea.Edit, "Cut", C("X")),
         T("edit.copy", ShortcutArea.Edit, "Copy", C("C")),
         S("edit.paste", ShortcutArea.Edit, "Paste (text or image)", C("V")),
+        S("edit.pastePlain", ShortcutArea.Edit, "Paste as plain text", CS("V")),
         T("edit.selectAll", ShortcutArea.Edit, "Select all", C("A")),
         // Item 72: line edits, editor focus only. Edit area, so Ctrl+D never conflicts with the explorer-only Duplicate.
         S("edit.moveLineUp", ShortcutArea.Edit, "Move line up", new ShortcutGesture("Up", ShortcutMods.Alt)),

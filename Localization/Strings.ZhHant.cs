@@ -309,6 +309,7 @@ public static partial class Loc
         ["Sc.edit.redo"] = "取消復原",
         ["Sc.edit.cut"] = "剪下",
         ["Sc.edit.copy"] = "複製",
+        ["Sc.edit.pastePlain"] = "貼上為純文字",
         ["Sc.edit.paste"] = "貼上 (文字或圖片)",
         ["Sc.edit.selectAll"] = "全選",
         ["Sc.edit.moveLineUp"] = "\u4E0A\u79FB\u4E00\u884C",

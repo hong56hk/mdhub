@@ -208,6 +208,27 @@ internal static class SelectionTests
         doc.Editor.Focus(); Pump();
         typeof(MainView).GetMethod("Edit", flags)!.Invoke(view, ["select all"]); Pump();
         Check(doc.Editor.SelectionStart == 0 && doc.Editor.SelectionEnd == doc.Editor.Text!.Length, "Edit > Select All with the source focused still selects the source");
+        var pasteItem = new DataTransferItem();
+        pasteItem.SetText("Plain\ntext");
+        pasteItem.Set(DataFormat.CreateBytesPlatformFormat(OperatingSystem.IsWindows() ? "HTML Format" : OperatingSystem.IsMacOS() ? "public.html" : "text/html"), Encoding.UTF8.GetBytes("<b>Formatted</b>"));
+        var pasteData = new DataTransfer();
+        pasteData.Add(pasteItem);
+        Wait(clipboard.SetDataAsync(pasteData));
+        var imageReader = typeof(MainView).GetProperty("ClipboardImageOverride", flags)!;
+        var failImageRead = System.Linq.Expressions.Expression.Lambda(imageReader.PropertyType,
+            System.Linq.Expressions.Expression.Throw(System.Linq.Expressions.Expression.New(typeof(Exception)),
+                imageReader.PropertyType.GetMethod("Invoke")!.ReturnType)).Compile();
+        imageReader.SetValue(view, failImageRead);
+        var beforePaste = doc.Editor.Text;
+        Key(Avalonia.Input.Key.V, cmd | RawInputModifiers.Shift);
+        Check(doc.Editor.Text == "Plain" + doc.Editor.NewLine + "text",
+            "Ctrl+Shift+V replaces the selection with plain clipboard text, normalizes line endings and skips image handling");
+        doc.Editor.Undo(); Pump();
+        Check(doc.Editor.Text == beforePaste, "plain text paste is undoable");
+        doc.Editor.IsReadOnly = true;
+        Key(Avalonia.Input.Key.V, cmd | RawInputModifiers.Shift);
+        Check(doc.Editor.Text == beforePaste, "plain text paste respects read-only editors");
+        doc.Editor.IsReadOnly = false;
         w.Close(); Pump();
     }
 

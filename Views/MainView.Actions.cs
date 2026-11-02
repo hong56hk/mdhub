@@ -205,6 +205,18 @@ public partial class MainView
     private async void OnShortcut(object? sender, KeyEventArgs e)
     {
         if (FolderExplorer.IsRenaming) return;
+        if (!_busy && ShortcutKeys.Match(e, s => s.Id == "edit.pastePlain") is { } pasteId)
+        {
+            if (TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is TextBox box)
+            {
+                e.Handled = true;
+                ShortcutFired?.Invoke(pasteId);
+                // TextBox reads only text; MarkdownTextBox also normalizes line endings.
+                // Bypass PasteAsync so clipboard images never become Markdown assets.
+                box.Paste();
+                return;
+            }
+        }
         // Item 49: Ctrl+Tab / Ctrl+Shift+Tab from any focus (this tunnel handler runs before the editor and focus navigation).
         if (ShortcutKeys.Match(e, s => s.Id is "view.nextTab" or "view.previousTab") is { } tabId)
         {

@@ -309,6 +309,7 @@ public static partial class Loc
         ["Sc.edit.redo"] = "다시 실행",
         ["Sc.edit.cut"] = "잘라내기",
         ["Sc.edit.copy"] = "복사",
+        ["Sc.edit.pastePlain"] = "일반 텍스트로 붙여넣기",
         ["Sc.edit.paste"] = "붙여넣기 (텍스트 또는 이미지)",
         ["Sc.edit.selectAll"] = "모두 선택",
         ["Sc.edit.moveLineUp"] = "\uC904 \uC704\uB85C \uC774\uB3D9",

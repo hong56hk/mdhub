@@ -312,6 +312,7 @@ public static partial class Loc
         ["Sc.edit.redo"] = "Rétablir",
         ["Sc.edit.cut"] = "Couper",
         ["Sc.edit.copy"] = "Copier",
+        ["Sc.edit.pastePlain"] = "Coller en texte brut",
         ["Sc.edit.paste"] = "Coller (texte ou image)",
         ["Sc.edit.selectAll"] = "Tout sélectionner",
         ["Sc.edit.moveLineUp"] = "D\u00E9placer la ligne vers le haut",
