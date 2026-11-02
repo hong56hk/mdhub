@@ -164,6 +164,8 @@ public static class EmojiCatalog
 🐸|Frog|frog amphibian green animal
 🐵|Monkey face|monkey animal silly
 🙈|See no evil monkey|shy embarrassed hide peek monkey
+🙉|Hear no evil monkey|shy embarrassed hide peek monkey
+🙊|Speak no evil monkey|shy embarrassed hide peek monkey
 🐧|Penguin|penguin bird cold animal
 🐦|Bird|bird fly nature animal
 🦋|Butterfly|butterfly insect beauty transformation
@@ -370,26 +372,26 @@ public static class EmojiCatalog
 🏁|Chequered flag|flag finish race complete winner
 🚩|Triangular flag|flag warning red flag danger marker
 🏳️‍🌈|Rainbow flag|pride rainbow lgbt lgbtq equality flag
-🏳️‍⚧️|Transgender flag|trans transgender pride equality flag
-🇬🇧|United Kingdom flag|uk british britain england london flag
-🇺🇸|United States flag|us usa american america flag
-🇨🇦|Canada flag|canadian canada maple flag
-🇦🇺|Australia flag|australian australia flag
-🇳🇿|New Zealand flag|new zealand kiwi flag
-🇫🇷|France flag|france french paris flag
-🇩🇪|Germany flag|germany german berlin flag
-🇪🇸|Spain flag|spain spanish flag
-🇮🇹|Italy flag|italy italian rome flag
-🇯🇵|Japan flag|japan japanese tokyo flag 日本
-🇰🇷|South Korea flag|korea korean seoul flag 한국
-🇨🇳|China flag|china chinese beijing flag 中国 中國
-🇭🇰|Hong Kong flag|hong kong flag 香港
-🇹🇼|Taiwan flag|taiwan flag 台湾 台灣
-🇮🇳|India flag|india indian flag
-🇧🇷|Brazil flag|brazil brazilian flag
-🇲🇽|Mexico flag|mexico mexican flag
-🇺🇦|Ukraine flag|ukraine ukrainian flag
-🇪🇺|European Union flag|europe european union eu flag
-🇺🇳|United Nations flag|united nations un international flag
 """;
 }
+//🏳️‍⚧️|Transgender flag|trans transgender pride equality flag
+// 🇬🇧|United Kingdom flag|uk british britain england london flag
+// 🇺🇸|United States flag|us usa american america flag
+// 🇨🇦|Canada flag|canadian canada maple flag
+// 🇦🇺|Australia flag|australian australia flag
+// 🇳🇿|New Zealand flag|new zealand kiwi flag
+// 🇫🇷|France flag|france french paris flag
+// 🇩🇪|Germany flag|germany german berlin flag
+// 🇪🇸|Spain flag|spain spanish flag
+// 🇮🇹|Italy flag|italy italian rome flag
+// 🇯🇵|Japan flag|japan japanese tokyo flag 日本
+// 🇰🇷|South Korea flag|korea korean seoul flag 한국
+// 🇨🇳|China flag|china chinese beijing flag 中国 中國
+// 🇭🇰|Hong Kong flag|hong kong flag 香港
+// 🇹🇼|Taiwan flag|taiwan flag 台湾 台灣
+// 🇮🇳|India flag|india indian flag
+// 🇧🇷|Brazil flag|brazil brazilian flag
+// 🇲🇽|Mexico flag|mexico mexican flag
+// 🇺🇦|Ukraine flag|ukraine ukrainian flag
+// 🇪🇺|European Union flag|europe european union eu flag
+// 🇺🇳|United Nations flag|united nations un international flag
