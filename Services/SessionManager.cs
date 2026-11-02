@@ -62,7 +62,7 @@ public static class SessionManager
     private static void Write(List<WindowSession> windows)
     {
         try { SessionStore.Save(SessionPath, new SessionData { Windows = windows.Where(w => !w.IsEmpty).ToList(), Theme = ThemeService.Current.ToString(), Language = Mdhub.Localization.Loc.Chosen,
-                RecentFiles = [.. RecentService.Files], RecentFolders = [.. RecentService.Folders], CustomShortcuts = Shortcuts.AnyCustomized ? Shortcuts.Export() : null,
+                RecentFiles = [.. RecentService.Files], RecentFolders = [.. RecentService.Folders], RecentEmojis = [.. EmojiRecents.Values], CustomShortcuts = Shortcuts.AnyCustomized ? Shortcuts.Export() : null,
                 Preview = PreviewSettings.IsDefault ? null : PreviewSettings.Current,
                 EditorFonts = EditorFonts.IsDefault ? null : EditorFonts.Current,
                 EditorColors = EditorColors.Export(),

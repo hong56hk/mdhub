@@ -31,8 +31,29 @@ public static class EditorFontsFlyout
     public static ScrollViewer Build() => new()
     {
         Name = "EditorSettingsScroll", MaxHeight = 560, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-        Content = new StackPanel { Spacing = 6, Children = { BuildFonts(), BuildTabs(), BuildAutoComplete(), BuildSpelling(), BuildEncoding(), BuildColors() } },
+        Content = new StackPanel { Spacing = 6, Children = { BuildMinimap(), BuildSyntaxHighlighting(), BuildFonts(), BuildTabs(), BuildAutoComplete(), BuildHtml(), BuildSpelling(), BuildEncoding(), BuildColors() } },
     };
+
+    public static CheckBox BuildMinimap()
+    {
+        var check = new CheckBox { Name = "EditorMinimapBox", Content = Loc.T("EditorMinimap"), IsChecked = EditorBehavior.Current.Minimap };
+        check.IsCheckedChanged += (_, _) => EditorBehavior.Update(d => d with { Minimap = check.IsChecked == true });
+        return check;
+    }
+
+    public static CheckBox BuildHtml()
+    {
+        var check = new CheckBox { Name = "EditorHtmlFormattingBox", Content = Loc.T("EnableHtmlFormatting"), IsChecked = EditorBehavior.Current.HtmlFormatting };
+        check.IsCheckedChanged += (_, _) => EditorBehavior.Update(d => d with { HtmlFormatting = check.IsChecked == true });
+        return check;
+    }
+
+    public static CheckBox BuildSyntaxHighlighting()
+    {
+        var check = new CheckBox { Name = "EditorCodeSyntaxHighlightingBox", Content = Loc.T("EditorCodeSyntaxHighlighting"), IsChecked = EditorBehavior.Current.CodeSyntaxHighlighting };
+        check.IsCheckedChanged += (_, _) => EditorBehavior.Update(d => d with { CodeSyntaxHighlighting = check.IsChecked == true });
+        return check;
+    }
 
     private static TextBlock Label(string key) => new() { Text = Loc.T(key), Foreground = ThemeService.Brush("TextSecondary"), Margin = new Thickness(0, 4, 0, 0) };
 

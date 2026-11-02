@@ -9,13 +9,27 @@ using Mdhub;
 using Mdhub.Models;
 using Mdhub.Views;
 using Mdhub.Components;
+if (args.Contains("--emoji-picker-only")) { try { EmojiPickerTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
+if (args.Contains("--split-editor-only")) { try { SplitEditorTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
+if (args.Contains("--unused-images-only")) { UnusedImageTests.Run(); return; }
+if (args.Contains("--reopentab-only")) { ReopenTabTests.Run(); return; }
+if (args.Contains("--multicaret-only")) { MultiCaretTests.Run(); return; }
+if (args.Contains("--tabreorder-only")) { TabReorderTests.Run(); return; }
+if (args.Contains("--code-syntax-only")) { CodeSyntaxTests.Run(); return; }
+if (args.Contains("--minimap-only")) { MinimapTests.Run(); return; }
+if (args.Contains("--scrollpastend-only")) { ScrollPastEndTests.Run(); return; }
+if (args.Contains("--disabled-buttons-only")) { DisabledButtonTests.Run(); return; }
 
+if (args.Contains("--case-only")) { try { TextCaseTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
+if (args.Contains("--import-only")) { try { ExplorerImportTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
+if (args.Contains("--html-only")) { try { HtmlFormattingTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
 if (args.Contains("--encoding-only")) { EncodingTests.Run(); return; }
 if (args.Contains("--selhome-only")) { SelectionHomeTests.Run(); return; }
 if (args.Contains("--eol-only")) { LineEndingTests.Run(); return; }
 if (args.Contains("--newfile-only")) { NewFileDialogTests.Run(); return; }
 if (args.Contains("--reveal-only")) { RevealTests.Run(); return; }
 if (args.Contains("--menu-only")) { MenuTests.Run(); return; }
+if (args.Contains("--outline-only")) { DocumentOutlineTests.Run(); return; }
 if (args.Contains("--previewtoggle-only")) { PreviewToggleTests.Run(); return; }
 if (args.Contains("--createtarget-only")) { CreateTargetTests.Run(); return; }
 if (args.Contains("--searchindent-only")) { SearchIndentTests.Run(); return; }
@@ -82,9 +96,9 @@ Pump();
 Require(pickerCalls == 2, "File > Open Folder uses the same folder picker path");
 var backgroundMenu = Find<TreeView>("FolderTree")!.ContextMenu!;
 Find<FolderExplorer>("FolderExplorer")!.UpdateBackgroundMenu();
-Require(string.Join("|", backgroundMenu.Items.Cast<Control>().Select(e => e is Separator ? "-" : ((MenuItem)e).Header)) == "New file|New folder|-|Paste|-|Reload"
+Require(string.Join("|", backgroundMenu.Items.Cast<Control>().Select(e => e is Separator ? "-" : ((MenuItem)e).Header)) == "New file|New folder|-|Paste|-|Reload|-|Remove unused images|Remove unused images recursively"
     && backgroundMenu.Items.OfType<Separator>().All(s => s.Background is Avalonia.Media.ISolidColorBrush b && b.Color == Avalonia.Media.Colors.LightGray),
-    "Empty-space menu lists New file, New folder, Paste, Reload with light gray separators");
+    "Empty-space menu lists New file, New folder, Paste, Reload, Remove unused images, and Remove unused images recursively with light gray separators");
 Require(backgroundMenu.Items.OfType<MenuItem>().All(m => !m.IsEnabled), "Empty-space menu entries are disabled with no folder open");
 Require(window.WindowDecorations == WindowDecorations.BorderOnly && window.ExtendClientAreaToDecorationsHint && window.CanResize,
     "Custom title bar removes native caption while retaining the resizable border");
@@ -361,8 +375,8 @@ RunOperation("LoadRootAsync", menuRoot);
 Pump();
 var noteItem = TreeItem(Path.Combine(menuRoot, "note.md"))!;
 var menuEntries = noteItem.ContextMenu!.Items.Cast<Control>().ToArray();
-Require(string.Join("|", menuEntries.Select(e => e is Separator ? "-" : ((MenuItem)e).Header)) == "Open with default app|-|Reveal in file explorer|-|Cut|Copy|Paste|Duplicate|-|Rename|Delete",
-    "Explorer context menu lists Open with default app (item 52), Reveal, Cut, Copy, Duplicate, Rename, Delete in order with separators");
+Require(string.Join("|", menuEntries.Select(e => e is Separator ? "-" : ((MenuItem)e).Header)) == "Open with default app|Open to the side|-|Reveal in file explorer|-|Cut|Copy|Paste|Duplicate|-|Rename|Delete|-|Remove unused images|Remove unused images recursively",
+    "Explorer context menu lists Open with default app, Open to the side, Reveal, Cut, Copy, Duplicate, Rename, Delete, and the unused-image commands in order with separators");
 Require(menuEntries.OfType<Separator>().All(s => s.Background is Avalonia.Media.ISolidColorBrush b && b.Color == Avalonia.Media.Colors.LightGray),
     "Explorer context menu separators are light gray");
 Require(TreeItem(Path.Combine(menuRoot, "Docs"))!.ContextMenu is not null, "Folders also have the explorer context menu");
@@ -447,7 +461,9 @@ Require(!Directory.Exists(Path.Combine(menuRoot, "Folder")) && recycled.Last() =
 MenuItem Bg(string name) { explorer.UpdateBackgroundMenu(); return Find<TreeView>("FolderTree")!.ContextMenu!.Items.OfType<MenuItem>().Single(m => m.Name == name); }
 MenuItem RowPaste(string path) { explorer.UpdateBackgroundMenu(); return TreeItem(path)!.ContextMenu!.Items.OfType<MenuItem>().Single(m => m.Name == "PasteMenuItem"); }
 void ClickBg(string name) { Bg(name).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Pump(); }
-Require(Bg("BackgroundNewFileMenuItem").IsEnabled && Bg("BackgroundReloadMenuItem").IsEnabled, "Empty-space menu entries are enabled with a folder open");
+Require(Bg("BackgroundNewFileMenuItem").IsEnabled && Bg("BackgroundReloadMenuItem").IsEnabled
+    && Bg("BackgroundRemoveUnusedImagesMenuItem").IsEnabled && Bg("BackgroundRemoveUnusedImagesRecursivelyMenuItem").IsEnabled,
+    "Empty-space menu entries are enabled with a folder open");
 Directory.CreateDirectory(Path.Combine(menuRoot, "Sub"));
 File.WriteAllText(Path.Combine(menuRoot, "Sub", "moved.md"), "moved");
 File.WriteAllText(Path.Combine(menuRoot, "paste.md"), "paste");
@@ -1456,7 +1472,7 @@ finally
     var emenu = ew.GetVisualDescendants().OfType<Menu>().First(c => c.Name == "MainMenu");
     var etops = emenu.Items.OfType<MenuItem>().ToList();
     MenuItem EItem(int top, string header) => etops[top].Items.OfType<MenuItem>().First(m => (m.Header as string)!.Replace("_", "") == header);
-    Require(new[] { (1, "Bold", "Ctrl+B"), (1, "Italic", "Ctrl+I"), (1, "Insert Link", "Ctrl+L"), (1, "Insert Date and Time", "Ctrl+OemSemicolon"), (1, "Go to Line…", "Ctrl+G"), (2, "Scroll Preview to Caret", "Ctrl+Shift+G") }
+    Require(new[] { (1, "Bold", "Ctrl+B"), (1, "Italic", "Ctrl+I"), (1, "Insert Link", "Ctrl+L"), (1, "Insert Date and Time", "Ctrl+OemSemicolon"), (1, "Go to Line…", "Ctrl+G"), (2, "Sync editor and preview at caret", "Ctrl+Shift+G") }
         .All(x => EItem(x.Item1, x.Item2).InputGesture?.ToString() == x.Item3 || x.Item2 == "Insert Date and Time" && EItem(1, x.Item2).InputGesture is { Key: Key.OemSemicolon }), "Menu items carry the new gestures");
     etops[1].Open(); Pump();
     string? MenuText(string header) => EItem(1, header).GetVisualDescendants().OfType<TextBlock>().FirstOrDefault(b => b.Name == "PART_InputGestureText")?.Text;
@@ -1470,7 +1486,7 @@ finally
     var sd = ew.OwnedWindows.Single();
     string RowText(string id) => string.Join("|", sd.GetVisualDescendants().OfType<Grid>().First(g => Equals(g.Tag, id)).Children.OfType<TextBlock>().Where(b => b.Name != "ShortcutCustomMark").Select(b => b.Text));
     Require(RowText("editor.quote") == "Block quote (Markdown)|Ctrl+\"" && RowText("editor.insertTime") == "Insert date and time|Ctrl+;" && RowText("editor.goToLine") == "Go to line|Ctrl+G"
-        && RowText("view.previewCaret") == "Scroll preview to caret|Ctrl+Shift+G" && RowText("editor.bold") == "Bold (Markdown)|Ctrl+B", "The Shortcut dialog lists the new shortcuts");
+        && RowText("view.previewCaret") == "Sync editor and preview at caret|Ctrl+Shift+G" && RowText("editor.bold") == "Bold (Markdown)|Ctrl+B", "The Shortcut dialog lists the new shortcuts");
     sd.Close(); Pump();
 
     clockProp.SetValue(null, savedClock);

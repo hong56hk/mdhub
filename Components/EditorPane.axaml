@@ -1,0 +1,14 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:c="using:Mdhub.Components" x:Class="Mdhub.Components.EditorPane" ClipToBounds="True">
+  <Border x:Name="FocusBorder" BorderThickness="0,2,0,0" BorderBrush="{DynamicResource BorderSubtle}">
+    <Grid RowDefinitions="Auto,*">
+      <c:FileTabs x:Name="FileTabs" />
+      <Grid x:Name="ContentGrid" Grid.Row="1" ColumnDefinitions="0,0,*,4,*">
+        <c:TextEditor x:Name="TextEditor" Grid.Column="2" />
+        <GridSplitter x:Name="PreviewSplitter" Grid.Column="3" Background="{DynamicResource BorderSubtle}" ResizeDirection="Columns" />
+        <c:MdEditor x:Name="MdEditor" Grid.Column="4" />
+        <c:ImageViewer x:Name="ImageViewer" Grid.Column="2" Grid.ColumnSpan="3" IsVisible="False" />
+        <c:BinaryPlaceholder x:Name="BinaryPlaceholder" Grid.Column="2" Grid.ColumnSpan="3" IsVisible="False" />
+      </Grid>
+    </Grid>
+  </Border>
+</UserControl>

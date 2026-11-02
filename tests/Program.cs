@@ -500,7 +500,7 @@ try
         Shortcuts.Import(SessionStore.Deserialize(json)!.CustomShortcuts);
         Require(Shortcuts.Format("file.save", false) == "Ctrl+K" && Shortcuts.Format("sidebar.search", false) == "Ctrl+Alt+F" && Shortcuts.Export().Count == 2, "Custom bindings survive a session save and load");
         Shortcuts.Import(new Dictionary<string, List<string>> { ["nope"] = ["Command+K"], ["edit.copy"] = ["Command+J"], ["file.open"] = ["Command+Bogus"], ["file.new"] = ["Command+F"], ["file.save"] = ["Command+K"] }, k => k != "Bogus");
-        Require(Shortcuts.Export().Keys.SequenceEqual(["file.save"]) && Shortcuts.Format("file.new", false) == "Ctrl+N", "Loading ignores unknown ids, editor gestures, bad keys and clashing bindings");
+        Require(Shortcuts.Export().Keys.SequenceEqual(["file.save"]) && Shortcuts.Format("file.new", false) == "Ctrl+N / Ctrl+T", "Loading ignores unknown ids, editor gestures, bad keys and clashing bindings");
         Require(SessionStore.Deserialize("{\"Version\":1,\"Windows\":[]}")!.CustomShortcuts is null, "Old session files load with default shortcuts");
         Shortcuts.ResetAll();
         Shortcuts.Changed -= Count;

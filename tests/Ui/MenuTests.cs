@@ -96,7 +96,7 @@ internal static class MenuTests
             redo.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Pump();
             Check(editor.Text == "hello!", "Redo from the menu reapplies the edit");
 
-            var preview = (Control)typeof(MainView).GetField("MdEditor", Flags)!.GetValue(v)!;
+            var preview = (Control)typeof(MainView).GetProperty("MdEditor", Flags)!.GetValue(v)!;
             preview.ContextMenu!.Open(preview); Pump();
             Check(preview.ContextMenu.Padding == LocResources.MenuPadding && preview.ContextMenu.Items.OfType<MenuItem>().All(i => CursorName(i) == handName), "The preview menu has the shared padding and hand-cursor items");
             preview.ContextMenu.Close(); Pump();

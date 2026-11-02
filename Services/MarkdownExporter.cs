@@ -20,7 +20,7 @@ public static class MarkdownExporter
     private static readonly string[] ColourKeys =
     [
         "PreviewBackground", "TextPrimary", "CodeBlockBackground", "QuoteBorder", "TableBorder", "TableHeaderBackground", "RuleForeground",
-        "InlineCodeBackground", "InlineCodeForeground", "LinkForeground", "SyntaxCodeKeyword", "SyntaxCodeString", "SyntaxCodeComment", "SyntaxCodeNumber",
+        "InlineCodeBackground", "InlineCodeForeground", "LinkForeground", "SyntaxCodeKeyword", "SyntaxCodeString", "SyntaxCodeComment", "SyntaxCodeNumber", "SyntaxCodeType", "SyntaxCodeProperty", "SyntaxCodeTag", "SyntaxCodeAttribute",
     ];
     public static IReadOnlyDictionary<string, string> LightColours => ColourKeys.ToDictionary(k => k, k =>
     {
@@ -48,7 +48,7 @@ public static class MarkdownExporter
             h1 { font-size: {{Px(28 * k)}}; line-height: {{Px(42 * k)}}; } h2 { font-size: {{Px(23 * k)}}; line-height: {{Px(34 * k)}}; } h3 { font-size: {{Px(19 * k)}}; line-height: {{Px(28 * k)}}; } h4, h5, h6 { font-size: {{Px(16 * k)}}; }
             p, ul, ol, blockquote, pre, table { margin: 0 0 {{Px(p.ParagraphSpacing)}}; }
             a { color: {{c["LinkForeground"]}}; text-decoration: none; } a:hover { text-decoration: underline; }
-            code { font-family: {{codeFamily}}Consolas, Menlo, 'Cascadia Mono', monospace; font-size: {{Px(p.CodeSize)}}; background: {{c["InlineCodeBackground"]}}; color: {{c["InlineCodeForeground"]}}; padding: 1px 4px; border-radius: 3px; }
+            code { font-family: {{codeFamily}}Consolas, Menlo, 'Cascadia Mono', monospace; font-size: {{Px(p.CodeSize)}}; background: {{c["InlineCodeBackground"]}}; color: {{(EditorBehavior.Current.CodeSyntaxHighlighting ? c["InlineCodeForeground"] : c["TextPrimary"])}}; padding: 1px 4px; border-radius: 3px; }
             pre { background: {{c["CodeBlockBackground"]}}; border-radius: 5px; padding: 14px; line-height: {{Px(Math.Round(p.CodeSize * 20 / PreviewSettings.DefaultCodeSize, 1))}}; white-space: pre-wrap; break-inside: avoid; page-break-inside: avoid; }
             pre code { background: none; color: inherit; padding: 0; font-size: {{Px(p.CodeSize)}}; }
             blockquote { border-left: 3px solid {{c["QuoteBorder"]}}; padding: 4px 14px; margin-left: 0; break-inside: avoid; }
@@ -64,6 +64,7 @@ public static class MarkdownExporter
             ul > li + li { margin-top: {{Px(p.BulletSpacing)}}; } ol > li + li { margin-top: {{Px(p.OrderedSpacing)}}; }
             ol > li::marker { font-size: {{Px(PreviewSettings.NumberSize)}}; } ul > li::marker { font-size: {{Px(PreviewSettings.BulletSize)}}; }
             .tok-k { color: {{c["SyntaxCodeKeyword"]}}; } .tok-s { color: {{c["SyntaxCodeString"]}}; } .tok-c { color: {{c["SyntaxCodeComment"]}}; font-style: italic; } .tok-n { color: {{c["SyntaxCodeNumber"]}}; }
+            .tok-t { color: {{c["SyntaxCodeType"]}}; } .tok-p { color: {{c["SyntaxCodeProperty"]}}; } .tok-tag { color: {{c["SyntaxCodeTag"]}}; } .tok-a { color: {{c["SyntaxCodeAttribute"]}}; }
             @page { size: A4; margin: 18mm 16mm; }
             @media print { html, body { background: white; } body { max-width: none; padding: 0; } }
             """;
@@ -196,58 +197,28 @@ public static class MarkdownExporter
         }
     }
 
-    private static readonly HashSet<string> Keywords = new(StringComparer.Ordinal)
-    {
-        "abstract","and","as","async","await","break","case","catch","class","const","continue","def","default","del","delete","do","elif","else","enum","except","export",
-        "extends","false","final","finally","fn","for","foreach","from","func","function","go","if","impl","import","in","interface","internal","is","lambda","let","match",
-        "mod","namespace","new","nil","None","not","null","or","override","package","pass","private","protected","pub","public","raise","readonly","record","ref",
-        "return","sealed","select","self","static","struct","super","switch","this","throw","trait","true","True","False","try","type","typeof","use","using","var","void",
-        "while","with","yield","int","string","bool","float","double","long","char","byte","object","echo","fi","then","done","esac",
-    };
-    private static readonly HashSet<string> SqlKeywords = new(StringComparer.OrdinalIgnoreCase)
-    { "select","from","where","insert","update","delete","join","left","right","inner","outer","on","order","by","group","having","values","into","create","table","and","or","not","null","as","limit" };
-    private static readonly HashSet<string> HashComment = new(StringComparer.OrdinalIgnoreCase) { "py", "python", "sh", "bash", "zsh", "shell", "ps1", "powershell", "pwsh", "yaml", "yml", "toml", "ruby", "rb", "r", "perl", "makefile", "dockerfile", "ini", "conf" };
-    private static readonly HashSet<string> NoHighlight = new(StringComparer.OrdinalIgnoreCase) { "text", "txt", "plain", "plaintext", "md", "markdown" };
-
     public static string Highlight(string code, string? language)
     {
-        if (string.IsNullOrEmpty(language) || NoHighlight.Contains(language)) return WebUtility.HtmlEncode(code);
-        var hash = HashComment.Contains(language);
-        var sql = language is "sql";
-        var markup = language is "html" or "xml" or "xaml" or "svg" or "axaml";
-        var slash = !hash && !sql && !markup;
+        if (!EditorBehavior.Current.CodeSyntaxHighlighting || !Mdhub.Text.CodeHighlighter.IsSupported(language)) return WebUtility.HtmlEncode(code);
+        var tokens = new Mdhub.Text.CodeHighlighter.Tokenizer().Run(code, language);
         var sb = new StringBuilder();
-        void Span(string cls, string text) => sb.Append($"<span class=\"tok-{cls}\">").Append(WebUtility.HtmlEncode(text)).Append("</span>");
-        int End(string close, int from) { var e = code.IndexOf(close, from, StringComparison.Ordinal); return e < 0 ? code.Length : e + close.Length; }
-        var i = 0;
-        while (i < code.Length)
+        var position = 0;
+        foreach (var token in tokens.Spans)
         {
-            var ch = code[i];
-            var next = i + 1 < code.Length ? code[i + 1] : '\0';
-            if (markup && code.AsSpan(i).StartsWith("<!--")) { var e = End("-->", i + 4); Span("c", code[i..e]); i = e; continue; }
-            if ((hash && ch == '#') || (slash && ch == '/' && next == '/') || (sql && ch == '-' && next == '-'))
-            { var e = code.IndexOf('\n', i); if (e < 0) e = code.Length; Span("c", code[i..e]); i = e; continue; }
-            if ((slash || sql) && ch == '/' && next == '*') { var e = End("*/", i + 2); Span("c", code[i..e]); i = e; continue; }
-            if (ch is '"' or '\'' or '`')
+            if (token.Start > position) sb.Append(WebUtility.HtmlEncode(code[position..token.Start]));
+            var cls = token.Color switch
             {
-                var e = i + 1;
-                while (e < code.Length && code[e] != ch && !(code[e] == '\n' && ch != '`')) e += code[e] == '\\' ? 2 : 1;
-                e = Math.Min(code.Length, e + 1);
-                Span("s", code[i..e]); i = e; continue;
-            }
-            if (char.IsDigit(ch) && (i == 0 || !char.IsLetterOrDigit(code[i - 1]) && code[i - 1] != '_'))
-            { var e = i; while (e < code.Length && (char.IsLetterOrDigit(code[e]) || code[e] is '.' or '_')) e++; Span("n", code[i..e]); i = e; continue; }
-            if (char.IsLetter(ch) || ch == '_')
-            {
-                var e = i; while (e < code.Length && (char.IsLetterOrDigit(code[e]) || code[e] == '_')) e++;
-                var word = code[i..e];
-                if (!markup && (sql ? SqlKeywords.Contains(word) : Keywords.Contains(word))) Span("k", word);
-                else sb.Append(WebUtility.HtmlEncode(word));
-                i = e; continue;
-            }
-            sb.Append(WebUtility.HtmlEncode(ch.ToString()));
-            i++;
+                Mdhub.Text.SyntaxColor.CodeKeyword => "k", Mdhub.Text.SyntaxColor.CodeString => "s",
+                Mdhub.Text.SyntaxColor.CodeComment => "c", Mdhub.Text.SyntaxColor.CodeNumber => "n",
+                Mdhub.Text.SyntaxColor.CodeType => "t", Mdhub.Text.SyntaxColor.CodeProperty => "p",
+                Mdhub.Text.SyntaxColor.CodeTag => "tag", Mdhub.Text.SyntaxColor.CodeAttribute => "a", _ => null,
+            };
+            var escaped = WebUtility.HtmlEncode(code.Substring(token.Start, token.Length));
+            if (cls is null) sb.Append(escaped);
+            else sb.Append($"<span class=\"tok-{cls}\">").Append(escaped).Append("</span>");
+            position = token.End;
         }
+        sb.Append(WebUtility.HtmlEncode(code[position..]));
         return sb.ToString();
     }
 }

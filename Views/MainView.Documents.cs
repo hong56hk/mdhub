@@ -10,7 +10,7 @@ namespace Mdhub.Views;
 // Document workflows: file dialogs, duplicate tabs, saving, and unsaved-change decisions.
 public partial class MainView
 {
-    private static FilePickerFileType TextFiles => new(Loc.T("TextAndMarkdown")) { Patterns = ["*.txt", "*.md", "*.markdown"] };
+    private static FilePickerFileType TextFiles => new(Loc.T("TextAndMarkdown")) { Patterns = ["*.txt", "*.md", "*.markdown", "*.html", "*.htm"] };
     private NoteDocument AddDocument(string? path, string text, string? name = null, System.Text.Encoding? encoding = null)
     {
         var document = new NoteDocument
@@ -20,6 +20,7 @@ public partial class MainView
         };
         document.SetLoadedLineEnding(Mdhub.Text.LineEndings.Detect(text, LineEndingSettings.ForNewFile)); // item 68
         InitializeTextDocument(document, text);
+        document.Buffer.ResetHistory();
         _documents.Add(document);
         FileTabs.SelectedDocument = document;
         return document;
@@ -38,7 +39,8 @@ public partial class MainView
         {
             document.Refresh();
             if (document.IsDirty) _sessionNote = null;
-            if (_active == document) { UpdateStatus(); MdEditor.ScheduleRefresh(); }
+            foreach (var pane in _panes.Where(p => p.Active == document)) pane.MdEditor.ScheduleRefresh();
+            if (_active == document) { UpdateStatus(); ScheduleOutline(); }
             var textChanged = document.Editor.Text != searchedText;
             searchedText = document.Editor.Text;
             if (textChanged && GlobalSearch.IsVisible && !_busy) GlobalSearch.Schedule();
@@ -71,6 +73,8 @@ public partial class MainView
         path = Path.GetFullPath(path);
         var existing = _documents.FirstOrDefault(d => SamePath(d.Path, path));
         if (existing is not null) { FileTabs.SelectedDocument = existing; if (recent) RecentService.AddFile(path); return; }
+        var shared = AllDocuments.FirstOrDefault(d => SamePath(d.Path, path));
+        if (shared is not null) { AddDocumentView(shared); if (recent) RecentService.AddFile(path); return; }
         var kind = await Task.Run(() => FileSupport.Detect(path));
         if (kind == SupportedFileKind.Unsupported) { AddBinaryDocument(path, recent); return; }
         if (kind == SupportedFileKind.Image)
@@ -114,14 +118,14 @@ public partial class MainView
                 using var file = await Host.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
                 {
                     Title = Loc.T("SaveNoteTitle"), SuggestedFileName = path is null ? document.UntitledName : Path.GetFileName(path),
-                    DefaultExtension = document.IsMarkdown ? "md" : "txt",
+                    DefaultExtension = document.IsMarkdown ? "md" : document.IsHtml ? "html" : "txt",
                     FileTypeChoices = [TextFiles, FilePickerFileTypes.All], ShowOverwritePrompt = true
                 });
                 if (file is null) return false;
                 path = file.TryGetLocalPath() ?? throw new IOException(Loc.T("ChooseLocalFile"));
             }
             if (path is null) return false;
-            if (_documents.Any(d => d != document && SamePath(d.Path, path)))
+            if (AllDocuments.Any(d => d.Buffer != document.Buffer && SamePath(d.Path, path)))
                 throw new IOException(Loc.T("AlreadyOpenSaveAs"));
         }
         if (!await EnsureEncodableAsync(document)) return false; // item 67
@@ -131,8 +135,7 @@ public partial class MainView
         document.SavedText = document.Text;
         document.SavedLineEnding = document.LineEnding; // item 68
         document.Refresh();
-        if (_active == document) MdEditor.ShowDocument(document.IsMarkdown ? document : null);
-        UpdateContentLayout();
+        RefreshPaneDocuments();
         UpdateStatus(Loc.F("Saved", path));
         MdEditor.ScheduleRefresh();
         if (isNewPath && FolderExplorer.Contains(path)) await FolderExplorer.RevealCreatedAsync(path);
@@ -142,6 +145,7 @@ public partial class MainView
     private async Task<bool> ConfirmCloseAsync(NoteDocument document)
     {
         if (!document.IsDirty) return true;
+        ActivateDocumentPane(document);
         FileTabs.SelectedDocument = document;
         var answer = await DialogService.ShowAsync(Host, Loc.T("UnsavedTitle"), Loc.F("SaveChangesTo", document.Title.TrimStart('●', ' ')), "Save", "Discard", "Cancel");
         return answer == "Discard" || (answer == "Save" && await SaveAsync(document, false));
@@ -149,7 +153,41 @@ public partial class MainView
 
     private async Task CloseDocumentAsync(NoteDocument document)
     {
-        if (!await ConfirmCloseAsync(document)) return;
+        if (!AllDocuments.Any(d => d != document && d.Buffer == document.Buffer) && !await ConfirmCloseAsync(document)) return;
+        RememberClosedTab(document);
         RemoveDocument(document);
+    }
+
+    // Keep lightweight snapshots, never editor controls or disposed image bitmaps.
+    private sealed record ClosedTab(string? Path, string Name, string Text, System.Text.Encoding Encoding, Mdhub.Text.LineEnding LineEnding, int Index);
+    private readonly List<ClosedTab> _closedTabs = [];
+
+    private void RememberClosedTab(NoteDocument document)
+    {
+        var index = _documents.IndexOf(document);
+        if (index < 0) return;
+        _closedTabs.Add(new(document.Path, document.UntitledName, document.Path is null ? document.Text : "", document.Encoding, document.LineEnding, index));
+        if (_closedTabs.Count > 20) _closedTabs.RemoveAt(0);
+    }
+
+    private async Task ReopenClosedTabAsync()
+    {
+        if (_closedTabs.Count == 0) return;
+        var tab = _closedTabs[^1];
+        NoteDocument? document;
+        if (tab.Path is { } path)
+        {
+            await OpenPathAsync(path);
+            document = _documents.FirstOrDefault(d => SamePath(d.Path, path));
+            if (document is null) return; // Opening a large file may have been cancelled.
+        }
+        else
+        {
+            document = AddDocument(null, tab.Text, tab.Name, tab.Encoding);
+            document.SetLoadedLineEnding(tab.LineEnding);
+        }
+        _closedTabs.RemoveAt(_closedTabs.Count - 1);
+        _documents.Move(_documents.IndexOf(document), Math.Min(tab.Index, _documents.Count - 1));
+        FileTabs.SelectedDocument = document;
     }
 }

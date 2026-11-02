@@ -1,0 +1,17 @@
+<Styles xmlns="https://github.com/avaloniaui">
+  <!-- Covers Button subclasses too, including ToggleButton and RepeatButton.
+       Keep the normal surface; only the content changes colour when disabled. -->
+  <Style Selector=":is(Button):disabled">
+    <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundDisabled}" />
+  </Style>
+  <Style Selector=":is(Button):disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{Binding Background, RelativeSource={RelativeSource TemplatedParent}}" />
+    <Setter Property="BorderBrush" Value="{Binding BorderBrush, RelativeSource={RelativeSource TemplatedParent}}" />
+    <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundDisabled}" />
+  </Style>
+  <!-- Checked search toggles retain their selection surface while disabled. -->
+  <Style Selector="ToggleButton.fieldToggle:checked:disabled /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.findAction.accent:checked:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentSoft}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+  </Style>
+</Styles>

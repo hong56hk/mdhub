@@ -105,7 +105,7 @@ internal static class RevealTests
             Check(Until(() => SelectedIs(deep) && Row(Path.GetDirectoryName(deep)!)?.IsExpanded == true), "Clicking Reveal in Side Bar in the editor menu reveals the file");
 
             CollapseAll();
-            var preview = (Control)typeof(MainView).GetField("MdEditor", Flags)!.GetValue(v)!;
+            var preview = (Control)typeof(MainView).GetProperty("MdEditor", Flags)!.GetValue(v)!;
             var pmenu = preview.ContextMenu!;
             OpenMenu(pmenu, preview);
             var preveal = MenuItemOf(pmenu, "RevealInSidebarMenuItem");

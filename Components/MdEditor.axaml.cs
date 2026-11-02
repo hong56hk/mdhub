@@ -30,8 +30,8 @@ public partial class MdEditor : UserControl
         InitSelection();
         // Item 35: typography changes apply live to the open preview.
         PreviewContent.Spacing = Mdhub.Services.PreviewSettings.Current.ParagraphSpacing;
-        AttachedToVisualTree += (_, _) => Mdhub.Services.PreviewSettings.Changed += OnPreviewSettingsChanged;
-        DetachedFromVisualTree += (_, _) => Mdhub.Services.PreviewSettings.Changed -= OnPreviewSettingsChanged;
+        AttachedToVisualTree += (_, _) => { Mdhub.Services.PreviewSettings.Changed += OnPreviewSettingsChanged; Mdhub.Services.EditorBehavior.Changed += OnPreviewSettingsChanged; };
+        DetachedFromVisualTree += (_, _) => { Mdhub.Services.PreviewSettings.Changed -= OnPreviewSettingsChanged; Mdhub.Services.EditorBehavior.Changed -= OnPreviewSettingsChanged; };
     }
     internal int SettingsRefreshes { get; private set; }
     private void OnPreviewSettingsChanged()
@@ -267,6 +267,8 @@ public partial class MdEditor : UserControl
         return box;
     }
 
+    public void FocusPreview() { PreviewScroll.Focusable = true; PreviewScroll.Focus(); }
+
     internal void CancelPreviewEdit() { if (EndEdit() is not null) MessageChanged?.Invoke(""); }
 
     // Applies the overlay text; returns the reason when it is rejected (the source is then unchanged).
@@ -320,9 +322,18 @@ public partial class MdEditor : UserControl
                 placeholder.Bind(TextBlock.TextProperty, placeholder.GetResourceObservable("PreviewPlaceholder"));
                 PreviewContent.Children.Add(placeholder);
             }
+            else if (document.IsHtml && Mdhub.Services.EditorBehavior.Current.HtmlFormatting)
+            {
+                var control = HtmlPreview.Render(text, document.Path is { } htmlPath ? Path.GetDirectoryName(htmlPath) : null);
+                _render = new PreviewRender(new PreviewSourceMap(text));
+                _render.Controls.Add(control);
+                _render.Blocks[_render.Map.AddBlock(0, text.Length)] = control;
+                PreviewContent.Children.Add(control);
+            }
             else if (result.Markdown is not null)
             {
-                _render = MarkdownPreview.RenderMapped(result.Markdown, text, document.Path is { } notePath ? Path.GetDirectoryName(notePath) : null);
+                _render = MarkdownPreview.RenderMapped(result.Markdown, text, document.Path is { } notePath ? Path.GetDirectoryName(notePath) : null,
+                    Path.GetExtension(document.Path ?? document.UntitledName).Equals(".md", StringComparison.OrdinalIgnoreCase));
                 foreach (var control in _render.Controls) PreviewContent.Children.Add(control);
             }
             else PreviewContent.Children.Add(new SelectableTextBlock { Text = text, TextWrapping = TextWrapping.Wrap, FontSize = Mdhub.Services.PreviewSettings.Current.BodySize });

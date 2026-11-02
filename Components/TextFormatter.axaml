@@ -1,7 +1,11 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:c="using:Mdhub.Components" x:Class="Mdhub.Components.TextFormatter">
-  <!-- Item 48: the toggle-preview button is a split-editor icon; its colour (and a subtle background) shows the state. -->
+  <!-- Three explicit view modes, with path icons and a highlighted selection. -->
   <UserControl.Styles>
-    <Style Selector="Button#TogglePreviewButton">
+    <Style Selector="Button.tool">
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Button.viewMode">
+      <Setter Property="CornerRadius" Value="6" />
       <Setter Property="Foreground" Value="{DynamicResource PreviewToggleOff}" />
       <Setter Property="Padding" Value="7,5" />
     </Style>
@@ -15,17 +19,29 @@
     <Style Selector="Button.tool.export">
       <Setter Property="Padding" Value="7,5" />
     </Style>
-    <Style Selector="Button#TogglePreviewButton.on">
-      <Setter Property="Foreground" Value="{DynamicResource PreviewToggleOn}" />
+    <Style Selector="Button.viewMode.on">
+      <Setter Property="Foreground" Value="{DynamicResource AccentStrong}" />
       <Setter Property="Background" Value="{DynamicResource PreviewToggleOnBackground}" />
+    </Style>
+    <Style Selector="Button.viewMode:disabled">
+      <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundDisabled}" />
     </Style>
   </UserControl.Styles>
   <Border BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="0,1" Padding="8,5" Background="{DynamicResource ToolbarBackground}">
     <Grid ColumnDefinitions="*,Auto">
       <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+        <StackPanel Orientation="Horizontal" Spacing="2">
         <StackPanel x:Name="FormatBar" Orientation="Horizontal" Spacing="2">
-          <Button Content="↶" Tag="undo" Classes="tool" Click="Edit_Click" ToolTip.Tip="{DynamicResource Undo}" />
-          <Button Content="↷" Tag="redo" Classes="tool" Click="Edit_Click" ToolTip.Tip="{DynamicResource Redo}" />
+          <Button Tag="undo" Classes="tool icon" Click="Edit_Click" ToolTip.Tip="{DynamicResource Undo}" AutomationProperties.Name="{DynamicResource Undo}">
+            <Path Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round"
+                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
+                  Data="M 5.5,2.5 L 2.5,5.5 L 5.5,8.5 M 2.5,5.5 H 9.5 A 3,3 0 0 1 9.5,11.5 H 7" />
+          </Button>
+          <Button Tag="redo" Classes="tool icon" Click="Edit_Click" ToolTip.Tip="{DynamicResource Redo}" AutomationProperties.Name="{DynamicResource Redo}">
+            <Path Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round"
+                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
+                  Data="M 10.5,2.5 L 13.5,5.5 L 10.5,8.5 M 13.5,5.5 H 6.5 A 3,3 0 0 0 6.5,11.5 H 9" />
+          </Button>
           <Button Content="B" Tag="bold" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Bold}" />
           <Button Content="I" Tag="italic" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Italic}" />
           <Button Tag="strike" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource Strikethrough}"><c:StrikeGlyph /></Button>
@@ -50,9 +66,9 @@
           </Button>
           <Button Content="❝" Tag="quote" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource BlockQuote}" />
           <Button x:Name="LinkButton" Tag="link" Classes="tool icon" Click="Format_Click" AutomationProperties.Name="{DynamicResource InsertLink}">
-            <!-- Item 50: two interlocking chain links, drawn horizontally. -->
-            <Path x:Name="LinkIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
-                  Data="M 7.8,9.5 H 3.5 A 2.5,2.5 0 0 1 3.5,4.5 H 7.5 A 2.5,2.5 0 0 1 9.6,8.4 M 8.2,4.5 H 12.5 A 2.5,2.5 0 0 1 12.5,9.5 H 8.5 A 2.5,2.5 0 0 1 6.4,5.6" />
+            <!-- SVG path geometry: two open rounded ends joined by a horizontal bar. -->
+            <Path x:Name="LinkIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.1" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
+                  Data="M 6.5,4.5 H 4 A 2.5,2.5 0 0 0 4,9.5 H 6.5 M 9.5,4.5 H 12 A 2.5,2.5 0 0 1 12,9.5 H 9.5 M 5.5,7 H 10.5" />
           </Button>
           <Button Tag="table" Classes="tool icon" Click="Format_Click" ToolTip.Tip="{DynamicResource InsertTable}" AutomationProperties.Name="{DynamicResource InsertTable}">
             <!-- Item 50: a rounded table with a (lightly filled) header row. Bug 65: a 3x3 grid. -->
@@ -63,23 +79,50 @@
                     Data="M 3,1.5 H 13 A 1.5,1.5 0 0 1 14.5,3 V 11 A 1.5,1.5 0 0 1 13,12.5 H 3 A 1.5,1.5 0 0 1 1.5,11 V 3 A 1.5,1.5 0 0 1 3,1.5 Z M 1.5,5.17 H 14.5 M 1.5,8.83 H 14.5 M 5.83,1.5 V 12.5 M 10.17,1.5 V 12.5" />
             </Grid>
           </Button>
+          <StackPanel x:Name="HtmlFormatBar" Orientation="Horizontal" Spacing="2" Margin="8,0,0,0" />
+        </StackPanel>
+          <Border x:Name="EmojiDivider" Width="1" Height="20" Margin="8,0" VerticalAlignment="Center" Background="{DynamicResource TextSecondary}" />
+          <Button x:Name="EmojiButton" Classes="tool icon" IsEnabled="False" Click="EmojiButton_Click" AutomationProperties.Name="{DynamicResource EmojiInput}">
+            <!-- SVG path geometry: an outlined face, two eyes and a curved smile. -->
+            <Path x:Name="EmojiIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.1" StrokeLineCap="Round" StrokeJoin="Round"
+                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
+                  Data="M 13.5,7 A 5.5,5.5 0 1 1 2.5,7 A 5.5,5.5 0 1 1 13.5,7 Z M 6,5.2 V 5.5 M 10,5.2 V 5.5 M 5.6,8.1 Q 8,11 10.4,8.1" />
+          </Button>
         </StackPanel>
       </ScrollViewer>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="12,0,0,0">
-        <Button x:Name="TogglePreviewButton" Classes="tool" Click="TogglePreview_Click" AutomationProperties.Name="{DynamicResource TogglePreview}">
+        <Button x:Name="SyncButton" Classes="tool icon" Focusable="False" Click="Sync_Click" AutomationProperties.Name="{DynamicResource Sc.view.previewCaret}">
+          <!-- SVG path geometry matching the reference's four arrows around a center point. -->
+          <Path x:Name="SyncIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.1" StrokeLineCap="Round" StrokeJoin="Round"
+                Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
+                Data="M 8,1 V 4 M 6.5,2.5 L 8,1 L 9.5,2.5 M 8,10 V 13 M 6.5,11.5 L 8,13 L 9.5,11.5 M 2,7 H 5 M 3.5,5.5 L 2,7 L 3.5,8.5 M 11,7 H 14 M 12.5,5.5 L 14,7 L 12.5,8.5 M 7.5,7 H 8.5" />
+        </Button>
+        <Border CornerRadius="8" BorderThickness="1" BorderBrush="{DynamicResource BorderSubtle}" Padding="2">
+          <StackPanel Orientation="Horizontal" Spacing="2">
+          <Button x:Name="EditorOnlyButton" Classes="tool viewMode" Click="EditorOnly_Click" AutomationProperties.Name="{DynamicResource ViewModeEditor}">
+            <Path Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Data="M 7,2 H 4 A 2,2 0 0 0 2,4 V 11 A 2,2 0 0 0 4,13 H 11 A 2,2 0 0 0 13,11 V 8 M 6,8 L 6,10 L 8,10 L 14,4 L 12,2 Z M 11,3 L 13,5" />
+          </Button>
+        <Button x:Name="TogglePreviewButton" Classes="tool viewMode" Click="SplitView_Click" AutomationProperties.Name="{DynamicResource ViewModeSplit}">
           <Path x:Name="TogglePreviewIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round"
                 Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                 Data="M 3,1.5 H 13 A 1.5,1.5 0 0 1 14.5,3 V 11 A 1.5,1.5 0 0 1 13,12.5 H 3 A 1.5,1.5 0 0 1 1.5,11 V 3 A 1.5,1.5 0 0 1 3,1.5 Z M 8,1.5 V 12.5" />
         </Button>
-        <!-- Item 51: export the Markdown note to HTML and PDF (a page with a folded corner). The HTML icon is '</>' again (20f95af restored it after bug 73); bug 82: both icons bind the ContentPresenter foreground so they dim when disabled (bug 65). -->
+          <Button x:Name="ViewerOnlyButton" Classes="tool viewMode" Click="ViewerOnly_Click" AutomationProperties.Name="{DynamicResource ViewModeViewer}">
+            <Path Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Data="M 1,7 Q 8,-2 15,7 Q 8,16 1,7 Z M 10,7 A 2,2 0 1 0 6,7 A 2,2 0 1 0 10,7 Z" />
+          </Button>
+          </StackPanel>
+        </Border>
+        <Border Width="1" Height="20" Margin="8,0" VerticalAlignment="Center" Background="{DynamicResource TextSecondary}" />
+        <!-- Export icons use folded pages; HTML adds code brackets. Both bind the ContentPresenter foreground so they dim when disabled. -->
         <Button x:Name="ExportHtmlButton" Classes="tool export" Click="ExportHtml_Click" ToolTip.Tip="{DynamicResource ExportHtmlTip}" AutomationProperties.Name="{DynamicResource ExportHtmlTip}">
           <Path x:Name="ExportHtmlIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
-                Data="M 5,3.5 L 1.5,7 L 5,10.5 M 11,3.5 L 14.5,7 L 11,10.5 M 9.5,2 L 6.5,12" />
+                Data="M 4,6 V 2 A 1,1 0 0 1 5,1 H 9.5 L 13,4.5 V 12 A 1,1 0 0 1 12,13 H 10 M 9.5,1 V 4.5 H 13 M 4,8 L 1.5,10.5 L 4,13 M 6.5,8 L 9,10.5 L 6.5,13" />
         </Button>
         <Button x:Name="ExportPdfButton" Classes="tool export" Click="ExportPdf_Click" ToolTip.Tip="{DynamicResource ExportPdfTip}" AutomationProperties.Name="{DynamicResource ExportPdfTip}">
           <Path x:Name="ExportPdfIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
                 Data="M 3.5,1 H 9.5 L 13,4.5 V 13 H 3.5 Z M 9.5,1 V 4.5 H 13 M 6,8 H 10.5 M 6,10.5 H 9" />
         </Button>
+        <Border Width="1" Height="20" Margin="8,0" VerticalAlignment="Center" Background="{DynamicResource TextSecondary}" />
         <!-- Item 60: editor settings (item 57 fonts) and preview settings (item 35 typography), right after Export PDF.
              The editor gear shows for text tabs, the preview gear only for Markdown; flyouts open below their button. -->
         <Button x:Name="EditorSettingsButton" Classes="tool export" ToolTip.Tip="{DynamicResource EditorSettings}" AutomationProperties.Name="{DynamicResource EditorSettings}">
@@ -89,6 +132,11 @@
         <Button x:Name="PreviewSettingsButton" Classes="tool export" ToolTip.Tip="{DynamicResource PreviewSettings}" AutomationProperties.Name="{DynamicResource PreviewSettings}">
           <Path x:Name="PreviewSettingsIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                 Data="{StaticResource PreviewSettingsIconGeometry}" />
+        </Button>
+        <Button x:Name="OutlineButton" Classes="tool icon viewMode" Click="Outline_Click" ToolTip.Tip="{DynamicResource DocumentOutline}" AutomationProperties.Name="{DynamicResource DocumentOutline}">
+          <Path Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round"
+                Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
+                Data="M 2,2 H 14 M 2,2 V 12 M 2,7 H 5 M 7,7 H 14 M 2,12 H 5 M 7,12 H 14" />
         </Button>
       </StackPanel>
     </Grid>

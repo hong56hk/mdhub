@@ -69,6 +69,7 @@
       <MenuItem Header="{DynamicResource MenuGoToLine}" Click="Command_Click" c:ShortcutKeys.Id="editor.goToLine" />
     </MenuItem>
     <MenuItem Header="{DynamicResource MenuView}">
+      <MenuItem Header="{DynamicResource SplitEditorRight}" Click="Command_Click" c:ShortcutKeys.Id="view.splitEditor" />
       <MenuItem Header="{DynamicResource MenuToggleFolders}" Click="ToggleFolders_Click" />
       <MenuItem Header="{DynamicResource MenuTogglePreview}" Click="TogglePreview_Click" c:ShortcutKeys.Id="view.togglePreview" />
       <MenuItem Header="{DynamicResource MenuToggleWordWrap}" Click="WordWrap_Click" c:ShortcutKeys.Id="view.wordWrap" />

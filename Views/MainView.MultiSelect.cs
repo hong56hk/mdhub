@@ -40,8 +40,8 @@ public partial class MainView
             {
                 var answer = await DialogService.ShowAsync(Host, Loc.T("Delete"), Loc.Plural("DeleteItemsConfirmOne", "DeleteItemsConfirmMany", paths.Count), "MoveItemsToRecycleBin", "Cancel");
                 if (answer != "MoveItemsToRecycleBin") return;
-                var affected = _documents.Where(d => d.Path is not null && paths.Any(p => IsSameOrInside(p, d.Path))).ToList();
-                foreach (var document in affected)
+                var affected = AllDocuments.Where(d => d.Path is not null && paths.Any(p => IsSameOrInside(p, d.Path))).ToList();
+                foreach (var document in affected.DistinctBy(d => d.Buffer))
                     if (!await ConfirmCloseAsync(document)) return;
                 var recycle = RecycleOverride;
                 await Task.Run(() => { foreach (var path in paths) { if (recycle is null) ExplorerFileOperations.Recycle(root, path); else recycle(path); } });
@@ -84,7 +84,7 @@ public partial class MainView
         {
             var target = ExplorerMove.Destination(root, source, directory);
             if (target is null) continue;
-            if (_documents.Any(document => document.Path is not null && SamePath(document.Path, target))) throw new IOException(Loc.T("DestinationOpen"));
+            if (AllDocuments.Any(document => document.Path is not null && SamePath(document.Path, target))) throw new IOException(Loc.T("DestinationOpen"));
             await Task.Run(() => ExplorerFileOperations.Move(source, target));
             UpdateMovedDocuments(source, target);
             if (ExplorerClipboardPaths is { } clip && clip.Any(p => SamePath(p, source)))

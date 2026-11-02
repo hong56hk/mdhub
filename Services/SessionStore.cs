@@ -27,6 +27,7 @@ public sealed record SessionData
     public string? Language { get; init; }
     public List<string> RecentFiles { get; init; } = []; // File > Open Recent, newest first; missing in old files: empty
     public List<string> RecentFolders { get; init; } = [];
+    public List<string> RecentEmojis { get; init; } = [];
     // Custom shortcut bindings: id -> gestures like "Command+Shift+F"; missing in old files: none (defaults).
     public Dictionary<string, List<string>>? CustomShortcuts { get; init; }
     // Item 35: preview fonts and spacing; missing in old files (or all defaults): null.
@@ -46,6 +47,9 @@ public sealed record SessionData
 // Item 70: Tab inserts spaces (default) or a tab; TabSize (1-8) = spaces per Tab and the width of a tab character.
 public sealed record EditorBehaviorData
 {
+    public bool CodeSyntaxHighlighting { get; init; } = true;
+    public bool Minimap { get; init; } = true;
+    public bool HtmlFormatting { get; init; } = true;
     public bool InsertSpaces { get; init; } = true;
     public int TabSize { get; init; } = 4;
     // Item 71: Markdown list / table auto-complete and table column alignment (all on by default).

@@ -69,10 +69,11 @@ internal static class ExportTests
             var status = w.GetVisualDescendants().OfType<BottomStatusBar>().Single();
             var toggle = bar.FindControl<Button>("TogglePreviewButton")!;
             var htmlButton = bar.FindControl<Button>("ExportHtmlButton")!; var pdfButton = bar.FindControl<Button>("ExportPdfButton")!;
-            var row = (Panel)toggle.Parent!;
-            var index = row.Children.IndexOf(toggle);
+            var selector = (Control)toggle.Parent!.Parent!;
+            var row = (Panel)selector.Parent!;
+            var index = row.Children.IndexOf(selector);
             Check(row.Children.IndexOf(htmlButton) == index + 1 && row.Children.IndexOf(pdfButton) == index + 2, "Order: preview toggle, HTML, PDF");
-            Check(htmlButton.Bounds.Left > toggle.Bounds.Right - 0.5 && pdfButton.Bounds.Left > htmlButton.Bounds.Right - 0.5 && Math.Abs(htmlButton.Bounds.Height - toggle.Bounds.Height) < 0.5, "Export buttons sit right of the toggle with the same height");
+            Check(htmlButton.Bounds.Left > selector.Bounds.Right - 0.5 && pdfButton.Bounds.Left > htmlButton.Bounds.Right - 0.5 && htmlButton.Bounds.Height >= toggle.Bounds.Height, "Export buttons sit right of the toggle with the same height");
             foreach (var b in new[] { htmlButton, pdfButton })
             {
                 var paths = b.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().ToList();

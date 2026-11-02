@@ -4,35 +4,60 @@ namespace Mdhub.Views;
 
 public partial class MainView
 {
-    private bool _showPreview = true;
+    private enum ViewMode { Editor, Split, Viewer }
+    private ViewMode _viewMode = ViewMode.Split;
 
-    private void UpdateContentLayout()
+    private void UpdateContentLayout() => UpdateContentLayout(_activePane);
+
+    private void UpdateContentLayout(Mdhub.Components.EditorPane pane)
     {
-        var markdown = _active?.IsMarkdown == true;
-        var image = _active?.IsImage == true;
-        var binary = _active?.IsBinary == true;
-        var preview = markdown && _showPreview;
-        if (MdEditor.IsVisible && !preview) _previewWidth = Workspace.ColumnDefinitions[4].Width;
-        MdEditor.IsVisible = PreviewSplitter.IsVisible = preview;
-        TextFormatter.SetPreviewOn(preview);
-        TextFormatter.SetSettingsVisibility(_active is not null && !image && !binary, markdown);
-        Workspace.ColumnDefinitions[3].Width = new GridLength(preview ? 4 : 0);
-        Workspace.ColumnDefinitions[4].Width = preview ? _previewWidth : new GridLength(0);
-        Grid.SetColumnSpan(TextEditor, preview ? 1 : 3);
-        TextEditor.IsVisible = !image && !binary;
-        BinaryPlaceholder.IsVisible = binary;
-        BinaryPlaceholder.ShowFile(binary ? _active!.Path : null);
-        ImageViewer.IsVisible = image;
-        ImageViewer.ShowImage(_active?.Image);
-        if (image || binary) TextEditor.CloseFind();
-        BottomStatusBar.SetImageZoom(image ? ImageViewer.ZoomPercent : null);
+        var active = pane == _activePane;
+        var document = pane.Active;
+        var mode = active ? _viewMode : (ViewMode)pane.ViewMode;
+        var hasPreview = document?.HasPreview == true;
+        var image = document?.IsImage == true;
+        var binary = document?.IsBinary == true;
+        var preview = hasPreview && mode != ViewMode.Editor;
+        var split = preview && mode == ViewMode.Split;
+        var grid = pane.ContentGrid;
+        if (pane.PreviewSplitter.IsVisible && !split) pane.PreviewWidth = grid.ColumnDefinitions[4].Width;
+        pane.MdEditor.IsVisible = preview;
+        pane.PreviewSplitter.IsVisible = split;
+        grid.ColumnDefinitions[3].Width = new GridLength(split ? 4 : 0);
+        grid.ColumnDefinitions[4].Width = split ? pane.PreviewWidth : new GridLength(0);
+        Grid.SetColumnSpan(pane.TextEditor, preview ? 1 : 3);
+        Grid.SetColumn(pane.MdEditor, split ? 4 : 2);
+        Grid.SetColumnSpan(pane.MdEditor, split ? 1 : 3);
+        pane.TextEditor.IsVisible = !image && !binary && (!hasPreview || mode != ViewMode.Viewer);
+        pane.BinaryPlaceholder.IsVisible = binary;
+        pane.BinaryPlaceholder.ShowFile(binary ? document!.Path : null);
+        pane.ImageViewer.IsVisible = image;
+        pane.ImageViewer.ShowImage(document?.Image);
+        if (image || binary) pane.TextEditor.CloseFind();
+        if (active)
+        {
+            UpdateOutlineLayout();
+            TextFormatter.SetSyncEnabled(split && !_busy);
+            TextFormatter.SetViewMode(hasPreview ? (int)mode : 0);
+            TextFormatter.SetSettingsVisibility(document is not null && !image && !binary, hasPreview);
+            BottomStatusBar.SetImageZoom(image ? pane.ImageViewer.ZoomPercent : null);
+        }
+    }
+
+    private void RefreshPaneDocuments()
+    {
+        foreach (var pane in _panes)
+        {
+            pane.MdEditor.ShowDocument(pane.Active?.HasPreview == true ? pane.Active : null);
+            UpdateContentLayout(pane);
+        }
     }
 
     // Item 37: image zoom (Ctrl+wheel over the image, Reset zoom shows 100%).
     internal bool ZoomImage(Avalonia.Input.PointerWheelEventArgs e)
     {
-        if (!ImageViewer.IsVisible || !ImageViewer.IsPointerOver) return false;
-        return ImageViewer.ZoomAt(e.Delta.Y, e.GetPosition(ImageViewer));
+        var viewer = _panes.Select(p => p.ImageViewer).FirstOrDefault(v => v.IsVisible && v.IsPointerOver);
+        return viewer is not null && viewer.ZoomAt(e.Delta.Y, e.GetPosition(viewer));
     }
     internal bool ResetImageZoom() => ImageViewer.IsVisible && ImageViewer.ResetZoom();
 }

@@ -14,7 +14,7 @@ public partial class MainView
         var parent = Path.GetDirectoryName(path)!;
         var target = Path.Combine(parent, name);
         if (Components.FolderExplorer.DuplicateError(path, name) is { } duplicate) return duplicate;
-        if (_documents.Any(d => d.Path is { } p && SamePath(p, target) && !SamePath(p, path))) return Loc.T("NameOpenInTab");
+        if (AllDocuments.Any(d => d.Path is { } p && SamePath(p, target) && !SamePath(p, path))) return Loc.T("NameOpenInTab");
         SetBusy(true);
         try
         {

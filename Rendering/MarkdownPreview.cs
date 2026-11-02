@@ -9,6 +9,7 @@ using Markdig.Syntax.Inlines;
 using Markdig.Extensions.Tables;
 using Avalonia.Media.TextFormatting;
 using Settings = Mdhub.Services.PreviewSettings;
+using Mdhub.Text;
 
 namespace Mdhub.Rendering;
 
@@ -19,6 +20,7 @@ public static class MarkdownPreview
     public static MarkdownDocument Parse(string text) => Markdown.Parse(text, Pipeline);
 
     [ThreadStatic] private static string? _baseDirectory;
+    [ThreadStatic] private static bool _suppressInlineCode;
 
     // Local images (relative to baseDirectory, or absolute) load from disk; remote URLs stay labels.
     public static IReadOnlyList<Control> Render(ContainerBlock document, string? baseDirectory)
@@ -30,13 +32,15 @@ public static class MarkdownPreview
     }
 
     // Renders and records which control / run shows which source range, for the selection highlight.
-    public static PreviewRender RenderMapped(ContainerBlock document, string source, string? baseDirectory)
+    public static PreviewRender RenderMapped(ContainerBlock document, string source, string? baseDirectory, bool styleInlineCode = true)
     {
         var previous = (_baseDirectory, _result, _block, _fallback);
         var result = new PreviewRender(new PreviewSourceMap(source));
+        var previousInline = _suppressInlineCode;
+        _suppressInlineCode = !styleInlineCode;
         (_baseDirectory, _result, _block, _fallback) = (baseDirectory, result, -1, -1);
         try { result.Controls.AddRange(Render(document)); return result; }
-        finally { (_baseDirectory, _result, _block, _fallback) = previous; }
+        finally { (_baseDirectory, _result, _block, _fallback) = previous; _suppressInlineCode = previousInline; }
     }
 
     [ThreadStatic] private static PreviewRender? _result;
@@ -105,14 +109,24 @@ public static class MarkdownPreview
                     var codeText = Mapped(PreviewTags.Tag(new TextBlock { FontFamily = new FontFamily(Settings.CodeFamilyList), FontSize = Settings.Current.CodeSize, TextWrapping = TextWrapping.Wrap }, "pre"), code);
                     var codeBlockId = _result is { } codeResult ? codeResult.Map.Blocks.Count - 1 : -1;
                     var lines = code.Lines.Lines ?? [];
+                    var language = (code as FencedCodeBlock)?.Info?.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+                    var codeState = default(CodeHighlighter.State);
                     for (var i = 0; i < code.Lines.Count; i++)
                     {
                         if (i > 0) codeText.Inlines!.Add(new LineBreak());
                         var slice = lines[i].Slice;
-                        var lineRun = new Run(slice.ToString());
-                        codeText.Inlines!.Add(lineRun);
+                        var content = slice.ToString();
+                        var tokens = new List<SyntaxSpan>();
+                        codeState = CodeHighlighter.Line(content, language, codeState, tokens);
+                        if (!Mdhub.Services.EditorBehavior.Current.CodeSyntaxHighlighting || tokens.Count == 0) tokens = [new(0, content.Length, SyntaxColor.Default)];
                         var saved = _block; _block = codeBlockId;
-                        MapRun(codeText.Inlines, lineRun, slice.Start);
+                        foreach (var token in tokens)
+                        {
+                            var lineRun = new Run(content.Substring(token.Start, token.Length));
+                            if (token.Color != SyntaxColor.CodeText) lineRun.Foreground = Mdhub.Components.MarkdownTextPresenter.BrushFor(token.Color);
+                            codeText.Inlines!.Add(lineRun);
+                            MapRun(codeText.Inlines, lineRun, slice.Start + token.Start);
+                        }
                         _block = saved;
                     }
                     if (_result is { } fenceResult && code is FencedCodeBlock && code.Lines.Count > 0 && codeBlockId >= 0 && ContiguousLines(fenceResult.Map.Source, lines, code.Lines.Count) is { } fenceContent)
@@ -171,7 +185,9 @@ public static class MarkdownPreview
                     yield return Mapped(PreviewTags.Tag(new Border { Height = 1, Background = Mdhub.Services.ThemeService.Brush("RuleForeground"), Margin = new Thickness(0, 8) }, "hr"), block);
                     break;
                 case HtmlBlock html:
-                    yield return Mapped(PreviewTags.Tag(new TextBlock { Text = html.Lines.ToString(), TextWrapping = TextWrapping.Wrap }, "html"), html);
+                    yield return Mapped(Mdhub.Services.EditorBehavior.Current.HtmlFormatting
+                        ? HtmlPreview.Render(html.Lines.ToString(), _baseDirectory)
+                        : PreviewTags.Tag(new TextBlock { Text = html.Lines.ToString(), TextWrapping = TextWrapping.Wrap }, "html"), html);
                     break;
                 case ContainerBlock container:
                     yield return Stack(Render(container));
@@ -296,17 +312,36 @@ public static class MarkdownPreview
 
     private static void AddInlines(InlineCollection target, ContainerInline container)
     {
+        if (Mdhub.Services.EditorBehavior.Current.HtmlFormatting && container.Descendants<HtmlInline>().Any())
+        {
+            using var writer = new StringWriter();
+            var renderer = new Markdig.Renderers.HtmlRenderer(writer);
+            Pipeline.Setup(renderer);
+            renderer.Render(container);
+            HtmlPreview.AddInlines(target, writer.ToString(), _baseDirectory);
+            return;
+        }
         foreach (var item in container)
         {
             switch (item)
             {
+                case HtmlEntityInline entity:
+                    target.Add(new Run(entity.Transcoded.ToString()));
+                    break;
                 case LiteralInline literal:
                     var literalRun = new Run(literal.Content.ToString());
                     target.Add(literalRun);
                     MapRun(target, literalRun, LocateIn(literal.Span, literalRun.Text));
                     break;
                 case CodeInline code:
-                    var codeRun = new Run(code.Content) { FontFamily = new FontFamily(Settings.CodeFamilyList), FontSize = Settings.Current.CodeSize, Background = Mdhub.Services.ThemeService.Brush("InlineCodeBackground"), Foreground = Mdhub.Services.ThemeService.Brush("InlineCodeForeground") };
+                    var codeRun = new Run(code.Content);
+                    if (!_suppressInlineCode)
+                    {
+                        codeRun.FontFamily = new FontFamily(Settings.CodeFamilyList);
+                        codeRun.FontSize = Settings.Current.CodeSize;
+                        codeRun.Background = Mdhub.Services.ThemeService.Brush("InlineCodeBackground");
+                        if (Mdhub.Services.EditorBehavior.Current.CodeSyntaxHighlighting) codeRun.Foreground = Mdhub.Services.ThemeService.Brush("InlineCodeForeground");
+                    }
                     PreviewTags.Tag(codeRun, "code");
                     target.Add(codeRun);
                     if (_result is { } r && code.Content.Length > 0 && code.Span.Start >= 0 && code.Span.End < r.Map.Source.Length)

@@ -23,6 +23,9 @@ public sealed record EncodingOption(string Id, string Name, int CodePage, bool B
 
 public static class TextEncodings
 {
+    // Unicode encodings, including GB18030, preserve supplementary characters and emoji sequences.
+    public static bool SupportsEmoji(Encoding encoding) => encoding.CodePage is 65001 or 1200 or 1201 or 12000 or 12001 or 54936;
+
     static TextEncodings() => Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
     public static readonly IReadOnlyList<EncodingOption> All =

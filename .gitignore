@@ -9,4 +9,8 @@ obj/
 .dotnet-home/
 .nuget/
 artifacts/
+.artifacts/
 *.user
+
+# ignore log
+*.log

@@ -26,7 +26,7 @@ internal static class RenameTests
         var tree = explorer.FindControl<TreeView>("FolderTree")!;
         var tabs = window.GetVisualDescendants().OfType<ListBox>().Single(c => c.Name == "Tabs");
         TextBox Box() => explorer.GetVisualDescendants().OfType<TextBox>().Single(t => t.Name == "ExplorerRenameBox");
-        void Press(Control target, Key key) { target.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = key }); Pump(); }
+        void Press(Control target, Key key) { target.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = key }); Shortcuts.KeyReleased(key.ToString()); Pump(); }
         void Wait(Func<bool> done)
         {
             var deadline = DateTime.UtcNow.AddSeconds(10);

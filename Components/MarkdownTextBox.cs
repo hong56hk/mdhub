@@ -5,13 +5,14 @@ using Avalonia.Input.Platform;
 namespace Mdhub.Components;
 
 // Keeps TextBox's editing, undo, selection, and IME support; only its text presenter adds colors.
-public sealed class MarkdownTextBox : TextBox
+public sealed partial class MarkdownTextBox : TextBox
 {
     protected override Type StyleKeyOverride => typeof(TextBox);
 
     // Item 68: pasted text takes the document's line ending (NewLine, which Enter types too).
     public MarkdownTextBox()
     {
+        InitMultiCaret();
         AddHandler(PastingFromClipboardEvent, (_, e) => { if (IsReadOnly) return; e.Handled = true; _ = PasteNormalizedAsync(); });
         // Item 74: the text offset under a right-click, so the context menu can offer spelling fixes for that word.
         AddHandler(PointerPressedEvent, (_, e) =>
@@ -31,8 +32,10 @@ public sealed class MarkdownTextBox : TextBox
     }
     public void InsertText(string text)
     {
+        if (IsReadOnly) return;
         var newline = NewLine ?? System.Environment.NewLine;
         var normalized = System.Text.RegularExpressions.Regex.Replace(text, "\r\n|\r|\n", newline.Replace("$", "$$"));
+        if (HasMultipleCarets) { ReplaceAtCarets(normalized, distributeLines: true); return; }
         var start = Math.Min(SelectionStart, SelectionEnd);
         SelectedText = normalized;
         SelectionStart = SelectionEnd = start + normalized.Length;
@@ -40,10 +43,20 @@ public sealed class MarkdownTextBox : TextBox
     }
     public static readonly StyledProperty<bool> HighlightMarkdownProperty = AvaloniaProperty.Register<MarkdownTextBox, bool>(nameof(HighlightMarkdown));
     public bool HighlightMarkdown { get => GetValue(HighlightMarkdownProperty); set => SetValue(HighlightMarkdownProperty, value); }
+    public static readonly StyledProperty<string?> SourceLanguageProperty = AvaloniaProperty.Register<MarkdownTextBox, string?>(nameof(SourceLanguage));
+    public string? SourceLanguage { get => GetValue(SourceLanguageProperty); set => SetValue(SourceLanguageProperty, value); }
+    public static readonly StyledProperty<bool> StyleInlineCodeProperty = AvaloniaProperty.Register<MarkdownTextBox, bool>(nameof(StyleInlineCode), true);
+    public bool StyleInlineCode { get => GetValue(StyleInlineCodeProperty); set => SetValue(StyleInlineCodeProperty, value); }
 
     // Item 66: overwrite mode replaces the characters under the caret, never a line break; a selection or paste works as usual.
     protected override void OnTextInput(Avalonia.Input.TextInputEventArgs e)
     {
+        if (HasMultipleCarets && !string.IsNullOrEmpty(e.Text))
+        {
+            if (!IsReadOnly) ReplaceAtCarets(e.Text, overwrite: Mdhub.Services.EditorMode.Overwrite);
+            e.Handled = true;
+            return;
+        }
         var text = Text;
         if (Mdhub.Services.EditorMode.Overwrite && !IsReadOnly && !string.IsNullOrEmpty(e.Text) && SelectionStart == SelectionEnd && text is not null)
         {
@@ -63,6 +76,7 @@ public sealed class MarkdownTextBox : TextBox
     // outdents every touched line. Each is one replacement, so one undo step.
     protected override void OnKeyDown(Avalonia.Input.KeyEventArgs e)
     {
+        if (HandleMultiCaretKey(e)) return;
         if (e.Key is Avalonia.Input.Key.Home or Avalonia.Input.Key.End && e.KeyModifiers == Avalonia.Input.KeyModifiers.Shift) { ExtendToLineEdge(e); return; }
         // Same root cause: a plain Home / End with a selection went from the selection start; VS Code moves from the caret.
         if (e.Key is Avalonia.Input.Key.Home or Avalonia.Input.Key.End && e.KeyModifiers == Avalonia.Input.KeyModifiers.None && SelectionStart != SelectionEnd) SelectionStart = SelectionEnd;
@@ -137,6 +151,8 @@ public sealed class MarkdownTextBox : TextBox
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
+        MultiCaretPropertyChanged(change);
+        if (_updatingCarets || HasMultipleCarets) return;
         if (change.Property != CaretIndexProperty || _aligning || !HighlightMarkdown || IsReadOnly) return;
         var text = Text ?? "";
         var caret = CaretIndex;
@@ -156,6 +172,7 @@ public sealed class MarkdownTextBox : TextBox
 
     private void AlignTableAt(int anchor)
     {
+        if (HasMultipleCarets) return;
         var text = Text ?? "";
         if (anchor > text.Length || IsReadOnly) return;
         if (Mdhub.Services.MarkdownAutoComplete.AlignTable(text, anchor, CaretIndex, AutoOptions) is not { } edit) return;

@@ -86,6 +86,34 @@ internal static class SyntaxTests
             && C(r, t, "![") == SyntaxColor.Marker && C(r, t, "https://x.dev") == SyntaxColor.Link, "Link text blue, URL dimmed, [ ] ( ) and ! dimmed; autolinks");
         Check(C(r, t, "_(b)", 2) == SyntaxColor.Url, "Balanced parentheses stay inside the URL");
 
+        // Raw HTML in Markdown, including nested lists like the source-editor example.
+        t = "# inline html\n<ol>\n  <li>First <span style=\"color: #E53935;\">text</span> item</li>\n"
+            + "  <li>Third item\n    <ol>\n      <li>Indented <span style=\"color: #2E7D32;\">text</span> item</li>\n    </ol>\n  </li>\n</ol>\n";
+        r = MarkdownHighlighter.Highlight(t);
+        Check(C(r, t, "ol>") == SyntaxColor.CodeTag && C(r, t, "li>") == SyntaxColor.CodeTag
+            && C(r, t, "span") == SyntaxColor.CodeTag && C(r, t, "style") == SyntaxColor.CodeAttribute
+            && C(r, t, "#E53935") == SyntaxColor.CodeString && C(r, t, "#2E7D32") == SyntaxColor.CodeString
+            && C(r, t, "</span>", 2) == SyntaxColor.CodeTag, "Raw HTML nested lists highlight tags, attributes, values and closing tags");
+        Check(C(r, t, "First") == SyntaxColor.Default && C(r, t, "text") == SyntaxColor.Default && r.Blocks.Count == 0
+            && r.Spans.All(s => !s.CodeBackground), "Raw HTML content keeps normal text and has no code block decoration");
+
+        t = "Before <custom-tag data-label='**bold** `code` > value' disabled /> **after** <!-- *comment* -->\n"
+            + "# Heading <u>underlined</u> tail\n- [x] <b>done</b>\n"
+            + "`<span style=\"x\">` <https://example.com> <a@b.com> 1 < 2 \\<em> &lt;em&gt;\n";
+        r = MarkdownHighlighter.Highlight(t);
+        Check(C(r, t, "custom-tag") == SyntaxColor.CodeTag && C(r, t, "data-label") == SyntaxColor.CodeAttribute
+            && C(r, t, "disabled") == SyntaxColor.CodeAttribute && C(r, t, "**bold**") == SyntaxColor.CodeString
+            && C(r, t, "`code`") == SyntaxColor.CodeString && C(r, t, "after") == SyntaxColor.Bold
+            && C(r, t, "*comment*") == SyntaxColor.CodeComment, "HTML quoted punctuation, self-closing/custom tags and comments stay separate from Markdown");
+        Check(C(r, t, "<u>", 1) == SyntaxColor.CodeTag && F(r, t, "<u>", 1) == SyntaxFont.Bold
+            && C(r, t, "tail") == SyntaxColor.H1 && C(r, t, "<b>", 1) == SyntaxColor.Checked
+            && F(r, t, "<b>", 1) == SyntaxFont.Strike, "HTML preserves heading fonts, surrounding colors and checked-item overrides");
+        Check(C(r, t, "span") == SyntaxColor.InlineCode && C(r, t, "https://example.com") == SyntaxColor.Link
+            && C(r, t, "a@b.com") == SyntaxColor.Default && C(r, t, "< 2") == SyntaxColor.Default
+            && C(r, t, "em>") == SyntaxColor.Default && C(r, t, "&lt;em&gt;") == SyntaxColor.Default,
+            "HTML highlighting leaves code spans, autolinks, email, comparisons and escaped tags alone");
+        Check(r.Spans.Zip(r.Spans.Skip(1), (a, b) => a.End <= b.Start).All(ordered => ordered), "Mixed HTML/Markdown spans do not overlap");
+
         // Lists, quotes, tasks.
         t = "- bullet\n* star\n+ plus\n1. one\n12) twelve\n  - nested\n> quoted **text**\n> > deeper\n- [ ] todo\n- [x] done item\n-not a list\n";
         r = MarkdownHighlighter.Highlight(t);
@@ -174,7 +202,7 @@ internal static class SyntaxTests
         var tabs = window.GetVisualDescendants().OfType<ListBox>().Single(x => x.Name == "Tabs");
         var document = (NoteDocument)tabs.SelectedItem!;
         var editor = (MarkdownTextBox)document.Editor;
-        const string text = "# Heading\n\n**bold** tail\n*it* tail\n~~gone~~\n- item `code`\n> quote\n\n```cs\npublic int X;\n```\n[link](u)\n";
+        const string text = "# Heading\n\n**bold** tail\n*it* tail\n~~gone~~\n- item `code`\n> quote\n\n```cs\npublic int X;\n```\n[link](u)\n<span style=\"color: #E53935;\">html text</span>\n";
         editor.Text = text;
         document.Refresh(); Layout();
         var presenter = editor.GetVisualDescendants().OfType<MarkdownTextPresenter>().Single();
@@ -191,7 +219,8 @@ internal static class SyntaxTests
         bool Colours() =>
             Fg(I("Heading")) == L("SyntaxH1") && Fg(0) == L("SyntaxMarker") && Fg(I("**bold")) == L("SyntaxMarker") && Fg(I("- item")) == L("SyntaxListMarker")
             && Fg(I("code`")) == L("SyntaxInlineCode") && (RunAt(I("code`"))?.BackgroundBrush as ISolidColorBrush)?.Color == L("SyntaxInlineCodeBackground")
-            && Fg(I("quote")) == L("SyntaxQuote") && Fg(I("public")) == L("SyntaxCodeKeyword") && Fg(I("link")) == L("SyntaxLink") && Fg(I("u)")) == L("SyntaxUrl");
+            && Fg(I("quote")) == L("SyntaxQuote") && Fg(I("public")) == L("SyntaxCodeKeyword") && Fg(I("link")) == L("SyntaxLink") && Fg(I("u)")) == L("SyntaxUrl")
+            && Fg(I("span")) == L("SyntaxCodeTag") && Fg(I("style")) == L("SyntaxCodeAttribute") && Fg(I("#E53935")) == L("SyntaxCodeString");
         Check(Colours(), "Dark: each construct reaches the rendered runs in its theme colour");
         Check(ThemeService.Lookup("SyntaxBold", AppTheme.Dark) == Color.Parse("#FFFFFF") && ThemeService.Lookup("SyntaxItalic", AppTheme.Dark) == Color.Parse("#E0E0E0")
             && ThemeService.Lookup("SyntaxStrike", AppTheme.Dark) == Color.Parse("#C8C8C8") && ThemeService.Lookup("SyntaxMarker", AppTheme.Dark) == Color.Parse("#6A6A6A"), "Item 44: Dark emphasis colours #FFFFFF/#E0E0E0/#C8C8C8, markers #6A6A6A");

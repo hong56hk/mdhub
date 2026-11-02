@@ -86,7 +86,7 @@ internal static class ExplorerClipboardKeyTests
             // Editor focus: Ctrl+C copies text and leaves the explorer clipboard alone.
             Click(P("note.md"));
             var before = Clip();
-            var box = view.FindControl<Mdhub.Components.TextEditor>("TextEditor")!.GetVisualDescendants().OfType<TextBox>().First(b => b.IsEffectivelyVisible && b.AcceptsReturn);
+            var box = view.GetVisualDescendants().OfType<Mdhub.Components.TextEditor>().Single(c => c.Name == "TextEditor").GetVisualDescendants().OfType<TextBox>().First(b => b.IsEffectivelyVisible && b.AcceptsReturn);
             box.Focus(); Pump();
             box.SelectionStart = 0; box.SelectionEnd = 4; Pump();
             Key(Avalonia.Input.Key.C, ctrl); WaitFor(() => ClipText() == "note");

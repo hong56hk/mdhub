@@ -11,7 +11,7 @@ public readonly record struct ShortcutGesture(string Key, ShortcutMods Mods, str
 {
     private static readonly Dictionary<string, string> KeyNames = new()
     {
-        ["OemPlus"] = "=", ["OemMinus"] = "-", ["OemPipe"] = "\\", ["Add"] = "Num +", ["Subtract"] = "Num -", ["NumPad0"] = "Num 0",
+        ["OemPeriod"] = ".", ["OemPlus"] = "=", ["OemMinus"] = "-", ["OemPipe"] = "\\", ["Add"] = "Num +", ["Subtract"] = "Num -", ["NumPad0"] = "Num 0",
         ["D0"] = "0", ["OemQuotes"] = "'", ["OemSemicolon"] = ";", ["Escape"] = "Esc", ["Delete"] = "Del", ["Left"] = "Left", ["Right"] = "Right", ["Up"] = "Up", ["Down"] = "Down"
     };
 
@@ -59,13 +59,15 @@ public static class Shortcuts
 
     public static readonly IReadOnlyList<Shortcut> All =
     [
-        Once(S("file.new", ShortcutArea.File, "New note", C("N"))),
+        Once(S("file.new", ShortcutArea.File, "New note", C("N"), C("T"))),
         Once(S("file.open", ShortcutArea.File, "Open file", C("O"))),
         Once(S("file.quickOpen", ShortcutArea.File, "Go to file", C("P"))),
         Once(S("file.openFolder", ShortcutArea.File, "Open folder", CS("O"), CS("N"))),
         Once(S("file.save", ShortcutArea.File, "Save", C("S"))),
         Once(S("file.saveAs", ShortcutArea.File, "Save as", CS("S"))),
+        Once(S("view.splitEditor", ShortcutArea.View, "Split editor right", C("OemPipe"), CS("OemPipe"))),
         Once(S("file.closeTab", ShortcutArea.File, "Close tab", C("W"))),
+        Once(S("file.reopenTab", ShortcutArea.File, "Reopen closed tab", CS("T"))),
         Once(S("explorer.rename", ShortcutArea.File, "Rename selected explorer item (explorer focused)", P("F2"))),
         S("sidebar.explorer", ShortcutArea.View, "Show explorer", CS("E")),
         S("file.revealInSidebar", ShortcutArea.View, "Reveal active file in side bar", C("E")),
@@ -76,11 +78,16 @@ public static class Shortcuts
         T("edit.cut", ShortcutArea.Edit, "Cut", C("X")),
         T("edit.copy", ShortcutArea.Edit, "Copy", C("C")),
         S("edit.paste", ShortcutArea.Edit, "Paste (text or image)", C("V")),
+        S("edit.pastePlain", ShortcutArea.Edit, "Paste as plain text", CS("V")),
         T("edit.selectAll", ShortcutArea.Edit, "Select all", C("A")),
         // Item 72: line edits, editor focus only. Edit area, so Ctrl+D never conflicts with the explorer-only Duplicate.
         S("edit.moveLineUp", ShortcutArea.Edit, "Move line up", new ShortcutGesture("Up", ShortcutMods.Alt)),
         S("edit.moveLineDown", ShortcutArea.Edit, "Move line down", new ShortcutGesture("Down", ShortcutMods.Alt)),
+        T("editor.addCaretAbove", ShortcutArea.Editor, "Add caret above", new ShortcutGesture("Up", ShortcutMods.Alt | ShortcutMods.Shift)),
+        T("editor.addCaretBelow", ShortcutArea.Editor, "Add caret below", new ShortcutGesture("Down", ShortcutMods.Alt | ShortcutMods.Shift)),
         S("edit.duplicateLine", ShortcutArea.Edit, "Duplicate line", C("D")),
+        S("edit.uppercase", ShortcutArea.Edit, "Convert selection to uppercase", C("U")),
+        S("edit.lowercase", ShortcutArea.Edit, "Convert selection to lowercase", CS("U")),
         // Item 53: after the Edit entries so a plain match of Ctrl+C/X/V still finds the editor entry first.
         E("explorer.cut", "Cut selected explorer item (explorer focused)", C("X")),
         E("explorer.copy", "Copy selected explorer item (explorer focused)", C("C")),
@@ -90,7 +97,8 @@ public static class Shortcuts
         // Item 80: after edit.selectAll so Ctrl+A in the editor still selects text.
         E("explorer.selectAll", "Select all visible explorer items (explorer focused)", C("A")),
         Once(S("view.wordWrap", ShortcutArea.View, "Toggle word wrap", new ShortcutGesture("Z", ShortcutMods.Alt))),
-        Once(S("view.togglePreview", ShortcutArea.View, "Toggle preview", C("OemPipe"), new ShortcutGesture("OemBackslash", ShortcutMods.Command, Hidden: true))),
+        Once(S("view.togglePreview", ShortcutArea.View, "Toggle preview", C("M"))),
+        Once(S("view.toggleEditor", ShortcutArea.View, "Toggle editor", new ShortcutGesture("M", ShortcutMods.Alt))),
         S("find.find", ShortcutArea.Find, "Find", C("F")),
         S("find.replace", ShortcutArea.Find, "Find and replace", C("H")),
         S("find.next", ShortcutArea.Find, "Next match", P("F3")),
@@ -102,12 +110,13 @@ public static class Shortcuts
         // Item 49: VS Code tab cycling (wraps at both ends); handled at window level so the editor never inserts a tab.
         S("view.nextTab", ShortcutArea.View, "Next tab", C("Tab")),
         S("view.previousTab", ShortcutArea.View, "Previous tab", CS("Tab")),
-        S("view.previewCaret", ShortcutArea.View, "Scroll preview to caret", CS("G")),
+        S("view.previewCaret", ShortcutArea.View, "Sync editor and preview at caret", CS("G")),
         S("editor.bold", ShortcutArea.Editor, "Bold (Markdown)", C("B")),
         S("editor.italic", ShortcutArea.Editor, "Italic (Markdown)", C("I")),
         S("editor.link", ShortcutArea.Editor, "Insert link (Markdown)", C("L")),
         // Ctrl+" is Shift+' on most layouts: accept both and show it as Ctrl+".
         S("editor.quote", ShortcutArea.Editor, "Block quote (Markdown)", new ShortcutGesture("OemQuotes", ShortcutMods.Command, "\""), new ShortcutGesture("OemQuotes", ShortcutMods.Command | ShortcutMods.Shift, Hidden: true)),
+        Once(S("editor.emoji", ShortcutArea.Editor, "Open emoji picker", C("OemPeriod"))),
         S("editor.insertTime", ShortcutArea.Editor, "Insert date and time", C("OemSemicolon")),
         Once(S("editor.goToLine", ShortcutArea.Editor, "Go to line", C("G"))),
         // Item 74: next misspelling (Markdown files, spell checking on).

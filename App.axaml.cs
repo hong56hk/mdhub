@@ -26,6 +26,7 @@ public partial class App : Application
             var saved = Services.SessionStore.Load(Services.SessionManager.SessionPath);
             Services.ThemeService.Apply(Services.ThemeService.Parse(saved?.Theme), persist: false);
             Services.RecentService.Load(saved);
+            Services.EmojiRecents.Import(saved?.RecentEmojis);
             Services.Shortcuts.Import(saved?.CustomShortcuts, Components.ShortcutKeys.IsKeyName);
             Services.PreviewSettings.Import(saved?.Preview);
             Services.EditorFonts.Import(saved?.EditorFonts);

@@ -36,7 +36,13 @@ internal static class FormatSelectionTests
             var doc = (NoteDocument)typeof(MainView).GetMethod("AddDocument", Flags)!.Invoke(v, [null, "", "sel.md", null])!;
             Settle();
             var ed = doc.Editor;
-            void Click(string tag) { buttons.Single(b => b.Tag as string == tag).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Settle(); }
+            void Click(string tag)
+            {
+                var button = buttons.Single(b => b.Tag as string == tag);
+                // A real toolbar click moves focus before Click is raised.
+                button.Focus(); Settle();
+                button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Settle();
+            }
             void Prep(string text, int s, int e) { ed.Text = text; ed.Focus(); ed.SelectionStart = s; ed.SelectionEnd = e; Settle(); }
             int At(string text, string marker) => text.IndexOf(marker, StringComparison.Ordinal);
 

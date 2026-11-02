@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Mdhub.Services;
@@ -21,6 +22,7 @@ public partial class FolderExplorer
     private Control? _dropTarget;
     private readonly DispatcherTimer _expandTimer = new() { Interval = TimeSpan.FromMilliseconds(650) };
     public event Action<ExplorerMoveRequest>? MoveRequested;
+    public event Action<ExplorerImportRequest>? ImportRequested;
 
     private void InitializeDragDrop()
     {
@@ -29,7 +31,8 @@ public partial class FolderExplorer
         FolderTree.AddHandler(PointerReleasedEvent, (_, _) => ClearPendingDrag(), RoutingStrategies.Tunnel, handledEventsToo: true);
         DragDrop.SetAllowDrop(FolderTree, true);
         DragDrop.SetAllowDrop(FolderNameButton, true);
-        foreach (var surface in new Control[] { FolderTree, FolderNameButton })
+        DragDrop.SetAllowDrop(FolderPanel, true);
+        foreach (var surface in new Control[] { FolderTree, FolderNameButton, FolderPanel })
         {
             surface.AddHandler(DragDrop.DragOverEvent, OnDragOver);
             surface.AddHandler(DragDrop.DragLeaveEvent, (_, _) => ClearDropTarget());
@@ -103,7 +106,8 @@ public partial class FolderExplorer
     private void OnDragOver(object? sender, DragEventArgs e)
     {
         var request = DropRequest(sender, e, out var highlight);
-        e.DragEffects = request is null ? DragDropEffects.None : DragDropEffects.Move;
+        var import = request is null ? ImportRequest(sender, e, out highlight) : null;
+        e.DragEffects = request is not null ? DragDropEffects.Move : import is not null ? DragDropEffects.Copy : DragDropEffects.None;
         e.Handled = true;
         if (_dropTarget == highlight) return;
         ClearDropTarget();
@@ -115,10 +119,30 @@ public partial class FolderExplorer
     private void OnFileDrop(object? sender, DragEventArgs e)
     {
         var request = DropRequest(sender, e, out _);
+        var import = request is null ? ImportRequest(sender, e, out _) : null;
         ClearDropTarget();
         e.Handled = true;
-        e.DragEffects = request is null ? DragDropEffects.None : DragDropEffects.Move;
+        e.DragEffects = request is not null ? DragDropEffects.Move : import is not null ? DragDropEffects.Copy : DragDropEffects.None;
         if (request is not null) MoveRequested?.Invoke(request);
+        else if (import is not null) ImportRequested?.Invoke(import);
+    }
+
+    private ExplorerImportRequest? ImportRequest(object? sender, DragEventArgs e, out Control? highlight)
+    {
+        highlight = null;
+        if (_busy || IsRenaming || _folder is null || !e.DragEffects.HasFlag(DragDropEffects.Copy)
+            || e.DataTransfer.TryGetValue(FileDragFormat) is not null) return null;
+        var files = e.DataTransfer.TryGetFiles();
+        if (files is null) return null;
+        var item = ReferenceEquals(sender, FolderNameButton) ? null : ItemAt(e.Source);
+        var directory = item?.Tag is FolderEntry entry ? (entry.IsDirectory ? entry.Path : Path.GetDirectoryName(entry.Path)!) : _folder;
+        var sources = files.Select(f => f.TryGetLocalPath()).OfType<string>()
+            .Where(p => ExplorerImport.Destination(_folder, p, directory) is not null)
+            .Distinct(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal).ToList();
+        if (sources.Count == 0) return null;
+        highlight = item?.Tag is FolderEntry { IsDirectory: true } ? item
+            : item?.GetVisualAncestors().OfType<TreeViewItem>().FirstOrDefault() as Control ?? FolderNameButton;
+        return new(sources, directory);
     }
 
     private void ClearPendingDrag() { _dragPress = null; _pendingDragPath = null; _pendingDragPaths = null; }

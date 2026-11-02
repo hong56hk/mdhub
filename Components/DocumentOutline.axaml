@@ -1,0 +1,16 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Mdhub.Components.DocumentOutline">
+  <Border Background="{DynamicResource AppBackground}">
+    <Grid RowDefinitions="Auto,*">
+      <Border BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="0,0,0,1" Padding="10,6">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="{DynamicResource DocumentOutline}" VerticalAlignment="Center" FontWeight="SemiBold" />
+          <Button Grid.Column="1" Classes="tool icon" Click="Close_Click" ToolTip.Tip="{DynamicResource CloseOutline}" AutomationProperties.Name="{DynamicResource CloseOutline}">
+            <Path Width="14" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}" Data="M 3,3 L 11,11 M 11,3 L 3,11" />
+          </Button>
+        </Grid>
+      </Border>
+      <TreeView x:Name="Headings" Grid.Row="1" Margin="4,6" SelectionChanged="Heading_Selected" AutomationProperties.Name="{DynamicResource DocumentOutline}" />
+      <TextBlock x:Name="EmptyMessage" Grid.Row="1" Margin="14" Text="{DynamicResource OutlineEmpty}" TextWrapping="Wrap" Opacity="0.65" />
+    </Grid>
+  </Border>
+</UserControl>

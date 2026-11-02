@@ -17,19 +17,24 @@ public sealed class MarkdownTextPresenter : TextPresenter
 {
     public static readonly StyledProperty<bool> HighlightMarkdownProperty = AvaloniaProperty.Register<MarkdownTextPresenter, bool>(nameof(HighlightMarkdown));
     public bool HighlightMarkdown { get => GetValue(HighlightMarkdownProperty); set => SetValue(HighlightMarkdownProperty, value); }
+    public static readonly StyledProperty<string?> SourceLanguageProperty = AvaloniaProperty.Register<MarkdownTextPresenter, string?>(nameof(SourceLanguage));
+    public string? SourceLanguage { get => GetValue(SourceLanguageProperty); set => SetValue(SourceLanguageProperty, value); }
+    public static readonly StyledProperty<bool> StyleInlineCodeProperty = AvaloniaProperty.Register<MarkdownTextPresenter, bool>(nameof(StyleInlineCode), true);
+    public bool StyleInlineCode { get => GetValue(StyleInlineCodeProperty); set => SetValue(StyleInlineCodeProperty, value); }
 
     /// <summary>The shared theme brush for a syntax colour (null for the editor's own foreground).</summary>
     public static IBrush? BrushFor(SyntaxColor color) => color == SyntaxColor.Default ? null : Mdhub.Services.ThemeService.Brush("Syntax" + color);
     public static IBrush InlineCodeBackground => Mdhub.Services.ThemeService.Brush("SyntaxInlineCodeBackground");
 
     private readonly MarkdownHighlighter _highlighter = new();
+    private readonly CodeHighlighter.Tokenizer _sourceHighlighter = new();
     private readonly Dictionary<(SyntaxColor, SyntaxFont, bool), GenericTextRunProperties> _properties = [];
     private (FontFamily, double, FontFeatureCollection?) _propertiesKey;
     private string? _cachedText;
     private SyntaxResult _syntax = new([], []);
 
     /// <summary>The current tokens and block decorations (empty when highlighting is off).</summary>
-    public SyntaxResult Syntax => HighlightMarkdown ? _syntax : new([], []);
+    public SyntaxResult Syntax => HighlightMarkdown || SourceLanguage is not null ? _syntax : new([], []);
     public event EventHandler? SyntaxChanged;
 
     // Item 57: code spans and fenced code use the editor gear's code font (only when it differs from the body font).
@@ -70,8 +75,9 @@ public sealed class MarkdownTextPresenter : TextPresenter
     {
         if (!Mdhub.Services.EditorFonts.SeparateCodeFont) return styles.ToArray();
         var code = new List<(int Start, int End)>();
+        if (SourceLanguage is not null) code.Add((0, length));
         foreach (var block in _syntax.Blocks) if (block.Kind == SyntaxBlockKind.Code) code.Add((block.Start, Math.Min(block.End, length)));
-        foreach (var span in _syntax.Spans) if (span.CodeBackground) code.Add((span.Start, Math.Min(span.End, length)));
+        foreach (var span in _syntax.Spans) if (span.CodeBackground && StyleInlineCode) code.Add((span.Start, Math.Min(span.End, length)));
         if (code.Count == 0) return styles.ToArray();
         code.Sort((a, b) => a.Start.CompareTo(b.Start));
         var cuts = new SortedSet<int>();
@@ -99,7 +105,8 @@ public sealed class MarkdownTextPresenter : TextPresenter
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == HighlightMarkdownProperty) { InvalidateTextLayout(); SyntaxChanged?.Invoke(this, EventArgs.Empty); }
+        if (change.Property == HighlightMarkdownProperty || change.Property == SourceLanguageProperty || change.Property == StyleInlineCodeProperty)
+        { _cachedText = null; InvalidateTextLayout(); SyntaxChanged?.Invoke(this, EventArgs.Empty); }
     }
 
     private GenericTextRunProperties Props(SyntaxColor color, SyntaxFont font, bool codeBackground)
@@ -123,8 +130,8 @@ public sealed class MarkdownTextPresenter : TextPresenter
         if (!string.IsNullOrEmpty(PreeditText)) return original;
         var text = Text ?? "";
         var tabbed = text.Contains('\t');
-        if (!HighlightMarkdown) return tabbed ? Tabbed(original, text, null) : original;
-        if (_cachedText != text) { _cachedText = text; _syntax = _highlighter.Run(text); SyntaxChanged?.Invoke(this, EventArgs.Empty); }
+        if (!HighlightMarkdown && SourceLanguage is null) return tabbed ? Tabbed(original, text, null) : original;
+        if (_cachedText != text) { _cachedText = text; _syntax = HighlightMarkdown ? _highlighter.Run(text) : _sourceHighlighter.Run(text, SourceLanguage); SyntaxChanged?.Invoke(this, EventArgs.Empty); }
         if (_syntax.Spans.Count == 0 && (_syntax.Blocks.Count == 0 || !Mdhub.Services.EditorFonts.SeparateCodeFont)) return tabbed ? Tabbed(original, text, null) : original;
         var typeface = new Typeface(FontFamily, FontStyle, FontWeight, FontStretch);
         var styles = new List<ValueSpan<TextRunProperties>>(_syntax.Spans.Count + 2);
@@ -138,7 +145,10 @@ public sealed class MarkdownTextPresenter : TextPresenter
         {
             if (span.Length <= 0 || span.Start >= text.Length) continue;
             var start = span.Start; var end = Math.Min(span.End, text.Length);
-            var props = Props(span.Color, span.Font, span.CodeBackground);
+            var color = span.Color;
+            if (!Mdhub.Services.EditorBehavior.Current.CodeSyntaxHighlighting && (color is >= SyntaxColor.CodeText and <= SyntaxColor.CodeAttribute || color == SyntaxColor.InlineCode)) color = SyntaxColor.Default;
+            if (!StyleInlineCode && span.CodeBackground) color = SyntaxColor.Default;
+            var props = Props(color, span.Font, span.CodeBackground && StyleInlineCode);
             // The selection colour takes precedence: cut syntax spans around it.
             if (selection is not null && start < selEnd && end > selStart)
             {

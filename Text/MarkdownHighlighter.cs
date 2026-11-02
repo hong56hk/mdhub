@@ -34,7 +34,7 @@ public sealed record SyntaxResult(IReadOnlyList<SyntaxSpan> Spans, IReadOnlyList
 public sealed class MarkdownHighlighter
 {
     // Block state carried from one line to the next.
-    internal readonly record struct LineState(byte Mode, string? Lang, char FenceChar, int FenceLength, bool CodeComment, bool InTable, int Index0)
+    internal readonly record struct LineState(byte Mode, string? Lang, char FenceChar, int FenceLength, CodeHighlighter.State CodeComment, bool InTable, int Index0)
     {
         public const byte Normal = 0, Fence = 1, FrontMatter = 2;
     }
@@ -51,7 +51,7 @@ public sealed class MarkdownHighlighter
         if (_cache.Count > 50_000) _cache.Clear();
         var spans = new List<SyntaxSpan>();
         var blocks = new List<SyntaxBlock>();
-        var state = new LineState(LineState.Normal, null, '\0', 0, false, false, 1);
+        var state = new LineState(LineState.Normal, null, '\0', 0, default, false, 1);
         var lineStart = 0;
         var first = true;
         while (lineStart <= text.Length)
@@ -121,7 +121,7 @@ public sealed class MarkdownHighlighter
             if (indent <= 3 && run >= state.FenceLength && t[run..].Trim().Length == 0)
             {
                 if (line.Length > 0) o.Add(new(0, line.Length, SyntaxColor.Marker));
-                return new(o.ToArray(), new LineState(LineState.Normal, null, '\0', 0, false, false, 0), SyntaxBlockKind.Code);
+                return new(o.ToArray(), new LineState(LineState.Normal, null, '\0', 0, default, false, 0), SyntaxBlockKind.Code);
             }
             var inComment = CodeHighlighter.Line(line, state.Lang, state.CodeComment, o);
             return new(o.ToArray(), next with { CodeComment = inComment }, SyntaxBlockKind.Code);
@@ -137,7 +137,7 @@ public sealed class MarkdownHighlighter
         {
             o.Add(new(0, line.Length, SyntaxColor.Marker));
             var lang = fence.Groups[2].Value;
-            return new(o.ToArray(), new LineState(LineState.Fence, lang.Length > 0 ? lang.ToLowerInvariant() : null, fence.Groups[1].Value[0], fence.Groups[1].Length, false, false, 0), SyntaxBlockKind.Code);
+            return new(o.ToArray(), new LineState(LineState.Fence, lang.Length > 0 ? lang.ToLowerInvariant() : null, fence.Groups[1].Value[0], fence.Groups[1].Length, default, false, 0), SyntaxBlockKind.Code);
         }
         if (Heading.Match(line) is { Success: true } h)
         {
@@ -234,6 +234,10 @@ public sealed class MarkdownHighlighter
 
     // ---------------------------------------------------------------- inline level
 
+    // Match a whole tag so Markdown punctuation in quoted attributes is not parsed as emphasis/code.
+    // Requiring a tag-name boundary keeps angle-bracket URLs, email addresses and comparisons out.
+    private static readonly Regex Html = new(@"\G(?:<!--.*?-->|</?[A-Za-z][A-Za-z0-9:-]*(?=[\s/>])(?:[^<>""']|""[^""]*""|'[^']*')*>)", RegexOptions.Compiled);
+
     /// <summary>Tokenizes line[from..to) with a base colour and font; emits spans for every char that is not plain default.</summary>
     // Item 44: emphasis gets its own colour unless an enclosing heading/link/checked colour is in force.
     // Nested emphasis: strike wins over bold, bold over italic.
@@ -291,6 +295,15 @@ public sealed class MarkdownHighlighter
                 o.Add(new(i + 1, autoEnd - i - 1, C(SyntaxColor.Link), font));
                 o.Add(new(autoEnd, 1, C(SyntaxColor.Marker), font));
                 i = plainStart = autoEnd + 1; continue;
+            }
+            if (c == '<' && Html.Match(s, i, to - i) is { Success: true } html)
+            {
+                Flush(i);
+                var tokens = new List<SyntaxSpan>();
+                CodeHighlighter.Line(html.Value, "html", default(CodeHighlighter.State), tokens);
+                foreach (var token in tokens)
+                    o.Add(token with { Start = token.Start + i, Color = C(token.Color == SyntaxColor.CodeText ? color : token.Color), Font = font });
+                i = plainStart = i + html.Length; continue;
             }
             if (c == '~' && i + 1 < to && s[i + 1] == '~')
             {

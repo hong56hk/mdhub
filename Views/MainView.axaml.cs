@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 using Mdhub.Components;
 using Mdhub.Models;
 using Mdhub.Services;
@@ -14,11 +15,12 @@ namespace Mdhub.Views;
 // Composes the workspace and coordinates actions across components. No component knows this view.
 public partial class MainView : UserControl
 {
-    private readonly ObservableCollection<NoteDocument> _documents = [];
+    private ObservableCollection<NoteDocument> _documents = [];
     private NoteDocument? _active;
     private bool _busy, _allowClose, _wrap;
     private int _untitled;
-    private GridLength _folderWidth = new(240), _previewWidth = new(1, GridUnitType.Star);
+    private bool _syncFromPreview;
+    private GridLength _folderWidth = new(240);
     private Window Host => TopLevel.GetTopLevel(this) as Window ?? throw new InvalidOperationException("The main view must be hosted in a window.");
     public event Action<string>? TitleChanged;
     public event Action? CloseRequested;
@@ -27,21 +29,18 @@ public partial class MainView : UserControl
 
     private void ApplyEditorFonts()
     {
-        foreach (var document in _documents) document.Editor.FontFamily = Services.EditorFonts.BodyFamily;
+        foreach (var document in AllDocuments) document.Editor.FontFamily = Services.EditorFonts.BodyFamily;
     }
     public MainView()
     {
         InitializeComponent();
-        MdEditor.ContextMenu = CreateEditorMenu(null); // item 41: Reveal in Side Bar from the preview
-        FileTabs.SetDocuments(_documents);
+        InitializePanes();
         // Code-set status texts follow a language switch (XAML texts use DynamicResource).
         AttachedToVisualTree += (_, _) => Loc.Changed += OnLanguageChanged;
         DetachedFromVisualTree += (_, _) => Loc.Changed -= OnLanguageChanged;
         WireQuickOpen();
-        FileTabs.DocumentSelected += SelectDocument;
-        FileTabs.NewRequested += () => RequestAction(WorkspaceAction.New);
-        FileTabs.CloseRequested += async document => await RunAsync(() => CloseDocumentAsync(document));
-        FileTabs.TabMenu = CreateTabMenu(); // item 75
+        Outline.CloseRequested += ToggleOutline;
+        Outline.HeadingRequested += NavigateOutline;
         TopMenu.ActionRequested += RequestAction;
         TopMenu.WindowActionRequested += action => WindowActionRequested?.Invoke(action);
         TopMenu.EditRequested += Edit;
@@ -54,14 +53,17 @@ public partial class MainView : UserControl
         FolderExplorer.FileRequested += async path => await RunAsync(() => OpenPathAsync(path), focusEditor: false);
         FolderExplorer.FileActivated += async path => { _focusEditorAfterBusy = true; await RunAsync(() => OpenPathAsync(path)); };
         FolderExplorer.RefreshRequested += () => RequestAction(WorkspaceAction.RefreshFolder);
-        WireBinaryPlaceholder();
+        FolderExplorer.OpenToSideRequested += async path => { if (!_busy) await RunAsync(() => OpenToSideAsync(path)); };
+        FolderExplorer.DefaultAppRequested += async path => await OpenWithDefaultAppAsync(path);
         WireEncodingMenu();
+        TextFormatter.EmojiRequested += ShowEmojiPicker;
         WireLineEndingMenu(); // item 68
         FolderExplorer.ExplorerRequested += async request => { if (!_busy) await RunAsync(() => HandleExplorerRequestAsync(request)); };
         FolderExplorer.MoveRequested += async request => await RunAsync(() => MoveExplorerFileAsync(request));
+        FolderExplorer.ImportRequested += async request => await RunAsync(() => ImportExplorerFilesAsync(request), focusEditor: false);
         FolderExplorer.FilesActivated += async paths => await RunAsync(() => OpenManyAsync(paths));
         FolderExplorer.RenameRequested = RenameExplorerItemAsync;
-        GlobalSearch.OpenBuffers = () => _documents.Where(d => d.Path is not null && !d.IsViewOnly)
+        GlobalSearch.OpenBuffers = () => UniqueDocuments.Where(d => d.Path is not null && !d.IsViewOnly)
             .ToDictionary(d => d.Path!, d => d.Text, OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
         GlobalSearch.HitRequested += async (file, hit) => await RunAsync(() => OpenSearchHitAsync(file, hit));
         GlobalSearch.ReplaceRequested = ReplaceSearchResultsAsync;
@@ -73,23 +75,29 @@ public partial class MainView : UserControl
         FolderExplorer.OpenFolderRequested += () => RequestAction(WorkspaceAction.OpenFolder);
         FolderExplorer.CreateRequested += async isFolder => await RunAsync(() => CreateExplorerItemAsync(isFolder));
         FolderExplorer.MessageChanged += BottomStatusBar.SetMessage;
-        MdEditor.StatisticsChanged += BottomStatusBar.UpdateStatistics;
-        MdEditor.MessageChanged += BottomStatusBar.SetMessage;
-        TextEditor.SpellCountChanged += BottomStatusBar.SetSpellCount; // item 74
-        ImageViewer.ZoomChanged += percent => { if (ImageViewer.IsVisible) BottomStatusBar.SetImageZoom(percent); };
         AddHandler(KeyDownEvent, OnShortcut, RoutingStrategies.Tunnel);
         // Focus moving into or out of the preview shows or hides the caret position.
         AddHandler(GotFocusEvent, (_, _) => UpdateCaretStatus(), RoutingStrategies.Bubble, handledEventsToo: true);
+        AddHandler(GotFocusEvent, (_, e) =>
+        {
+            if (e.Source is Visual visual && (visual == MdEditor || visual.GetVisualAncestors().Contains(MdEditor))) _syncFromPreview = true;
+            else if (e.Source == _active?.Editor) _syncFromPreview = false;
+        }, RoutingStrategies.Bubble, handledEventsToo: true);
         AddHandler(LostFocusEvent, (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateCaretStatus), RoutingStrategies.Bubble, handledEventsToo: true);
         AddDocument(null, "", "Untitled.md");
     }
 
-    public void FocusEditor() => TextEditor.FocusEditor();
+    public void FocusEditor()
+    {
+        if (MdEditor.IsVisible && !TextEditor.IsVisible) MdEditor.FocusPreview();
+        else TextEditor.FocusEditor();
+    }
     public void StopPreview()
     {
-        MdEditor.Stop();
-        ImageViewer.ShowImage(null);
-        foreach (var document in _documents) document.Image?.Dispose();
+        foreach (var pane in _panes) { pane.MdEditor.Stop(); pane.ImageViewer.ShowImage(null); }
+        _outlineTimer?.Stop();
+        foreach (var document in UniqueDocuments) document.Image?.Dispose();
+        foreach (var document in AllDocuments) document.Dispose();
     }
     public void UpdateWindowState(WindowState state) => TopMenu.UpdateWindowState(state);
 
@@ -100,12 +108,14 @@ public partial class MainView : UserControl
     {
         _sessionNote = null;
         _active = document;
+        _activePane.Active = document;
+        _syncFromPreview = false;
         FolderExplorer.MarkActive(document.Path);
         TextEditor.ShowDocument(document);
-        MdEditor.ShowDocument(document.IsMarkdown ? document : null);
+        MdEditor.ShowDocument(document.HasPreview ? document : null);
         UpdateContentLayout();
         UpdateStatus();
-        TextEditor.FocusEditor();
+        FocusEditor();
         document.RestoreSelection();
         Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (_active == document) document.RestoreSelection(); });
     }
@@ -137,8 +147,9 @@ public partial class MainView : UserControl
         _active.Refresh();
         TitleChanged?.Invoke(DocumentTitle);
         BottomStatusBar.UpdateDocument(_active, message ?? TransientStatus ?? _sessionNote);
+        TextFormatter.UpdateEmoji(_active);
         if (!_active.IsMarkdown && !_active.IsViewOnly) BottomStatusBar.UpdateStatistics(Mdhub.Text.TextStatistics.Count(_active.Text));
-        TextFormatter.SetFormattingEnabled(_active.IsMarkdown && !_busy);
+        TextFormatter.SetFormattingEnabled(_active.HasPreview && !_busy, _active.IsMarkdown);
         UpdateCaretStatus();
     }
 
@@ -166,7 +177,7 @@ public partial class MainView : UserControl
         finally
         {
             SetBusy(false);
-            if (focusEditor || _focusEditorAfterBusy) { _focusEditorAfterBusy = false; TextEditor.FocusEditor(); }
+            if (focusEditor || _focusEditorAfterBusy) { _focusEditorAfterBusy = false; FocusEditor(); }
             else if (explorerFocused && !FolderExplorer.IsKeyboardFocusWithin) FolderExplorer.FocusTree();
         }
     }
@@ -174,21 +185,23 @@ public partial class MainView : UserControl
     private void SetBusy(bool busy)
     {
         _busy = busy;
-        FileTabs.SetBusy(busy);
+        foreach (var pane in _panes) pane.FileTabs.SetBusy(busy);
         TopMenu.IsEnabled = !busy;
         FolderExplorer.SetBusy(busy);
-        TextFormatter.SetFormattingEnabled(!busy && _active?.IsMarkdown == true);
-        foreach (var document in _documents) document.Editor.IsReadOnly = busy || document.IsViewOnly || document.IsReadOnlyText;
+        TextFormatter.SetFormattingEnabled(!busy && _active?.HasPreview == true, _active?.IsMarkdown == true);
+        TextFormatter.SetSyncEnabled(!busy && _active?.HasPreview == true && _viewMode == ViewMode.Split);
+        foreach (var document in AllDocuments) document.Editor.IsReadOnly = busy || document.IsViewOnly || document.IsReadOnlyText;
+        if (_active is not null) TextFormatter.UpdateEmoji(_active);
     }
     // Saved file tabs only: untitled buffers and unsaved text are never written to the session.
     public WindowSession CaptureSession()
     {
-        var saved = _documents.Where(d => d.Path is not null).ToList();
+        var saved = UniqueDocuments.Where(d => d.Path is not null).ToList();
         return new WindowSession
         {
             Folder = FolderExplorer.OpenedFolder,
             Tabs = saved.Select(d => d.Path!).ToList(),
-            ActiveTab = _active is null ? -1 : saved.IndexOf(_active)
+            ActiveTab = _active is null ? -1 : saved.FindIndex(d => d.Buffer == _active.Buffer)
         };
     }
 
@@ -228,14 +241,15 @@ public partial class MainView : UserControl
     {
         if (_allowClose) return;
         if (_busy) { e.Cancel = true; return; }
-        if (!_documents.Any(d => d.IsDirty)) { MdEditor.Stop(); return; }
+        if (!AllDocuments.Any(d => d.IsDirty)) { MdEditor.Stop(); return; }
         e.Cancel = true;
         await RunAsync(async () =>
         {
-            foreach (var document in _documents.ToArray())
+            foreach (var document in UniqueDocuments.ToArray())
                 if (!await ConfirmCloseAsync(document)) return;
             _allowClose = true;
             MdEditor.Stop();
+        _outlineTimer?.Stop();
             CloseRequested?.Invoke();
         });
     }
