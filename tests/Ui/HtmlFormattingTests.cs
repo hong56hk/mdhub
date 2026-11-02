@@ -103,6 +103,42 @@ internal static class HtmlFormattingTests
             NoteDocument Open(string text, string name) => (NoteDocument)typeof(MainView).GetMethod("AddDocument", flags)!.Invoke(view, [null, text, name, null])!;
             var doc = Open("<p>hello</p>", "html.md"); Pump();
             Check(htmlBar.IsVisible, "HTML toolbar is visible by default");
+            foreach (var (action, expected) in new[]
+            {
+                ("html-underline", "before <u>Hello</u> after"),
+                ("html-sup", "before <sup>Hello</sup> after"),
+                ("html-sub", "before <sub>Hello</sub> after"),
+                ("html-align-left", "before \n\n<div style=\"text-align: left;\">\nHello\n</div>\n\n after"),
+                ("html-align-center", "before \n\n<div style=\"text-align: center;\">\nHello\n</div>\n\n after"),
+                ("html-align-right", "before \n\n<div style=\"text-align: right;\">\nHello\n</div>\n\n after")
+            })
+            {
+                doc.Editor.Text = "before Hello after"; doc.Editor.Focus();
+                doc.Editor.SelectionStart = 7; doc.Editor.SelectionEnd = 12;
+                var button = htmlBar.Children.OfType<Button>().Single(b => b.Tag as string == action);
+                button.Focus(); Pump();
+                button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Check(doc.Text == expected, action + " applies to the selection after toolbar focus");
+                doc.Editor.Undo();
+                Check(doc.Text == "before Hello after", action + " is one undo step");
+            }
+            doc.Editor.Text = "before Hello after"; doc.Editor.Focus();
+            doc.Editor.SelectionStart = 12; doc.Editor.SelectionEnd = 7;
+            var colorButton = htmlBar.Children.OfType<Button>().Single(b =>
+                b.Content is Grid grid && grid.Children.Any(c => c.Name == "HtmlTextColorIcon"));
+            colorButton.Focus();
+            var colorFlyout = (Flyout)colorButton.Flyout!;
+            colorFlyout.ShowAt(colorButton); Pump();
+            var colorPanel = (StackPanel)colorFlyout.Content!;
+            var colorInput = colorPanel.Children.OfType<TextBox>().Single();
+            colorInput.Focus(); colorInput.Text = "#1565c0";
+            var applyColor = colorPanel.Children.OfType<Button>().Single();
+            applyColor.Focus();
+            applyColor.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+            Check(doc.Text == "before <span style=\"color: #1565C0;\">Hello</span> after", "Color flyout preserves a reversed editor selection while editing the color");
+            doc.Editor.Undo();
+            Check(doc.Text == "before Hello after", "Color selection formatting is one undo step");
+            doc.Editor.Text = "<p>hello</p>"; doc.Editor.Focus();
             doc.Editor.SelectionStart = 3; doc.Editor.SelectionEnd = 8;
             editor.Format("bold");
             Check(doc.Text == "<p><strong>hello</strong></p>", "Bold toolbar uses HTML in an HTML block");
