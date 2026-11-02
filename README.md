@@ -25,7 +25,7 @@ MDHub is a desktop app for keeping personal notes and journals locally. It has n
 
 ## Download
 
-MDHub 1.0.0 is available from [GitHub Releases](https://github.com/hong56hk/mdhub/releases).
+MDHub 1.1.0 is available from [GitHub Releases](https://github.com/hong56hk/mdhub/releases).
 
 ## Build from source
 
