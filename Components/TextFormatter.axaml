@@ -66,9 +66,9 @@
           </Button>
           <Button Content="❝" Tag="quote" Classes="tool" Click="Format_Click" ToolTip.Tip="{DynamicResource BlockQuote}" />
           <Button x:Name="LinkButton" Tag="link" Classes="tool icon" Click="Format_Click" AutomationProperties.Name="{DynamicResource InsertLink}">
-            <!-- Item 50: two interlocking chain links, drawn horizontally. -->
-            <Path x:Name="LinkIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
-                  Data="M 7.8,9.5 H 3.5 A 2.5,2.5 0 0 1 3.5,4.5 H 7.5 A 2.5,2.5 0 0 1 9.6,8.4 M 8.2,4.5 H 12.5 A 2.5,2.5 0 0 1 12.5,9.5 H 8.5 A 2.5,2.5 0 0 1 6.4,5.6" />
+            <!-- SVG path geometry: two open rounded ends joined by a horizontal bar. -->
+            <Path x:Name="LinkIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.1" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
+                  Data="M 6.5,4.5 H 4 A 2.5,2.5 0 0 0 4,9.5 H 6.5 M 9.5,4.5 H 12 A 2.5,2.5 0 0 1 12,9.5 H 9.5 M 5.5,7 H 10.5" />
           </Button>
           <Button Tag="table" Classes="tool icon" Click="Format_Click" ToolTip.Tip="{DynamicResource InsertTable}" AutomationProperties.Name="{DynamicResource InsertTable}">
             <!-- Item 50: a rounded table with a (lightly filled) header row. Bug 65: a 3x3 grid. -->
