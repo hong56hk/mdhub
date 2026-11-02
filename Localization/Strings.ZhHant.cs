@@ -440,6 +440,8 @@ public static partial class Loc
         ["Sc.editor.docStart"] = "移至文件開頭",
         ["Sc.editor.docEnd"] = "移至文件結尾",
         ["Sc.editor.toggleOverwrite"] = "\u5207\u63DB\u63D2\u5165/\u8986\u5BEB",
+        ["Sc.editor.addCaretAbove"] = "在上一行新增游標",
+        ["Sc.editor.addCaretBelow"] = "在下一行新增游標",
         ["ModeInsert"] = "\u63D2\u5165",
         ["ModeOverwrite"] = "\u8986\u5BEB",
         ["ModeToggleTip"] = "\u63D2\u5165\u6216\u8986\u5BEB\u8F38\u5165 ({0})",

@@ -443,6 +443,8 @@ public static partial class Loc
         ["Sc.editor.docStart"] = "Zum Dokumentanfang",
         ["Sc.editor.docEnd"] = "Zum Dokumentende",
         ["Sc.editor.toggleOverwrite"] = "Einf\u00FCgen/\u00DCberschreiben umschalten",
+        ["Sc.editor.addCaretAbove"] = "Cursor oberhalb hinzufügen",
+        ["Sc.editor.addCaretBelow"] = "Cursor unterhalb hinzufügen",
         ["ModeInsert"] = "EINFG",
         ["ModeOverwrite"] = "\u00DCB",
         ["ModeToggleTip"] = "Einf\u00FCgen oder \u00FCberschreiben ({0})",

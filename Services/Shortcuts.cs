@@ -81,6 +81,8 @@ public static class Shortcuts
         // Item 72: line edits, editor focus only. Edit area, so Ctrl+D never conflicts with the explorer-only Duplicate.
         S("edit.moveLineUp", ShortcutArea.Edit, "Move line up", new ShortcutGesture("Up", ShortcutMods.Alt)),
         S("edit.moveLineDown", ShortcutArea.Edit, "Move line down", new ShortcutGesture("Down", ShortcutMods.Alt)),
+        T("editor.addCaretAbove", ShortcutArea.Editor, "Add caret above", new ShortcutGesture("Up", ShortcutMods.Alt | ShortcutMods.Shift)),
+        T("editor.addCaretBelow", ShortcutArea.Editor, "Add caret below", new ShortcutGesture("Down", ShortcutMods.Alt | ShortcutMods.Shift)),
         S("edit.duplicateLine", ShortcutArea.Edit, "Duplicate line", C("D")),
         S("edit.uppercase", ShortcutArea.Edit, "Convert selection to uppercase", C("U")),
         S("edit.lowercase", ShortcutArea.Edit, "Convert selection to lowercase", CS("U")),

@@ -443,6 +443,8 @@ public static partial class Loc
         ["Sc.editor.docStart"] = "Aller au début du document",
         ["Sc.editor.docEnd"] = "Aller à la fin du document",
         ["Sc.editor.toggleOverwrite"] = "Basculer insertion/remplacement",
+        ["Sc.editor.addCaretAbove"] = "Ajouter un curseur au-dessus",
+        ["Sc.editor.addCaretBelow"] = "Ajouter un curseur en dessous",
         ["ModeInsert"] = "INS",
         ["ModeOverwrite"] = "RFP",
         ["ModeToggleTip"] = "Saisie en insertion ou en remplacement ({0})",

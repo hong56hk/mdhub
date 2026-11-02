@@ -440,6 +440,8 @@ public static partial class Loc
         ["Sc.editor.docStart"] = "文書の先頭へ移動",
         ["Sc.editor.docEnd"] = "文書の末尾へ移動",
         ["Sc.editor.toggleOverwrite"] = "\u633F\u5165/\u4E0A\u66F8\u304D\u306E\u5207\u308A\u66FF\u3048",
+        ["Sc.editor.addCaretAbove"] = "上の行にカーソルを追加",
+        ["Sc.editor.addCaretBelow"] = "下の行にカーソルを追加",
         ["ModeInsert"] = "\u633F\u5165",
         ["ModeOverwrite"] = "\u4E0A\u66F8",
         ["ModeToggleTip"] = "\u633F\u5165\u307E\u305F\u306F\u4E0A\u66F8\u304D\u5165\u529B ({0})",

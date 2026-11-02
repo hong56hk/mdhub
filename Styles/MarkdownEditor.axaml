@@ -39,6 +39,8 @@
               </ControlTemplate>
             </ScrollViewer.Template>
             <c:ScrollPastEnd>
+              <Panel>
+                <c:MultiCaretOverlay IsHitTestVisible="False" />
               <c:MarkdownTextPresenter Name="PART_TextPresenter"
                 HighlightMarkdown="{TemplateBinding HighlightMarkdown}"
                 SourceLanguage="{TemplateBinding SourceLanguage}"
@@ -51,6 +53,7 @@
                 TextAlignment="{TemplateBinding TextAlignment}" LineHeight="{TemplateBinding LineHeight}"
                 LetterSpacing="{TemplateBinding LetterSpacing}"
                 HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+              </Panel>
             </c:ScrollPastEnd>
           </ScrollViewer>
         </Border>

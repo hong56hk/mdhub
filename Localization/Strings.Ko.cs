@@ -440,6 +440,8 @@ public static partial class Loc
         ["Sc.editor.docStart"] = "문서 처음으로 이동",
         ["Sc.editor.docEnd"] = "문서 끝으로 이동",
         ["Sc.editor.toggleOverwrite"] = "\uC0BD\uC785/\uACB9\uCCD0\uC4F0\uAE30 \uC804\uD658",
+        ["Sc.editor.addCaretAbove"] = "위쪽 줄에 커서 추가",
+        ["Sc.editor.addCaretBelow"] = "아래쪽 줄에 커서 추가",
         ["ModeInsert"] = "\uC0BD\uC785",
         ["ModeOverwrite"] = "\uACB9\uCE68",
         ["ModeToggleTip"] = "\uC0BD\uC785 \uB610\uB294 \uACB9\uCCD0\uC4F0\uAE30 \uC785\uB825 ({0})",

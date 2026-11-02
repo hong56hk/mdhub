@@ -440,6 +440,8 @@ public static partial class Loc
         ["Sc.editor.docStart"] = "Go to start of document",
         ["Sc.editor.docEnd"] = "Go to end of document",
         ["Sc.editor.toggleOverwrite"] = "Toggle insert/overwrite",
+        ["Sc.editor.addCaretAbove"] = "Add caret above",
+        ["Sc.editor.addCaretBelow"] = "Add caret below",
         ["ModeInsert"] = "INS",
         ["ModeOverwrite"] = "OVR",
         ["ModeToggleTip"] = "Insert or overwrite typing ({0})",

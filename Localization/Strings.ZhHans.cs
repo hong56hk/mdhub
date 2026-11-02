@@ -443,6 +443,8 @@ public static partial class Loc
         ["Sc.editor.docStart"] = "移至文档开头",
         ["Sc.editor.docEnd"] = "移至文档结尾",
         ["Sc.editor.toggleOverwrite"] = "\u5207\u6362\u63D2\u5165/\u6539\u5199",
+        ["Sc.editor.addCaretAbove"] = "在上一行添加光标",
+        ["Sc.editor.addCaretBelow"] = "在下一行添加光标",
         ["ModeInsert"] = "\u63D2\u5165",
         ["ModeOverwrite"] = "\u6539\u5199",
         ["ModeToggleTip"] = "\u63D2\u5165\u6216\u6539\u5199\u8F93\u5165 ({0})",

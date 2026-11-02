@@ -9,6 +9,7 @@ using Mdhub;
 using Mdhub.Models;
 using Mdhub.Views;
 using Mdhub.Components;
+if (args.Contains("--multicaret-only")) { MultiCaretTests.Run(); return; }
 if (args.Contains("--tabreorder-only")) { TabReorderTests.Run(); return; }
 if (args.Contains("--code-syntax-only")) { CodeSyntaxTests.Run(); return; }
 if (args.Contains("--minimap-only")) { MinimapTests.Run(); return; }

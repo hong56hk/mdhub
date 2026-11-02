@@ -248,7 +248,7 @@ public partial class MainView
             if (undoId == "edit.undo") undoDoc.Editor.Undo(); else undoDoc.Editor.Redo();
             return;
         }
-        // Item 72: Alt+Up/Down and Ctrl+D act on the focused editor only; elsewhere (the explorer) Ctrl+D falls through to Duplicate.
+        // Alt+Up/Down and Ctrl+D act on the focused editor only; elsewhere Ctrl+D falls through to Duplicate.
         if (!_busy && EditorFocused && _active is { IsViewOnly: false } && !_active.Editor.IsReadOnly && ShortcutKeys.Match(e, s => s.Id is "edit.moveLineUp" or "edit.moveLineDown" or "edit.duplicateLine") is { } lineId)
         {
             e.Handled = true;
