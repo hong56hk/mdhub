@@ -106,6 +106,7 @@
           </Button>
           </StackPanel>
         </Border>
+        <Border Width="1" Height="20" Margin="8,0" VerticalAlignment="Center" Background="{DynamicResource TextSecondary}" />
         <!-- Export icons use folded pages; HTML adds code brackets. Both bind the ContentPresenter foreground so they dim when disabled. -->
         <Button x:Name="ExportHtmlButton" Classes="tool export" Click="ExportHtml_Click" ToolTip.Tip="{DynamicResource ExportHtmlTip}" AutomationProperties.Name="{DynamicResource ExportHtmlTip}">
           <Path x:Name="ExportHtmlIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
@@ -115,6 +116,7 @@
           <Path x:Name="ExportPdfIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
                 Data="M 3.5,1 H 9.5 L 13,4.5 V 13 H 3.5 Z M 9.5,1 V 4.5 H 13 M 6,8 H 10.5 M 6,10.5 H 9" />
         </Button>
+        <Border Width="1" Height="20" Margin="8,0" VerticalAlignment="Center" Background="{DynamicResource TextSecondary}" />
         <!-- Item 60: editor settings (item 57 fonts) and preview settings (item 35 typography), right after Export PDF.
              The editor gear shows for text tabs, the preview gear only for Markdown; flyouts open below their button. -->
         <Button x:Name="EditorSettingsButton" Classes="tool export" ToolTip.Tip="{DynamicResource EditorSettings}" AutomationProperties.Name="{DynamicResource EditorSettings}">
