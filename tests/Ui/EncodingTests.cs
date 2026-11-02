@@ -120,6 +120,41 @@ internal static class EncodingTests
             TextBlock S(string name) => status.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == name);
             void Open(string path) => Wait((Task)typeof(MainView).GetMethod("OpenPathAsync", Flags)!.Invoke(v, [path])!);
             NoteDocument Active() => (NoteDocument)typeof(MainView).GetField("_active", Flags)!.GetValue(v)!;
+            var formatter = w.GetVisualDescendants().OfType<TextFormatter>().Single();
+            var emojiButton = formatter.FindControl<Button>("EmojiButton")!;
+            var emojiDoc = Active();
+            foreach (var encoding in TextEncodings.All.Select(o => o.Create()).Concat([new UTF32Encoding(false, true, true), new UTF32Encoding(true, true, true)]))
+            {
+                emojiDoc.Encoding = encoding;
+                formatter.UpdateEmoji(emojiDoc);
+                const string sample = "👩‍💻👍🏽🏳️‍🌈";
+                bool roundTrips;
+                try { roundTrips = encoding.GetString(encoding.GetBytes(sample)) == sample; }
+                catch (EncoderFallbackException) { roundTrips = false; }
+                Check(emojiButton.IsEnabled == roundTrips && emojiButton.Opacity == (roundTrips ? 1 : 0.35), $"{encoding.WebName}: emoji button follows lossless emoji support");
+            }
+            emojiDoc.Encoding = TextFileStore.DefaultEncoding;
+            emojiDoc.Editor.Text = "hello world";
+            emojiDoc.Editor.Focus();
+            emojiDoc.Editor.SelectionStart = 6;
+            emojiDoc.Editor.SelectionEnd = 11;
+            var picker = (Flyout)typeof(MainView).GetMethod("BuildEmojiPicker", Flags)!.Invoke(v, [emojiDoc])!;
+            picker.ShowAt(emojiButton); Pump();
+            var emojiGrid = (WrapPanel)((StackPanel)picker.Content!).Children[1];
+            var emojiKey = emojiGrid.Children.OfType<Button>().Single(b => Equals(b.Content, "👩‍💻"));
+            emojiKey.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent)); Pump();
+            Check(emojiDoc.Text == "hello 👩‍💻" && emojiDoc.Editor.SelectionStart == emojiDoc.Text.Length && emojiDoc.IsDirty, "Emoji picker replaces the saved selection and leaves the caret after the full sequence");
+            emojiDoc.Editor.Undo();
+            Check(emojiDoc.Text == "hello world", "Emoji insertion can be undone");
+            emojiDoc.Encoding = TextEncodings.Strict(1252)!;
+            typeof(MainView).GetMethod("InsertEmoji", Flags)!.Invoke(v, [emojiDoc, "😀"]);
+            Check(emojiDoc.Text == "hello world", "An encoding change while the picker is open blocks insertion");
+            emojiDoc.Editor.IsReadOnly = true;
+            emojiDoc.Encoding = TextFileStore.DefaultEncoding;
+            formatter.UpdateEmoji(emojiDoc);
+            Check(!emojiButton.IsEnabled, "Read-only documents disable emoji input");
+            emojiDoc.Editor.IsReadOnly = false;
+            emojiDoc.Editor.Text = ""; emojiDoc.SavedText = "";
             bool Save(NoteDocument d) => Result((Task<bool>)typeof(MainView).GetMethod("SaveAsync", Flags)!.Invoke(v, [d, false])!);
             bool Reopen(NoteDocument d, string id) => Result((Task<bool>)typeof(MainView).GetMethod("ReopenWithEncodingAsync", Flags)!.Invoke(v, [d, id])!);
             bool SaveWith(NoteDocument d, string id) => Result((Task<bool>)typeof(MainView).GetMethod("SaveWithEncodingAsync", Flags)!.Invoke(v, [d, id])!);

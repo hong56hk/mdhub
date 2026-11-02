@@ -58,6 +58,7 @@ public partial class MainView : UserControl
         FolderExplorer.RefreshRequested += () => RequestAction(WorkspaceAction.RefreshFolder);
         WireBinaryPlaceholder();
         WireEncodingMenu();
+        TextFormatter.EmojiRequested += ShowEmojiPicker;
         WireLineEndingMenu(); // item 68
         FolderExplorer.ExplorerRequested += async request => { if (!_busy) await RunAsync(() => HandleExplorerRequestAsync(request)); };
         FolderExplorer.MoveRequested += async request => await RunAsync(() => MoveExplorerFileAsync(request));
@@ -145,6 +146,7 @@ public partial class MainView : UserControl
         _active.Refresh();
         TitleChanged?.Invoke(DocumentTitle);
         BottomStatusBar.UpdateDocument(_active, message ?? TransientStatus ?? _sessionNote);
+        TextFormatter.UpdateEmoji(_active);
         if (!_active.IsMarkdown && !_active.IsViewOnly) BottomStatusBar.UpdateStatistics(Mdhub.Text.TextStatistics.Count(_active.Text));
         TextFormatter.SetFormattingEnabled(_active.HasPreview && !_busy, _active.IsMarkdown);
         UpdateCaretStatus();
@@ -187,6 +189,7 @@ public partial class MainView : UserControl
         FolderExplorer.SetBusy(busy);
         TextFormatter.SetFormattingEnabled(!busy && _active?.HasPreview == true, _active?.IsMarkdown == true);
         foreach (var document in _documents) document.Editor.IsReadOnly = busy || document.IsViewOnly || document.IsReadOnlyText;
+        if (_active is not null) TextFormatter.UpdateEmoji(_active);
     }
     // Saved file tabs only: untitled buffers and unsaved text are never written to the session.
     public WindowSession CaptureSession()

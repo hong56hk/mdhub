@@ -1,6 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:c="using:Mdhub.Components" x:Class="Mdhub.Components.TextFormatter">
   <!-- Three explicit view modes, with path icons and a highlighted selection. -->
   <UserControl.Styles>
+    <Style Selector="Button.tool">
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+    </Style>
     <Style Selector="Button.viewMode">
       <Setter Property="CornerRadius" Value="6" />
       <Setter Property="Foreground" Value="{DynamicResource PreviewToggleOff}" />
@@ -24,6 +27,7 @@
   <Border BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="0,1" Padding="8,5" Background="{DynamicResource ToolbarBackground}">
     <Grid ColumnDefinitions="*,Auto">
       <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+        <StackPanel Orientation="Horizontal" Spacing="2">
         <StackPanel x:Name="FormatBar" Orientation="Horizontal" Spacing="2">
           <Button Tag="undo" Classes="tool icon" Click="Edit_Click" ToolTip.Tip="{DynamicResource Undo}" AutomationProperties.Name="{DynamicResource Undo}">
             <Path Width="16" Height="14" Stretch="None" StrokeThickness="1.25" StrokeLineCap="Round" StrokeJoin="Round"
@@ -73,6 +77,14 @@
             </Grid>
           </Button>
           <StackPanel x:Name="HtmlFormatBar" Orientation="Horizontal" Spacing="2" Margin="8,0,0,0" />
+        </StackPanel>
+          <Border x:Name="EmojiDivider" Width="1" Height="20" Margin="8,0" VerticalAlignment="Center" Background="{DynamicResource TextSecondary}" />
+          <Button x:Name="EmojiButton" Classes="tool icon" IsEnabled="False" Click="EmojiButton_Click" AutomationProperties.Name="{DynamicResource EmojiInput}">
+            <!-- SVG path geometry: an outlined face, two eyes and a curved smile. -->
+            <Path x:Name="EmojiIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.1" StrokeLineCap="Round" StrokeJoin="Round"
+                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
+                  Data="M 13.5,7 A 5.5,5.5 0 1 1 2.5,7 A 5.5,5.5 0 1 1 13.5,7 Z M 6,5.2 V 5.5 M 10,5.2 V 5.5 M 5.6,8.1 Q 8,11 10.4,8.1" />
+          </Button>
         </StackPanel>
       </ScrollViewer>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="12,0,0,0">

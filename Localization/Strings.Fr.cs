@@ -5,6 +5,8 @@ public static partial class Loc
 {
     public static readonly IReadOnlyDictionary<string, string> Fr = new Dictionary<string, string>
     {
+        ["EmojiInput"] = "Insérer un emoji",
+        ["EmojiUnsupported"] = "Cet encodage ne permet pas d’enregistrer les emojis. Enregistrez en UTF-8 pour les saisir.",
         ["Sc.edit.uppercase"] = "Convertir la sélection en majuscules",
         ["Sc.edit.lowercase"] = "Convertir la sélection en minuscules",
         ["CannotImportHere"] = "Impossible de copier ce fichier ici. Vérifiez que le fichier source et le dossier de destination sont toujours disponibles.",

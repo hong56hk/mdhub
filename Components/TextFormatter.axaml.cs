@@ -8,6 +8,16 @@ public partial class TextFormatter : UserControl
     public event Action<WorkspaceAction>? ActionRequested;
     public event Action<string>? EditRequested;
     public event Action<string>? FormatRequested;
+    public void UpdateEmoji(Mdhub.Models.NoteDocument document)
+    {
+        EmojiButton.IsEnabled = !document.IsViewOnly && !document.IsReadOnlyText && !document.Editor.IsReadOnly && Mdhub.Services.TextEncodings.SupportsEmoji(document.Encoding);
+        EmojiButton.Opacity = EmojiButton.IsEnabled ? 1 : 0.35;
+        ToolTip.SetTip(EmojiButton, Mdhub.Localization.Loc.T(Mdhub.Services.TextEncodings.SupportsEmoji(document.Encoding) ? "EmojiInput" : "EmojiUnsupported"));
+    }
+
+    public event Action<Control>? EmojiRequested;
+    private void EmojiButton_Click(object? sender, RoutedEventArgs e) => EmojiRequested?.Invoke(EmojiButton);
+
     public TextFormatter()
     {
         InitializeComponent();

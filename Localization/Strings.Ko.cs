@@ -5,6 +5,8 @@ public static partial class Loc
 {
     public static readonly IReadOnlyDictionary<string, string> Ko = new Dictionary<string, string>
     {
+        ["EmojiInput"] = "이모지 삽입",
+        ["EmojiUnsupported"] = "이 인코딩은 이모지를 저장할 수 없습니다. UTF-8로 저장하면 이모지를 입력할 수 있습니다.",
         ["Sc.edit.uppercase"] = "선택한 텍스트를 대문자로 변환",
         ["Sc.edit.lowercase"] = "선택한 텍스트를 소문자로 변환",
         ["CannotImportHere"] = "이 위치에 파일을 복사할 수 없습니다. 원본 파일과 대상 폴더를 확인하세요.",
