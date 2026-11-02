@@ -15,6 +15,7 @@ public partial class MainView
         var binary = _active?.IsBinary == true;
         var preview = hasPreview && _viewMode != ViewMode.Editor;
         var split = preview && _viewMode == ViewMode.Split;
+        TextFormatter.SetSyncEnabled(split && !_busy);
         if (PreviewSplitter.IsVisible && !split) _previewWidth = Workspace.ColumnDefinitions[4].Width;
         MdEditor.IsVisible = preview;
         PreviewSplitter.IsVisible = split;

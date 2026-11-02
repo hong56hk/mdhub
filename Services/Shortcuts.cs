@@ -109,7 +109,7 @@ public static class Shortcuts
         // Item 49: VS Code tab cycling (wraps at both ends); handled at window level so the editor never inserts a tab.
         S("view.nextTab", ShortcutArea.View, "Next tab", C("Tab")),
         S("view.previousTab", ShortcutArea.View, "Previous tab", CS("Tab")),
-        S("view.previewCaret", ShortcutArea.View, "Scroll preview to caret", CS("G")),
+        S("view.previewCaret", ShortcutArea.View, "Sync editor and preview at caret", CS("G")),
         S("editor.bold", ShortcutArea.Editor, "Bold (Markdown)", C("B")),
         S("editor.italic", ShortcutArea.Editor, "Italic (Markdown)", C("I")),
         S("editor.link", ShortcutArea.Editor, "Insert link (Markdown)", C("L")),

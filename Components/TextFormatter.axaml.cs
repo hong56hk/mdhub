@@ -35,6 +35,7 @@ public partial class TextFormatter : UserControl
         ToolTip.SetTip(LinkButton, $"{Mdhub.Localization.Loc.T("InsertLink")} ({Mdhub.Services.Shortcuts.Format("editor.link", ShortcutKeys.IsMac)})");
         ToolTip.SetTip(EditorOnlyButton, $"{Mdhub.Localization.Loc.T("ViewModeEditor")} ({Mdhub.Services.Shortcuts.Format("view.togglePreview", ShortcutKeys.IsMac)})");
         ToolTip.SetTip(TogglePreviewButton, Mdhub.Localization.Loc.T("ViewModeSplit"));
+        ToolTip.SetTip(SyncButton, $"{Mdhub.Localization.Loc.T("Sc.view.previewCaret")} ({Mdhub.Services.Shortcuts.Format("view.previewCaret", ShortcutKeys.IsMac)})");
         ToolTip.SetTip(ViewerOnlyButton, $"{Mdhub.Localization.Loc.T("ViewModeViewer")} ({Mdhub.Services.Shortcuts.Format("view.toggleEditor", ShortcutKeys.IsMac)})");
     }
     private void UpdateHtmlButtons() => HtmlFormatBar.IsVisible = Mdhub.Services.EditorBehavior.Current.HtmlFormatting;
@@ -58,6 +59,8 @@ public partial class TextFormatter : UserControl
         TogglePreviewButton.Classes.Set("on", mode == 1);
         ViewerOnlyButton.Classes.Set("on", mode == 2);
     }
+    public void SetSyncEnabled(bool enabled) => SyncButton.IsEnabled = enabled;
+    private void Sync_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.SyncCaret);
     private void EditorOnly_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.EditorOnly);
     private void SplitView_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.SplitView);
     private void ViewerOnly_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.ViewerOnly);

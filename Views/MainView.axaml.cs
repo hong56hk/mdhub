@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 using Mdhub.Components;
 using Mdhub.Models;
 using Mdhub.Services;
@@ -18,6 +19,7 @@ public partial class MainView : UserControl
     private NoteDocument? _active;
     private bool _busy, _allowClose, _wrap;
     private int _untitled;
+    private bool _syncFromPreview;
     private GridLength _folderWidth = new(240), _previewWidth = new(1, GridUnitType.Star);
     private Window Host => TopLevel.GetTopLevel(this) as Window ?? throw new InvalidOperationException("The main view must be hosted in a window.");
     public event Action<string>? TitleChanged;
@@ -84,6 +86,11 @@ public partial class MainView : UserControl
         AddHandler(KeyDownEvent, OnShortcut, RoutingStrategies.Tunnel);
         // Focus moving into or out of the preview shows or hides the caret position.
         AddHandler(GotFocusEvent, (_, _) => UpdateCaretStatus(), RoutingStrategies.Bubble, handledEventsToo: true);
+        AddHandler(GotFocusEvent, (_, e) =>
+        {
+            if (e.Source is Visual visual && (visual == MdEditor || visual.GetVisualAncestors().Contains(MdEditor))) _syncFromPreview = true;
+            else if (e.Source == _active?.Editor) _syncFromPreview = false;
+        }, RoutingStrategies.Bubble, handledEventsToo: true);
         AddHandler(LostFocusEvent, (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateCaretStatus), RoutingStrategies.Bubble, handledEventsToo: true);
         AddDocument(null, "", "Untitled.md");
     }
@@ -109,6 +116,7 @@ public partial class MainView : UserControl
     {
         _sessionNote = null;
         _active = document;
+        _syncFromPreview = false;
         FolderExplorer.MarkActive(document.Path);
         TextEditor.ShowDocument(document);
         MdEditor.ShowDocument(document.HasPreview ? document : null);
@@ -188,6 +196,7 @@ public partial class MainView : UserControl
         TopMenu.IsEnabled = !busy;
         FolderExplorer.SetBusy(busy);
         TextFormatter.SetFormattingEnabled(!busy && _active?.HasPreview == true, _active?.IsMarkdown == true);
+        TextFormatter.SetSyncEnabled(!busy && _active?.HasPreview == true && _viewMode == ViewMode.Split);
         foreach (var document in _documents) document.Editor.IsReadOnly = busy || document.IsViewOnly || document.IsReadOnlyText;
         if (_active is not null) TextFormatter.UpdateEmoji(_active);
     }

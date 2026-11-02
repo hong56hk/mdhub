@@ -19,6 +19,7 @@ public partial class MainView
         if (_busy) return;
         switch (action)
         {
+            case WorkspaceAction.SyncCaret: SyncCaret(); return;
             case WorkspaceAction.ToggleOutline: ToggleOutline(); return;
             case WorkspaceAction.Exit: CloseRequested?.Invoke(); return;
             case WorkspaceAction.ToggleFolders: ToggleFolders_Click(null, new RoutedEventArgs()); return;
@@ -331,10 +332,25 @@ public partial class MainView
         "editor.goToLine" => GoToLineAsync,
         "editor.nextMisspelling" => Sync(() => TextEditor.NextMisspelling()),
         "edit.moveLineUp" or "edit.moveLineDown" or "edit.duplicateLine" => Sync(() => LineEdit(id)),
-        "view.previewCaret" => Sync(() => { if (_active is { } d) MdEditor.CenterPreviewOnLine(d.Editor.CaretIndex); }),
+        "view.previewCaret" => Sync(SyncCaret),
         _ => null
     };
     private static Func<Task> Sync(Action a) => () => { a(); return Task.CompletedTask; };
+
+    private void SyncCaret()
+    {
+        if (_busy || _active is not { HasPreview: true } document) return;
+        if (!EditorFocused && (MdEditor.IsKeyboardFocusWithin || _syncFromPreview))
+        {
+            if (MdEditor.SourceCaret() is not { } caret) return;
+            var editor = document.Editor;
+            editor.SelectionStart = editor.SelectionEnd = editor.CaretIndex = caret;
+            // Bring the actual wrapped caret rectangle into view without moving keyboard focus.
+            if (Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(editor).OfType<Avalonia.Controls.Presenters.TextPresenter>().FirstOrDefault() is { } presenter)
+                presenter.BringIntoView(presenter.TextLayout.HitTestTextPosition(caret));
+        }
+        else MdEditor.CenterPreviewOnLine(document.Editor.CaretIndex);
+    }
 
     private void ChangeSelectionCase(bool uppercase)
     {

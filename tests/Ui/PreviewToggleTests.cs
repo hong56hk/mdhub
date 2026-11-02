@@ -13,6 +13,9 @@ using Mdhub.Components;
 using Mdhub.Localization;
 using Mdhub.Services;
 using Mdhub.Views;
+using Mdhub.Models;
+using Mdhub.Rendering;
+using Avalonia.Input;
 
 // Item 48: the icon-only toggle-preview button.
 internal static class PreviewToggleTests
@@ -42,6 +45,7 @@ internal static class PreviewToggleTests
             var splitter = v.FindControl<GridSplitter>("PreviewSplitter")!;
             var editButton = bar.FindControl<Button>("EditorOnlyButton")!;
             var viewButton = bar.FindControl<Button>("ViewerOnlyButton")!;
+            var sync = bar.FindControl<Button>("SyncButton")!;
             void Click(Button target) { target.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump(); }
             void Mode(int mode)
             {
@@ -75,7 +79,72 @@ internal static class PreviewToggleTests
                 Loc.Set(code); Pump();
                 Check(AutomationProperties.GetName(button) == Loc.T("ViewModeSplit") && AutomationProperties.GetName(editButton) == Loc.T("ViewModeEditor") && AutomationProperties.GetName(viewButton) == Loc.T("ViewModeViewer"), $"{code}: accessible mode names");
                 Check(((string)ToolTip.GetTip(viewButton)!).Contains(Shortcuts.Format("view.toggleEditor", ShortcutKeys.IsMac)), "Viewer tooltip shows live shortcut");
+                Check(AutomationProperties.GetName(sync) == Loc.T("Sc.view.previewCaret") && ((string)ToolTip.GetTip(sync)!).Contains(Shortcuts.Format("view.previewCaret", ShortcutKeys.IsMac)), "Sync name and tooltip follow language and shortcut");
             }
+            Click(button);
+            var md = (MdEditor)preview;
+            var document = (NoteDocument)typeof(MainView).GetField("_active", Flags)!.GetValue(v)!;
+            var source = string.Concat(Enumerable.Range(0, 90).Select(i => $"Paragraph {i} with **bold words** and tail.\n\n"))
+                + "```\r\nfirst code line\r\nsecond code line\r\n```\r\n";
+            document.Editor.Text = source;
+            for (var i = 0; i < 15; i++) Pump();
+            T Prop<T>(string name) => (T)typeof(MdEditor).GetProperty(name, Flags)!.GetValue(md)!;
+            void SyncKey()
+            {
+                w.KeyPress(Avalonia.Input.Key.G, RawInputModifiers.Control | RawInputModifiers.Shift, PhysicalKey.None, null);
+                w.KeyRelease(Avalonia.Input.Key.G, RawInputModifiers.Control | RawInputModifiers.Shift, PhysicalKey.None, null);
+                Pump();
+            }
+            Check(sync.IsEnabled && !sync.Focusable && sync.Content is Avalonia.Controls.Shapes.Path, "Sync uses SVG geometry and preserves pane focus");
+            Check(sync.TranslatePoint(default, bar)!.Value.X < editButton.TranslatePoint(default, bar)!.Value.X, "Sync sits left of view modes");
+            document.Editor.Focus();
+            document.Editor.CaretIndex = source.IndexOf("Paragraph 70", StringComparison.Ordinal);
+            var centers = Prop<int>("PreviewCenters");
+            Click(sync);
+            var deadline = DateTime.UtcNow.AddSeconds(5);
+            while (Prop<int>("PreviewCenters") == centers && DateTime.UtcNow < deadline) Pump();
+            Check(Prop<int>("PreviewCenters") > centers && md.FindControl<ScrollViewer>("PreviewScroll")!.Offset.Y > 0, "Sync button scrolls preview to source caret");
+            centers = Prop<int>("PreviewCenters");
+            SyncKey();
+            deadline = DateTime.UtcNow.AddSeconds(5);
+            while (Prop<int>("PreviewCenters") == centers && DateTime.UtcNow < deadline) Pump();
+            Check(Prop<int>("PreviewCenters") > centers && document.Editor.IsFocused, "Ctrl+Shift+G syncs from editor and keeps focus");
+            var selection = Prop<PreviewSelection>("Selection");
+            var item = selection.Items.OfType<TextBlock>().First(t => t.Inlines?.OfType<Avalonia.Controls.Documents.Run>().FirstOrDefault()?.Text?.StartsWith("Paragraph 80 ") == true);
+            Check((bool)typeof(MdEditor).GetMethod("BeginPreviewEdit", Flags)!.Invoke(md, [item])!, "Open formatted preview edit");
+            var box = Prop<TextBox>("PreviewEditBox");
+            box.CaretIndex = "Paragraph 80 with bold ".Length;
+            document.Editor.CaretIndex = 0;
+            var editorScroll = document.Editor.GetVisualDescendants().OfType<ScrollViewer>().First();
+            editorScroll.Offset = default;
+            Click(sync);
+            var expected = source.IndexOf("Paragraph 80", StringComparison.Ordinal) + "Paragraph 80 with **bold ".Length;
+            Check(document.Editor.CaretIndex == expected && editorScroll.Offset.Y > 0, "Preview caret maps through bold markup and scrolls source");
+            Check(box.IsFocused && Prop<bool>("IsEditingPreview"), "Button leaves preview editing active");
+            box.Text = "NEW " + box.Text;
+            box.CaretIndex = "NEW Paragraph 80 with bold ".Length;
+            document.Editor.CaretIndex = 0;
+            SyncKey();
+            Check(document.Editor.CaretIndex == expected && box.IsFocused && document.Text == source, "Shortcut maps pending preview edits without committing or stealing focus");
+            typeof(MdEditor).GetMethod("CancelPreviewEdit", Flags)!.Invoke(md, []);
+            var codeBlock = Prop<IEnumerable<Control>>("PreviewBlocks").First(c => PreviewTags.Kind(c) == "pre");
+            Check((bool)typeof(MdEditor).GetMethod("BeginPreviewEdit", Flags)!.Invoke(md, [codeBlock])!, "Open code preview edit");
+            box = Prop<TextBox>("PreviewEditBox");
+            box.CaretIndex = "first code line\nsecond".Length;
+            SyncKey();
+            Check(document.Editor.CaretIndex == source.IndexOf("second code line", StringComparison.Ordinal) + 6, "Code caret maps normalized newlines back to CRLF source");
+            typeof(MdEditor).GetMethod("CancelPreviewEdit", Flags)!.Invoke(md, []);
+            typeof(MdEditor).GetMethod("SetPreviewSelection", Flags)!.Invoke(md, [new PreviewPosition(selection.IndexOf(item), 0), new PreviewPosition(selection.IndexOf(item), 5)]);
+            md.FocusPreview();
+            SyncKey();
+            Check(document.Editor.CaretIndex == source.IndexOf("Paragraph 80", StringComparison.Ordinal) + 5, "Rendered preview selection caret also syncs to source");
+            var codePosition = new PreviewPosition(selection.IndexOf(codeBlock), "first code line".Length + PreviewSelection.LineBreakLength + 6);
+            typeof(MdEditor).GetMethod("SetPreviewSelection", Flags)!.Invoke(md, [codePosition, codePosition]);
+            SyncKey();
+            Check(document.Editor.CaretIndex == source.IndexOf("second code line", StringComparison.Ordinal) + 6, "Rendered code selection accounts for platform line break widths");
+            Click(editButton);
+            Check(!sync.IsEnabled, "Sync button disabled without both panes");
+            document.Editor.Text = "# hi"; // keep teardown from opening an unsaved-changes prompt
         }
         finally
         {
