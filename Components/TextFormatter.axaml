@@ -88,6 +88,12 @@
                   Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
                   Data="M 13.5,7 A 5.5,5.5 0 1 1 2.5,7 A 5.5,5.5 0 1 1 13.5,7 Z M 6,5.2 V 5.5 M 10,5.2 V 5.5 M 5.6,8.1 Q 8,11 10.4,8.1" />
           </Button>
+          <Button x:Name="InsertDateTimeButton" Classes="tool icon" IsEnabled="False" Click="InsertDateTime_Click" AutomationProperties.Name="{DynamicResource MenuInsertDateTime}">
+            <!-- SVG path geometry: a clock face with hour and minute hands. -->
+            <Path x:Name="ClockIcon" Width="16" Height="14" Stretch="None" StrokeThickness="1.1" StrokeLineCap="Round" StrokeJoin="Round"
+                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
+                  Data="M 13.5,7 A 5.5,5.5 0 1 1 2.5,7 A 5.5,5.5 0 1 1 13.5,7 Z M 8,3.5 V 7 L 10.5,8.5" />
+          </Button>
         </StackPanel>
       </ScrollViewer>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="12,0,0,0">

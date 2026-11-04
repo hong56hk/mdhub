@@ -49,6 +49,7 @@ public partial class MainView : UserControl
         TopMenu.RecentRequested += (path, folder) => _ = RunAsync(() => OpenRecentAsync(path, folder));
         TextFormatter.ActionRequested += RequestAction;
         TextFormatter.EditRequested += Edit;
+        TextFormatter.CommandRequested += RunMenuCommand;
         TextFormatter.FormatRequested += action => { if (!_busy) TextEditor.Format(action); };
         // VS Code: selecting a file opens it but leaves focus in the explorer; Enter or double-click moves focus to the editor.
         FolderExplorer.FileRequested += async path => await RunAsync(() => OpenPathAsync(path), focusEditor: false);
@@ -154,7 +155,7 @@ public partial class MainView : UserControl
         _active.Refresh();
         TitleChanged?.Invoke(DocumentTitle);
         BottomStatusBar.UpdateDocument(_active, message ?? TransientStatus ?? _sessionNote);
-        TextFormatter.UpdateEmoji(_active);
+        TextFormatter.UpdateInsertButtons(_active);
         if (!_active.IsMarkdown && !_active.IsViewOnly) BottomStatusBar.UpdateStatistics(Mdhub.Text.TextStatistics.Count(_active.Text));
         TextFormatter.SetFormattingEnabled(_active.HasPreview && !_busy, _active.IsMarkdown);
         UpdateCaretStatus();
@@ -198,7 +199,7 @@ public partial class MainView : UserControl
         TextFormatter.SetFormattingEnabled(!busy && _active?.HasPreview == true, _active?.IsMarkdown == true);
         TextFormatter.SetSyncEnabled(!busy && _active?.HasPreview == true && _viewMode == ViewMode.Split);
         foreach (var document in AllDocuments) document.Editor.IsReadOnly = busy || document.IsViewOnly || document.IsReadOnlyText;
-        if (_active is not null) TextFormatter.UpdateEmoji(_active);
+        if (_active is not null) TextFormatter.UpdateInsertButtons(_active);
     }
     // Saved file tabs only: untitled buffers and unsaved text are never written to the session.
     public WindowSession CaptureSession()
