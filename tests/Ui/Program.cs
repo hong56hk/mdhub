@@ -9,6 +9,7 @@ using Mdhub;
 using Mdhub.Models;
 using Mdhub.Views;
 using Mdhub.Components;
+if (args.Contains("--nested-lists-only")) { NestedListTests.Run(); return; }
 if (args.Contains("--recovery-only")) { try { RecoveryTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
 if (args.Contains("--emoji-picker-only")) { try { EmojiPickerTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
 if (args.Contains("--split-editor-only")) { try { SplitEditorTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
