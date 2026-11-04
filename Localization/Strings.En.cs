@@ -359,6 +359,8 @@ public static partial class Loc
         ["Sc.zoom.out"] = "Zoom out",
         ["Sc.zoom.reset"] = "Reset zoom",
         ["Sc.view.previewCaret"] = "Sync editor and preview at caret",
+        ["Sc.view.focusLeftPane"] = "Focus left pane",
+        ["Sc.view.focusRightPane"] = "Focus right pane",
         ["Sc.view.nextTab"] = "Next tab",
         ["Sc.view.previousTab"] = "Previous tab",
         ["KindBinary"] = "Binary",

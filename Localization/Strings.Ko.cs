@@ -359,6 +359,8 @@ public static partial class Loc
         ["Sc.zoom.out"] = "축소",
         ["Sc.zoom.reset"] = "확대/축소 초기화",
         ["Sc.view.previewCaret"] = "커서 위치에서 편집기와 미리 보기 동기화",
+        ["Sc.view.focusLeftPane"] = "왼쪽 창으로 포커스 이동",
+        ["Sc.view.focusRightPane"] = "오른쪽 창으로 포커스 이동",
         ["Sc.view.nextTab"] = "\ub2e4\uc74c \ud0ed",
         ["Sc.view.previousTab"] = "\uc774\uc804 \ud0ed",
         ["KindBinary"] = "\ubc14\uc774\ub108\ub9ac",

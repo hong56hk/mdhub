@@ -226,6 +226,16 @@ public partial class MainView
             CycleTab(tabId == "view.nextTab" ? 1 : -1);
             return;
         }
+        if (ShortcutKeys.Match(e, s => s.Id is "view.focusLeftPane" or "view.focusRightPane") is { } paneId)
+        {
+            e.Handled = true;
+            if (!_busy)
+            {
+                ShortcutFired?.Invoke(paneId);
+                FocusAdjacentPane(paneId == "view.focusLeftPane" ? -1 : 1);
+            }
+            return;
+        }
         if (HandleSidebarShortcut(e)) return;
         if (!_busy && FolderExplorer.IsKeyboardFocusWithin && ShortcutKeys.Match(e, s => s.Id == "explorer.rename") is not null)
         {

@@ -362,6 +362,8 @@ public static partial class Loc
         ["Sc.zoom.out"] = "Verkleinern",
         ["Sc.zoom.reset"] = "Zoom zurücksetzen",
         ["Sc.view.previewCaret"] = "Editor und Vorschau am Cursor synchronisieren",
+        ["Sc.view.focusLeftPane"] = "Linken Bereich fokussieren",
+        ["Sc.view.focusRightPane"] = "Rechten Bereich fokussieren",
         ["Sc.view.nextTab"] = "Nächster Tab",
         ["Sc.view.previousTab"] = "Vorheriger Tab",
         ["KindBinary"] = "Binär",

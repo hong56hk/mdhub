@@ -362,6 +362,8 @@ public static partial class Loc
         ["Sc.zoom.out"] = "Zoom arrière",
         ["Sc.zoom.reset"] = "Réinitialiser le zoom",
         ["Sc.view.previewCaret"] = "Synchroniser l’éditeur et l’aperçu au curseur",
+        ["Sc.view.focusLeftPane"] = "Activer le volet de gauche",
+        ["Sc.view.focusRightPane"] = "Activer le volet de droite",
         ["Sc.view.nextTab"] = "Onglet suivant",
         ["Sc.view.previousTab"] = "Onglet précédent",
         ["KindBinary"] = "Binaire",

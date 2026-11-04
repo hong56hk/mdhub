@@ -74,6 +74,14 @@ public partial class MainView
         if (_active?.IsMarkdown == true) BottomStatusBar.UpdateStatistics(Mdhub.Text.TextStatistics.Count(_active.Text));
     }
 
+    private void FocusAdjacentPane(int step)
+    {
+        var index = _panes.IndexOf(_activePane) + step;
+        if (index < 0 || index >= _panes.Count) return;
+        ActivatePane(_panes[index]);
+        FocusEditor();
+    }
+
     private EditorPane? CreatePaneToSide()
     {
         if (_panes.Count >= MaxEditorPanes)

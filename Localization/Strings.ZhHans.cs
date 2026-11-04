@@ -362,6 +362,8 @@ public static partial class Loc
         ["Sc.zoom.out"] = "缩小",
         ["Sc.zoom.reset"] = "重置缩放",
         ["Sc.view.previewCaret"] = "在光标处同步编辑器和预览",
+        ["Sc.view.focusLeftPane"] = "切换至左侧窗格",
+        ["Sc.view.focusRightPane"] = "切换至右侧窗格",
         ["Sc.view.nextTab"] = "下一个标签页",
         ["Sc.view.previousTab"] = "上一个标签页",
         ["KindBinary"] = "二进制",

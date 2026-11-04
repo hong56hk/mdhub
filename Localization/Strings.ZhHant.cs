@@ -359,6 +359,8 @@ public static partial class Loc
         ["Sc.zoom.out"] = "縮小",
         ["Sc.zoom.reset"] = "重設縮放",
         ["Sc.view.previewCaret"] = "在游標處同步編輯器與預覽",
+        ["Sc.view.focusLeftPane"] = "切換至左側窗格",
+        ["Sc.view.focusRightPane"] = "切換至右側窗格",
         ["Sc.view.nextTab"] = "\u4e0b\u4e00\u500b\u5206\u9801",
         ["Sc.view.previousTab"] = "\u4e0a\u4e00\u500b\u5206\u9801",
         ["KindBinary"] = "\u4e8c\u9032\u4f4d",

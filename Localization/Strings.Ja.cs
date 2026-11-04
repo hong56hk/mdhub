@@ -359,6 +359,8 @@ public static partial class Loc
         ["Sc.zoom.out"] = "縮小",
         ["Sc.zoom.reset"] = "ズームをリセット",
         ["Sc.view.previewCaret"] = "カーソル位置でエディターとプレビューを同期",
+        ["Sc.view.focusLeftPane"] = "左のペインにフォーカス",
+        ["Sc.view.focusRightPane"] = "右のペインにフォーカス",
         ["Sc.view.nextTab"] = "\u6b21\u306e\u30bf\u30d6",
         ["Sc.view.previousTab"] = "\u524d\u306e\u30bf\u30d6",
         ["KindBinary"] = "\u30d0\u30a4\u30ca\u30ea",
