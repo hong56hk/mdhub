@@ -12,7 +12,7 @@ using Mdhub.Models;
 using Mdhub.Services;
 using Mdhub.Views;
 
-// Item 75: the file tab context menu (Close tab / Close other tabs).
+// The file tab context menu and pane-scoped close actions.
 internal static class TabMenuTests
 {
     public static void Run()
@@ -49,7 +49,7 @@ internal static class TabMenuTests
                 Settle();
             }
 
-            Check(menu is not null && menu.Items.OfType<MenuItem>().Select(i => i.Name).SequenceEqual(["TabCloseMenuItem", "TabCloseOthersMenuItem", "TabSplitRightMenuItem"]), "The tab strip has a context menu: Close tab, Close other tabs, Split Right");
+            Check(menu is not null && menu.Items.OfType<MenuItem>().Select(i => i.Name).SequenceEqual(["TabCloseMenuItem", "TabCloseOthersMenuItem", "TabCloseAllMenuItem", "TabSplitRightMenuItem"]), "The tab strip has a context menu: Close tab, Close other tabs, Close all tabs, Split Right");
             Check(tabs.SelectedDocument == c, "c is active");
             RightClick(TabOf(a));
             Check(menu.IsOpen && tabs.MenuTarget == a, "Right-clicking a tab opens the menu for that tab");
@@ -117,12 +117,38 @@ internal static class TabMenuTests
                 && right.Editor != splitTarget.Editor && right.Text == splitTarget.Text && right.IsDirty,
                 "Split Right splits the clicked inactive tab, including its unsaved content");
             Check(Docs().Contains(different), "Splitting retains the other source tabs");
-            var closeSplit = (Task)typeof(MainView).GetMethod("CloseDocumentAsync", flags)!.Invoke(view, [right])!;
-            for (var i = 0; i < 100 && !closeSplit.IsCompleted; i++) Pump();
-            closeSplit.GetAwaiter().GetResult(); Settle();
-            Check(w.GetVisualDescendants().OfType<EditorPane>().Count() == 1, "Closing the split tab collapses its empty pane");
+            var rightPane = panes.Last();
+            var dirty = Open("unique unsaved content", "dirty.md");
+            dirty.Editor.Text += " changed"; Settle();
+            var sourceDocuments = Docs();
+            void CloseAll(EditorPane pane)
+            {
+                var paneList = pane.GetVisualDescendants().OfType<FileTabs>().Single().FindControl<ListBox>("Tabs")!;
+                var target = paneList.GetVisualDescendants().OfType<ListBoxItem>().First();
+                RightClick(target);
+                var paneMenu = paneList.ContextMenu!;
+                var item = paneMenu.Items.OfType<MenuItem>().Single(i => i.Name == "TabCloseAllMenuItem");
+                Check(item.Header as string == Loc.T("CloseAllTabs"), "Close all tabs has a localized label");
+                item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+                paneMenu.Close(); Settle();
+            }
+            // Target a pane while another one is active; the shared dirty buffer needs no prompt.
+            typeof(MainView).GetMethod("ActivatePane", flags)!.Invoke(view, [panes.First()]);
+            CloseAll(rightPane);
+            Answer("Cancel");
+            Check(rightPane.Documents.SequenceEqual([dirty]) && Docs().SequenceEqual(sourceDocuments)
+                && w.GetVisualDescendants().OfType<EditorPane>().Count() == 2,
+                "Close all tabs affects only its pane; Cancel preserves the dirty tab and split");
+            CloseAll(rightPane);
+            Answer("Discard");
+            Check(w.GetVisualDescendants().OfType<EditorPane>().Count() == 1 && Docs().SequenceEqual(sourceDocuments),
+                "Discard closes the remaining split tab and removes only its empty pane");
             Check(Loc.Languages.Where(l => l.Code != Loc.English).All(l => Loc.Table(l.Code).ContainsKey("SplitRight")), "Split Right is translated in every language");
+            Check(Loc.Languages.All(l => Loc.Table(l.Code).ContainsKey("CloseAllTabs")), "Close all tabs is translated in every language");
             foreach (var d in Docs()) d.SavedText = d.Text;
+            CloseAll(panes.First());
+            Check(Docs().Count == 1 && Docs()[0].Text == "" && w.GetVisualDescendants().OfType<EditorPane>().Count() == 1,
+                "Close all tabs in the final pane leaves one empty note");
         }
         finally { foreach (var o in w.OwnedWindows.ToList()) o.Close(); w.Close(); }
         Console.WriteLine($"Tab menu tests: {passed} passed");

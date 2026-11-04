@@ -112,6 +112,7 @@ public static partial class Loc
         ["CloseWindow"] = "ウィンドウを閉じる",
         ["CloseTab"] = "タブを閉じる",
         ["CloseOtherTabs"] = "\u4ed6\u306e\u30bf\u30d6\u3092\u9589\u3058\u308b",
+        ["CloseAllTabs"] = "すべてのタブを閉じる",
         ["NewNote"] = "新しいノート",
         ["SidebarExplorer"] = "エクスプローラー",
         ["SidebarSearch"] = "検索",

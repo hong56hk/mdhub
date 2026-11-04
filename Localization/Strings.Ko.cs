@@ -112,6 +112,7 @@ public static partial class Loc
         ["CloseWindow"] = "창 닫기",
         ["CloseTab"] = "탭 닫기",
         ["CloseOtherTabs"] = "\ub2e4\ub978 \ud0ed \ub2eb\uae30",
+        ["CloseAllTabs"] = "모든 탭 닫기",
         ["NewNote"] = "새 노트",
         ["SidebarExplorer"] = "탐색기",
         ["SidebarSearch"] = "검색",

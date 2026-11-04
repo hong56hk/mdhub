@@ -112,6 +112,7 @@ public static partial class Loc
         ["CloseWindow"] = "Close window",
         ["CloseTab"] = "Close tab",
         ["CloseOtherTabs"] = "Close other tabs",
+        ["CloseAllTabs"] = "Close all tabs",
         ["NewNote"] = "New note",
         ["SidebarExplorer"] = "EXPLORER",
         ["SidebarSearch"] = "SEARCH",

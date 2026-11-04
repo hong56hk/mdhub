@@ -6,7 +6,7 @@ using Mdhub.Services;
 
 namespace Mdhub.Views;
 
-// Item 75: right-click a file tab for Close tab / Close other tabs (dirty tabs go through the unsaved-changes prompt).
+// File tab close actions use the unsaved-changes prompt for dirty tabs.
 public partial class MainView
 {
     private ContextMenu CreateTabMenu(EditorPane pane)
@@ -19,6 +19,14 @@ public partial class MainView
         var others = LocResources.Item("CloseOtherTabs");
         others.Name = "TabCloseOthersMenuItem";
         others.Click += async (_, _) => { if (pane.FileTabs.MenuTarget is { } d) { ActivatePane(pane); await RunAsync(() => CloseOtherDocumentsAsync(d)); } };
+        var all = LocResources.Item("CloseAllTabs");
+        all.Name = "TabCloseAllMenuItem";
+        all.Click += async (_, _) =>
+        {
+            if (_busy || pane.FileTabs.MenuTarget is null) return;
+            ActivatePane(pane);
+            await RunAsync(() => CloseAllDocumentsAsync(pane));
+        };
         var split = LocResources.Item("SplitRight");
         split.Name = "TabSplitRightMenuItem";
         ShortcutKeys.SetId(split, "view.splitEditor");
@@ -31,12 +39,23 @@ public partial class MainView
         };
         menu.Items.Add(close);
         menu.Items.Add(others);
+        menu.Items.Add(all);
         menu.Items.Add(split);
         // Opening covers a right-click; Opened also covers a menu opened from code or the keyboard.
         menu.Opening += (_, _) => others.IsEnabled = pane.Documents.Count > 1;
         menu.Opened += (_, _) => others.IsEnabled = pane.Documents.Count > 1;
         ShortcutKeys.ApplyGestures([close, split]);
         return menu.Localized();
+    }
+
+    private async Task CloseAllDocumentsAsync(EditorPane pane)
+    {
+        // Snapshot only this pane: removing its last tab activates another pane or creates an empty note.
+        foreach (var document in pane.Documents.ToList())
+        {
+            await CloseDocumentAsync(document);
+            if (pane.Documents.Contains(document)) return; // A save prompt was cancelled.
+        }
     }
 
     // Closes every tab except keep, left to right; cancelling a prompt stops there and keeps the rest open.

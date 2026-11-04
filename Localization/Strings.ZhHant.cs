@@ -112,6 +112,7 @@ public static partial class Loc
         ["CloseWindow"] = "關閉視窗",
         ["CloseTab"] = "關閉分頁",
         ["CloseOtherTabs"] = "\u95dc\u9589\u5176\u4ed6\u5206\u9801",
+        ["CloseAllTabs"] = "關閉所有分頁",
         ["NewNote"] = "新增筆記",
         ["SidebarExplorer"] = "檔案總管",
         ["SidebarSearch"] = "搜尋",
