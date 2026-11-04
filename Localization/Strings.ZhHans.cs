@@ -171,7 +171,7 @@ public static partial class Loc
         ["GlobalReplaceTip"] = "替换选择的匹配项或文件",
         ["GlobalReplaceAllTip"] = "在文件夹中全部替换",
         ["GlobalOpenFolder"] = "请打开文件夹以进行搜索。",
-        ["GlobalHint"] = "搜索已打开文件夹中的文本文件。",
+        ["GlobalHint"] = "搜索已打开文件夹中的文本文件及未保存的标签页。",
         ["Searching"] = "正在搜索…",
         ["GlobalResults"] = "{1:N0} 个文件中有 {0:N0} 个结果",
         ["GlobalLimited"] = " · 仅显示前 {0:N0} 个匹配项",

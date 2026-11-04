@@ -171,7 +171,7 @@ public static partial class Loc
         ["GlobalReplaceTip"] = "Remplacer le résultat ou le fichier sélectionné",
         ["GlobalReplaceAllTip"] = "Tout remplacer dans le dossier",
         ["GlobalOpenFolder"] = "Ouvrez un dossier pour lancer une recherche.",
-        ["GlobalHint"] = "Rechercher dans les fichiers texte du dossier ouvert.",
+        ["GlobalHint"] = "Rechercher dans les fichiers texte du dossier ouvert et les onglets non enregistrés.",
         ["Searching"] = "Recherche…",
         ["GlobalResults"] = "{0:N0} résultats dans {1:N0} fichiers",
         ["GlobalLimited"] = " · {0:N0} premiers résultats affichés",

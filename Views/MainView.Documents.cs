@@ -30,6 +30,7 @@ public partial class MainView
         _documents.Add(document);
         TrackRecovery(document);
         FileTabs.SelectedDocument = document;
+        if (path is null && GlobalSearch.IsVisible) GlobalSearch.Schedule();
         return document;
     }
 
@@ -148,6 +149,7 @@ public partial class MainView
         document.Refresh();
         RefreshPaneDocuments();
         UpdateStatus(Loc.F("Saved", path));
+        if (GlobalSearch.IsVisible) GlobalSearch.Schedule();
         MdEditor.ScheduleRefresh();
         await FlushRecoveryAsync();
         if (isNewPath && FolderExplorer.Contains(path)) await FolderExplorer.RevealCreatedAsync(path);

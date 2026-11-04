@@ -168,7 +168,7 @@ public static partial class Loc
         ["GlobalReplaceTip"] = "取代選取的相符項目或檔案",
         ["GlobalReplaceAllTip"] = "在資料夾中全部取代",
         ["GlobalOpenFolder"] = "請開啟資料夾以進行搜尋。",
-        ["GlobalHint"] = "搜尋已開啟資料夾中的文字檔。",
+        ["GlobalHint"] = "搜尋已開啟資料夾中的文字檔及未儲存的分頁。",
         ["Searching"] = "正在搜尋…",
         ["GlobalResults"] = "{1:N0} 個檔案中有 {0:N0} 個結果",
         ["GlobalLimited"] = " · 僅顯示前 {0:N0} 個相符項目",

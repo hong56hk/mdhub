@@ -168,7 +168,7 @@ public static partial class Loc
         ["GlobalReplaceTip"] = "Replace selected match or file",
         ["GlobalReplaceAllTip"] = "Replace all in folder",
         ["GlobalOpenFolder"] = "Open a folder to search.",
-        ["GlobalHint"] = "Search text files in the opened folder.",
+        ["GlobalHint"] = "Search text files in the opened folder and unsaved tabs.",
         ["Searching"] = "Searching…",
         ["GlobalResults"] = "{0:N0} results in {1:N0} files",
         ["GlobalLimited"] = " · First {0:N0} matches shown",

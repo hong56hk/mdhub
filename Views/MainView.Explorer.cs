@@ -169,6 +169,7 @@ public partial class MainView
             _recoveryBuffers.Remove(document.Buffer);
         }
         OnRecoveryChanged(null);
+        if (GlobalSearch.IsVisible) GlobalSearch.Schedule();
         if (_documents.Count == 0)
         {
             if (_panes.Count > 1) RemovePane(owner);

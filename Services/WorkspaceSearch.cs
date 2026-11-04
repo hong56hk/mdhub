@@ -8,7 +8,9 @@ namespace Mdhub.Services;
 
 public sealed record SearchHit(string Path, int Start, int Length, int Line, string Preview, int PreviewStart);
 // Lossy: undecodable bytes were replaced with U+FFFD for searching, so the file must not be rewritten.
-public sealed record SearchFile(string Path, string Source, Encoding Encoding, IReadOnlyList<SearchHit> Hits, bool Lossy = false);
+// For an untitled buffer, Path is its stable buffer key and UnsavedName is the visible tab name.
+public sealed record SearchFile(string Path, string Source, Encoding Encoding, IReadOnlyList<SearchHit> Hits, bool Lossy = false, string? UnsavedName = null);
+public sealed record UnsavedSearchBuffer(string Key, string Name, string Text);
 public sealed record WorkspaceSearchResult(IReadOnlyList<SearchFile> Files, string? Error = null, int Skipped = 0, bool Limited = false, int Lossy = 0, bool Cancelled = false)
 {
     public int Count => Files.Sum(f => f.Hits.Count);
@@ -24,8 +26,9 @@ public static class WorkspaceSearch
     // several workers read and match files in parallel. `found` is called (from a worker thread) for each file with hits
     // as soon as it is matched, so the panel can stream results; the returned result is sorted by path.
     // Cancellation returns a Cancelled result rather than throwing, so superseded searches stay quiet.
-    public static Task<WorkspaceSearchResult> SearchAsync(string root, string query, FindOptions options,
-        IReadOnlyDictionary<string, string> openBuffers, CancellationToken cancellationToken, Action<SearchFile>? found = null) => Task.Run(async () =>
+    public static Task<WorkspaceSearchResult> SearchAsync(string? root, string query, FindOptions options,
+        IReadOnlyDictionary<string, string> openBuffers, CancellationToken cancellationToken, Action<SearchFile>? found = null,
+        IReadOnlyList<UnsavedSearchBuffer>? unsavedBuffers = null) => Task.Run(async () =>
     {
         var regex = FindReplace.Build(query, options, out var error);
         if (regex is null) return new WorkspaceSearchResult([], error);
@@ -35,12 +38,19 @@ public static class WorkspaceSearch
         var lossyFiles = 0;
         var total = 0;
         string? timeout = null;
+        var unsaved = (unsavedBuffers ?? []).ToDictionary(b => b.Key);
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var channel = Channel.CreateBounded<string>(new BoundedChannelOptions(1024) { SingleWriter = true });
         var walker = Task.Run(async () =>
         {
             try
             {
+                foreach (var key in unsaved.Keys)
+                {
+                    if (stop.IsCancellationRequested) return;
+                    await channel.Writer.WriteAsync(key);
+                }
+                if (root is null) return;
                 var pending = new Stack<(DirectoryInfo Directory, GitIgnore Ignore)>();
                 pending.Push((new DirectoryInfo(root), GitIgnore.Empty.Enter(root)));
                 while (pending.TryPop(out var item))
@@ -80,7 +90,8 @@ public static class WorkspaceSearch
                         string source;
                         Encoding encoding;
                         var lossy = false;
-                        if (openBuffers.TryGetValue(path, out var buffer)) { source = buffer; encoding = TextFileStore.DefaultEncoding; }
+                        if (unsaved.TryGetValue(path, out var untitled)) { source = untitled.Text; encoding = TextFileStore.DefaultEncoding; }
+                        else if (openBuffers.TryGetValue(path, out var buffer)) { source = buffer; encoding = TextFileStore.DefaultEncoding; }
                         else
                         {
                             // Not FileSupport.Detect: its strict sample decode rejects (and throws on) legacy-encoded text.
@@ -95,7 +106,7 @@ public static class WorkspaceSearch
                         // The caller's token, not `stop`: hits already counted towards MaxResults must be kept when another worker hits the limit.
                         var hits = Match(regex, path, source, ref total, cancellationToken);
                         if (hits.Count == 0) continue;
-                        var file = new SearchFile(path, source, encoding, hits, lossy);
+                        var file = new SearchFile(path, source, encoding, hits, lossy, untitled?.Name);
                         files.Add(file);
                         if (lossy) Interlocked.Increment(ref lossyFiles);
                         found?.Invoke(file);

@@ -168,7 +168,7 @@ public static partial class Loc
         ["GlobalReplaceTip"] = "選択した一致またはファイルを置換",
         ["GlobalReplaceAllTip"] = "フォルダー内をすべて置換",
         ["GlobalOpenFolder"] = "検索するにはフォルダーを開いてください。",
-        ["GlobalHint"] = "開いているフォルダー内のテキスト ファイルを検索します。",
+        ["GlobalHint"] = "開いているフォルダー内のテキスト ファイルと未保存のタブを検索します。",
         ["Searching"] = "検索中…",
         ["GlobalResults"] = "{1:N0} 個のファイルに {0:N0} 件の結果",
         ["GlobalLimited"] = " · 最初の {0:N0} 件を表示",

@@ -168,7 +168,7 @@ public static partial class Loc
         ["GlobalReplaceTip"] = "선택한 일치 항목 또는 파일 바꾸기",
         ["GlobalReplaceAllTip"] = "폴더에서 모두 바꾸기",
         ["GlobalOpenFolder"] = "검색하려면 폴더를 여세요.",
-        ["GlobalHint"] = "열린 폴더의 텍스트 파일을 검색합니다.",
+        ["GlobalHint"] = "열린 폴더의 텍스트 파일과 저장하지 않은 탭을 검색합니다.",
         ["Searching"] = "검색 중…",
         ["GlobalResults"] = "파일 {1:N0}개에서 결과 {0:N0}개",
         ["GlobalLimited"] = " · 처음 {0:N0}개 일치 항목만 표시",

@@ -67,6 +67,8 @@ public partial class MainView : UserControl
         FolderExplorer.RenameRequested = RenameExplorerItemAsync;
         GlobalSearch.OpenBuffers = () => UniqueDocuments.Where(d => d.Path is not null && !d.IsViewOnly)
             .ToDictionary(d => d.Path!, d => d.Text, OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+        GlobalSearch.UnsavedBuffers = () => UniqueDocuments.Where(d => d.Path is null && !d.IsViewOnly)
+            .Select(d => new UnsavedSearchBuffer(d.Buffer.RecoveryKey, d.UntitledName, d.Text)).ToArray();
         GlobalSearch.HitRequested += async (file, hit) => await RunAsync(() => OpenSearchHitAsync(file, hit));
         GlobalSearch.ReplaceRequested = ReplaceSearchResultsAsync;
         // Item 57: the editor gear's fonts apply live to every open editor (the presenters re-lay out code spans).

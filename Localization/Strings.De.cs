@@ -171,7 +171,7 @@ public static partial class Loc
         ["GlobalReplaceTip"] = "Ausgewählten Treffer oder Datei ersetzen",
         ["GlobalReplaceAllTip"] = "Alle im Ordner ersetzen",
         ["GlobalOpenFolder"] = "Öffnen Sie einen Ordner, um zu suchen.",
-        ["GlobalHint"] = "Textdateien im geöffneten Ordner durchsuchen.",
+        ["GlobalHint"] = "Textdateien im geöffneten Ordner und ungespeicherte Tabs durchsuchen.",
         ["Searching"] = "Suche läuft…",
         ["GlobalResults"] = "{0:N0} Ergebnisse in {1:N0} Dateien",
         ["GlobalLimited"] = " · Erste {0:N0} Treffer angezeigt",

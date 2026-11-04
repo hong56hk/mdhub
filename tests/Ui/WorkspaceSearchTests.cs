@@ -39,6 +39,37 @@ internal static class WorkspaceSearchTests
         {
             Shortcut(Key.F);
             Check(search.IsVisible && Find<TextBox>("GlobalQuery").IsFocused && search.Result.Count == 0, "search shortcut opens and focuses empty-folder search");
+            var tabsBeforeFolder = Find<ListBox>("Tabs");
+            var untitled = (NoteDocument)tabsBeforeFolder.SelectedItem!;
+            untitled.Editor.Text = "scratch needle";
+            Query("needle");
+            Check(search.Result.Count == 1 && search.Result.Files.Single().UnsavedName == untitled.UntitledName,
+                "global search includes untitled tabs without an open folder");
+            var other = (NoteDocument)typeof(MainView).GetMethod("AddDocument", BindingFlags.NonPublic | BindingFlags.Instance)!
+                .Invoke(view, [null, "another needle", untitled.UntitledName, null])!;
+            Query("needle");
+            Check(search.Result.Files.Count == 2 && search.Result.Files.Select(f => f.Path).Distinct().Count() == 2,
+                "untitled tabs with identical names have distinct search identities");
+            var scratchTree = Find<TreeView>("GlobalResults");
+            var scratchGroup = scratchTree.Items.OfType<TreeViewItem>().Single(i => i.Tag is SearchFile f && f.Path == untitled.Buffer.RecoveryKey);
+            Check(((StackPanel)scratchGroup.Header!).Children.OfType<TextBlock>().Single().Text == $"{untitled.UntitledName}  (1)",
+                "untitled result shows its tab name");
+            scratchTree.SelectedItem = scratchGroup.Items[0];
+            Pump();
+            Check(tabsBeforeFolder.SelectedItem == untitled && untitled.Editor.SelectedText == "needle",
+                "clicking an untitled result activates the correct tab and selects the match");
+            var scratchRequest = new WorkspaceReplaceRequest(search.Result.Files, "needle", "thread", new());
+            var scratchReplace = (Task<string>)typeof(MainView).GetMethod("ReplaceSearchResultsAsync", BindingFlags.NonPublic | BindingFlags.Instance)!
+                .Invoke(view, [scratchRequest])!;
+            Pump();
+            window.OwnedWindows.Single().GetVisualDescendants().OfType<Button>().Single(button => Equals(button.Content, "Replace"))
+                .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Await(scratchReplace);
+            Check(untitled.Text == "scratch thread" && other.Text == "another thread" && untitled.Path is null && other.Path is null,
+                "global replacement edits untitled buffers without saving them");
+            untitled.Editor.Undo();
+            Check(untitled.Text == "scratch needle", "untitled global replacement is undoable");
+            typeof(MainView).GetMethod("RemoveDocument", BindingFlags.NonPublic | BindingFlags.Instance)!.Invoke(view, [other]);
             var a = Path.Combine(root, "a.md");
             var sub = Directory.CreateDirectory(Path.Combine(root, "sub")).FullName;
             var b = Path.Combine(sub, "b.txt");
@@ -48,6 +79,8 @@ internal static class WorkspaceSearchTests
             File.WriteAllText(Path.Combine(root, ".git", "ignored"), "alpha");
             File.WriteAllBytes(Path.Combine(root, "binary.bin"), [0, 1, 2]);
             Invoke("LoadRootAsync", root);
+            Query("needle");
+            Check(search.Result.Files.Single().Path == untitled.Buffer.RecoveryKey, "folder search also includes untitled tabs");
             Query("alpha");
             Check(search.Result.Count == 5 && search.Result.Files.Count == 2, $"global search groups recursive text results and excludes metadata and binary files (count={search.Result.Count}, error={search.Result.Error})");
             Find<ToggleButton>("GlobalWholeWord").IsChecked = true;
@@ -92,7 +125,7 @@ internal static class WorkspaceSearchTests
             dialog.GetVisualDescendants().OfType<Button>().Single(button => Equals(button.Content, "Replace")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Await(replace);
             Check(document.Text == "unsaved beta" && document.IsDirty && File.ReadAllText(a).StartsWith("alpha"), "replace preserves open buffers as unsaved edits");
-            Check(File.ReadAllText(b) == "beta\r\nother beta" && File.ReadAllBytes(b).Take(2).SequenceEqual(new byte[] { 255, 254 }), "closed-file replacement preserves Unicode encoding and CRLF");
+            Check(File.ReadAllText(b) == "beta\r\nother beta" && File.ReadAllBytes(b).Take(2).SequenceEqual(new byte[] { 255, 254 }), $"closed-file replacement preserves Unicode encoding and CRLF (text={File.ReadAllText(b)}, bytes={Convert.ToHexString(File.ReadAllBytes(b))}, status={replace.Result})");
             document.Editor.Undo();
             Check(document.Text == "unsaved alpha", "open-buffer replacement can be undone");
             Query("beta");

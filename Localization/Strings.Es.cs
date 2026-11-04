@@ -171,7 +171,7 @@ public static partial class Loc
         ["GlobalReplaceTip"] = "Reemplazar la coincidencia o el archivo seleccionado",
         ["GlobalReplaceAllTip"] = "Reemplazar todo en la carpeta",
         ["GlobalOpenFolder"] = "Abra una carpeta para buscar.",
-        ["GlobalHint"] = "Buscar en los archivos de texto de la carpeta abierta.",
+        ["GlobalHint"] = "Buscar en los archivos de texto de la carpeta abierta y las pestañas sin guardar.",
         ["Searching"] = "Buscando…",
         ["GlobalResults"] = "{0:N0} resultados en {1:N0} archivos",
         ["GlobalLimited"] = " · Se muestran las primeras {0:N0} coincidencias",
