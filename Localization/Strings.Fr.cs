@@ -1,10 +1,16 @@
-﻿namespace Mdhub.Localization;
+namespace Mdhub.Localization;
 
 // fr strings. Keys must match Strings.En.cs (FileTests check this).
 public static partial class Loc
 {
     public static readonly IReadOnlyDictionary<string, string> Fr = new Dictionary<string, string>
     {
+        ["RecoveryFailed"] = "Impossible de mettre à jour la copie de récupération. Vos modifications restent ouvertes. Enregistrez-les avant de fermer.",
+        ["FileChangedTitle"] = "Fichier modifié sur le disque",
+        ["FileChangedMessage"] = "Un autre programme a modifié {0}. Remplacer le fichier par vos modifications, recharger en abandonnant vos modifications ou annuler ?",
+        ["FileDeletedMessage"] = "Un autre programme a supprimé {0}. Remplacer recréera le fichier. Le rechargement nécessite que le fichier existe à nouveau.",
+        ["ReplaceDiskFile"] = "Remplacer le fichier",
+        ["FileMissingReload"] = "Le fichier n’existe plus. Vos modifications sont conservées.",
         ["EmojiCategoryRecent"] = "Récents",
         ["EmojiNoRecents"] = "Les emojis récemment utilisés apparaîtront ici.",
         ["Sc.editor.emoji"] = "Ouvrir le sélecteur d’emojis",

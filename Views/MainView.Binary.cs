@@ -46,6 +46,8 @@ public partial class MainView
         var (text, encoding, lossy) = await TextFileStore.ReadLenientAsync(path);
         var index = _documents.IndexOf(placeholder);
         var document = new NoteDocument { Path = path, SavedText = text, Encoding = encoding, IsReadOnlyText = lossy };
+        document.Buffer.SavedEncoding = encoding;
+        TrackRecovery(document);
         document.SetLoadedLineEnding(Mdhub.Text.LineEndings.Detect(text, LineEndingSettings.ForNewFile)); // item 68
         InitializeTextDocument(document, text);
         document.Buffer.ResetHistory();

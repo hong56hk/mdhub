@@ -39,7 +39,8 @@ public partial class MainWindow : Window
         // Bug 87: NoRepeat shortcuts re-arm on key release; losing activation (a dialog, another app) re-arms everything.
         // (Not on in-window focus moves: Ctrl+W moves focus to the next tab, and its auto-repeat must stay swallowed.)
         AddHandler(KeyUpEvent, (_, e) => Shortcuts.KeyReleased(e.Key.ToString()), RoutingStrategies.Tunnel, handledEventsToo: true);
-        Deactivated += (_, _) => Shortcuts.ReleaseAll();
+        Deactivated += (_, _) => { Shortcuts.ReleaseAll(); _ = MainView.FlushRecoveryAsync(); };
+        Activated += (_, _) => MainView.ScheduleExternalCheck();
         // A modal dialog swallows the owner's KeyUp, so any window opening re-arms everything too.
         if (Interlocked.Exchange(ref _dialogHookInstalled, 1) == 0)
             WindowOpenedEvent.AddClassHandler<Window>((_, _) => Shortcuts.ReleaseAll(), handledEventsToo: true);
@@ -88,6 +89,7 @@ public partial class MainWindow : Window
         SetZoom(ZoomLevel.Wheel(ZoomPercent, e.Delta.Y));
     }
 
+    public WindowSession CaptureRecoverySession() => SessionManager.Bounds(this, MainView.CaptureRecoverySession());
     public WindowSession CaptureSession() => SessionManager.Bounds(this, MainView.CaptureSession());
     public void ApplyBounds(WindowSession session) => SessionManager.Apply(this, session);
 
@@ -99,7 +101,8 @@ public partial class MainWindow : Window
         {
             if (started) return;
             started = true;
-            await MainView.RestoreSessionAsync(session, note);
+            try { await MainView.RestoreSessionAsync(session, note); }
+            finally { SessionManager.CompleteRestore(this); }
             Title = MainView.DocumentTitle;
         };
     }

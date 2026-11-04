@@ -1,10 +1,16 @@
-﻿namespace Mdhub.Localization;
+namespace Mdhub.Localization;
 
 // zh-Hans strings. Keys must match Strings.En.cs (FileTests check this).
 public static partial class Loc
 {
     public static readonly IReadOnlyDictionary<string, string> ZhHans = new Dictionary<string, string>
     {
+        ["RecoveryFailed"] = "无法更新恢复副本。编辑内容仍保留，请在关闭前保存。",
+        ["FileChangedTitle"] = "磁盘上的文件已更改",
+        ["FileChangedMessage"] = "其他程序已更改 {0}。要以编辑内容替换磁盘文件、重新加载并放弃编辑，还是取消？",
+        ["FileDeletedMessage"] = "其他程序已删除 {0}。替换将以编辑内容重建文件；文件恢复前无法重新加载。",
+        ["ReplaceDiskFile"] = "替换磁盘文件",
+        ["FileMissingReload"] = "文件已不存在。编辑内容已保留。",
         ["EmojiCategoryRecent"] = "最近使用",
         ["EmojiNoRecents"] = "最近使用的表情符号将显示在此处。",
         ["Sc.editor.emoji"] = "打开表情符号选择器",

@@ -5,6 +5,12 @@ public static partial class Loc
 {
     public static readonly IReadOnlyDictionary<string, string> Ja = new Dictionary<string, string>
     {
+        ["RecoveryFailed"] = "復元用コピーを更新できません。編集内容は開いたままです。閉じる前に保存してください。",
+        ["FileChangedTitle"] = "ディスク上のファイルが変更されました",
+        ["FileChangedMessage"] = "別のプログラムが {0} を変更しました。編集内容で上書き、編集を破棄して再読み込み、またはキャンセルしますか？",
+        ["FileDeletedMessage"] = "別のプログラムが {0} を削除しました。上書きで再作成できます。ファイルが復元されるまで再読み込みはできません。",
+        ["ReplaceDiskFile"] = "ディスクのファイルを上書き",
+        ["FileMissingReload"] = "ファイルが存在しません。編集内容は保持されています。",
         ["EmojiCategoryRecent"] = "最近使った絵文字",
         ["EmojiNoRecents"] = "最近使った絵文字がここに表示されます。",
         ["Sc.editor.emoji"] = "絵文字ピッカーを開く",

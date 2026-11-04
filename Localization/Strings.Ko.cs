@@ -5,6 +5,12 @@ public static partial class Loc
 {
     public static readonly IReadOnlyDictionary<string, string> Ko = new Dictionary<string, string>
     {
+        ["RecoveryFailed"] = "복구 사본을 업데이트할 수 없습니다. 편집 내용은 열려 있습니다. 닫기 전에 저장하세요.",
+        ["FileChangedTitle"] = "디스크의 파일이 변경됨",
+        ["FileChangedMessage"] = "다른 프로그램이 {0}을(를) 변경했습니다. 편집 내용으로 덮어쓰거나, 편집을 버리고 다시 불러오거나, 취소하시겠습니까?",
+        ["FileDeletedMessage"] = "다른 프로그램이 {0}을(를) 삭제했습니다. 덮어쓰면 파일을 다시 만듭니다. 파일이 복원될 때까지 다시 불러올 수 없습니다.",
+        ["ReplaceDiskFile"] = "디스크 파일 덮어쓰기",
+        ["FileMissingReload"] = "파일이 없습니다. 편집 내용은 유지되었습니다.",
         ["EmojiCategoryRecent"] = "최근 사용",
         ["EmojiNoRecents"] = "최근에 사용한 이모지가 여기에 표시됩니다.",
         ["Sc.editor.emoji"] = "이모지 선택기 열기",

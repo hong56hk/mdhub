@@ -5,6 +5,12 @@ public static partial class Loc
 {
     public static readonly IReadOnlyDictionary<string, string> ZhHant = new Dictionary<string, string>
     {
+        ["RecoveryFailed"] = "無法更新復原副本。編輯內容仍保留，請在關閉前儲存。",
+        ["FileChangedTitle"] = "磁碟上的檔案已變更",
+        ["FileChangedMessage"] = "其他程式已變更 {0}。要以編輯內容取代磁碟檔案、重新載入並捨棄編輯，還是取消？",
+        ["FileDeletedMessage"] = "其他程式已刪除 {0}。取代將以編輯內容重建檔案；檔案恢復前無法重新載入。",
+        ["ReplaceDiskFile"] = "取代磁碟檔案",
+        ["FileMissingReload"] = "檔案已不存在。編輯內容已保留。",
         ["EmojiCategoryRecent"] = "最近使用",
         ["EmojiNoRecents"] = "最近使用的表情符號將顯示於此處。",
         ["Sc.editor.emoji"] = "開啟表情符號選擇器",

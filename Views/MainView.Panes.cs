@@ -64,6 +64,8 @@ public partial class MainView
         _active = pane.Active;
         _viewMode = (ViewMode)pane.ViewMode;
         _syncFromPreview = false;
+        _ = FlushRecoveryAsync();
+        ScheduleExternalCheck();
         pane.SetActive(true);
         if (_active is not null) FolderExplorer.MarkActive(_active.Path);
         UpdateContentLayout();

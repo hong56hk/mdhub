@@ -35,6 +35,7 @@ public partial class MainView : UserControl
     {
         InitializeComponent();
         InitializePanes();
+        InitializeRecovery();
         // Code-set status texts follow a language switch (XAML texts use DynamicResource).
         AttachedToVisualTree += (_, _) => Loc.Changed += OnLanguageChanged;
         DetachedFromVisualTree += (_, _) => Loc.Changed -= OnLanguageChanged;
@@ -84,7 +85,7 @@ public partial class MainView : UserControl
             else if (e.Source == _active?.Editor) _syncFromPreview = false;
         }, RoutingStrategies.Bubble, handledEventsToo: true);
         AddHandler(LostFocusEvent, (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateCaretStatus), RoutingStrategies.Bubble, handledEventsToo: true);
-        AddDocument(null, "", "Untitled.md");
+        _placeholderBuffer = AddDocument(null, "", "Untitled.md").Buffer;
     }
 
     public void FocusEditor()
@@ -94,6 +95,10 @@ public partial class MainView : UserControl
     }
     public void StopPreview()
     {
+        _stopped = true;
+        _recoveryTimer.Stop();
+        foreach (var buffer in _recoveryBuffers) buffer.Changed -= OnRecoveryChanged;
+        _recoveryBuffers.Clear();
         foreach (var pane in _panes) { pane.MdEditor.Stop(); pane.ImageViewer.ShowImage(null); }
         _outlineTimer?.Stop();
         foreach (var document in UniqueDocuments) document.Image?.Dispose();
@@ -106,6 +111,7 @@ public partial class MainView : UserControl
 
     private void SelectDocument(NoteDocument document)
     {
+        _ = FlushRecoveryAsync();
         _sessionNote = null;
         _active = document;
         _activePane.Active = document;
@@ -117,6 +123,7 @@ public partial class MainView : UserControl
         UpdateStatus();
         FocusEditor();
         document.RestoreSelection();
+        ScheduleExternalCheck();
         Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (_active == document) document.RestoreSelection(); });
     }
 
@@ -207,6 +214,7 @@ public partial class MainView : UserControl
 
     public async Task RestoreSessionAsync(WindowSession session, string? note)
     {
+        _restoringRecovery = true;
         var failed = 0;
         var placeholder = _documents.Count == 1 && _documents[0].Path is null && !_documents[0].IsDirty && _documents[0].Text.Length == 0 ? _documents[0] : null;
         if (session.Folder is { } folder)
@@ -214,15 +222,22 @@ public partial class MainView : UserControl
             try { await LoadRootAsync(folder); } catch (Exception) { failed++; }
         }
         var opened = new List<NoteDocument>();
+        var openedByKey = new Dictionary<string, NoteDocument>();
         foreach (var tab in session.Tabs)
         {
             try
             {
                 _restoringTabs = true;
-                try { await OpenPathAsync(tab); } finally { _restoringTabs = false; }
-                if (_active is { Path: { } openedPath } document && SamePath(openedPath, Path.GetFullPath(tab)))
+                try
+                {
+                    if (session.Recovery.FirstOrDefault(r => r.Key == tab) is { } recovery) RestoreRecoveryDocument(recovery);
+                    else await OpenPathAsync(tab);
+                }
+                finally { _restoringTabs = false; }
+                if (_active is { } document && (session.Recovery.Any(r => r.Key == tab) || (document.Path is { } openedPath && SamePath(openedPath, Path.GetFullPath(tab)))))
                 {
                     if (!opened.Contains(document)) opened.Add(document);
+                    openedByKey[tab] = document;
                 }
                 else failed++;
             }
@@ -230,8 +245,10 @@ public partial class MainView : UserControl
         }
         if (opened.Count > 0 && placeholder is not null && _documents.Contains(placeholder)) await CloseDocumentAsync(placeholder);
         if (session.ActiveTab >= 0 && session.ActiveTab < session.Tabs.Count
-            && _documents.FirstOrDefault(d => d.Path is { } p && SamePath(p, Path.GetFullPath(session.Tabs[session.ActiveTab]))) is { } active)
+            && openedByKey.TryGetValue(session.Tabs[session.ActiveTab], out var active))
             FileTabs.SelectedDocument = active;
+        _restoringRecovery = false;
+        ScheduleExternalCheck();
         if (failed > 0) note = $"{note} {Loc.Plural("ReopenFailedOne", "ReopenFailedMany", failed)}".Trim();
         _sessionNote = note;
         UpdateStatus();
@@ -241,15 +258,20 @@ public partial class MainView : UserControl
     {
         if (_allowClose) return;
         if (_busy) { e.Cancel = true; return; }
-        if (!AllDocuments.Any(d => d.IsDirty)) { MdEditor.Stop(); return; }
         e.Cancel = true;
         await RunAsync(async () =>
         {
-            foreach (var document in UniqueDocuments.ToArray())
-                if (!await ConfirmCloseAsync(document)) return;
+            if (SessionManager.Enabled)
+            {
+                if (!await FlushRecoveryAsync() && UniqueDocuments.Any(d => d.IsDirty
+                    || (d.Path is null && !d.IsReadOnlyText && d.Text.Length > 0))) return;
+            }
+            else
+            {
+                foreach (var document in UniqueDocuments.ToArray())
+                    if (!await ConfirmCloseAsync(document)) return;
+            }
             _allowClose = true;
-            MdEditor.Stop();
-        _outlineTimer?.Stop();
             CloseRequested?.Invoke();
         });
     }

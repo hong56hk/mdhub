@@ -5,6 +5,12 @@ public static partial class Loc
 {
     public static readonly IReadOnlyDictionary<string, string> En = new Dictionary<string, string>
     {
+        ["RecoveryFailed"] = "Unable to update recovery. Your edits are still open; please save them before closing.",
+        ["FileChangedTitle"] = "File changed on disk",
+        ["FileChangedMessage"] = "Another program changed {0}. Replace the disk file with your edits, reload from disk and discard your edits, or cancel?",
+        ["FileDeletedMessage"] = "Another program deleted {0}. Replace will recreate it with your edits. Reload is unavailable until the file exists again.",
+        ["ReplaceDiskFile"] = "Replace disk file",
+        ["FileMissingReload"] = "The file no longer exists. Your edits have been kept.",
         ["EmojiCategoryRecent"] = "Recent",
         ["EmojiNoRecents"] = "Recently used emojis will appear here.",
         ["Sc.editor.emoji"] = "Open emoji picker",

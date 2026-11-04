@@ -8,6 +8,7 @@ public sealed record WindowSession
 {
     public string? Folder { get; init; }
     public List<string> Tabs { get; init; } = [];
+    public List<RecoveryDocument> Recovery { get; init; } = [];
     public int ActiveTab { get; init; } = -1;
     public double X { get; init; }
     public double Y { get; init; }
@@ -109,7 +110,16 @@ public static class SessionStore
                 || version.GetInt32() != CurrentVersion) return null;
             var data = parsed.RootElement.Deserialize<SessionData>(Json);
             if (data?.Windows is null) return null;
-            return data with { Windows = data.Windows.Where(w => w is not null).Select(w => w with { Tabs = (w.Tabs ?? []).Where(t => !string.IsNullOrWhiteSpace(t)).ToList() }).ToList() };
+            return data with
+            {
+                Windows = data.Windows.Where(w => w is not null).Select(w => w with
+                {
+                    Recovery = (w.Recovery ?? []).Where(r => r is not null && !string.IsNullOrEmpty(r.Key)
+                        && r.Text is not null && r.SavedText is not null
+                        && (r.Path is null || Path.IsPathFullyQualified(r.Path))).ToList(),
+                    Tabs = (w.Tabs ?? []).Where(t => !string.IsNullOrWhiteSpace(t)).ToList()
+                }).ToList()
+            };
         }
         catch (Exception) { return null; }
     }
@@ -150,7 +160,7 @@ public static class SessionStore
             var tabs = new List<string>();
             foreach (var tab in window.Tabs)
             {
-                if (Exists(fileExists, tab)) { if (!tabs.Contains(tab, StringComparer.OrdinalIgnoreCase)) tabs.Add(tab); }
+                if (window.Recovery.Any(r => r.Key == tab) || Exists(fileExists, tab)) { if (!tabs.Contains(tab, StringComparer.OrdinalIgnoreCase)) tabs.Add(tab); }
                 else skipped++;
             }
             var active = activePath is null ? -1 : tabs.FindIndex(t => string.Equals(t, activePath, StringComparison.OrdinalIgnoreCase));

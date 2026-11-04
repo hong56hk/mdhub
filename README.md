@@ -18,6 +18,7 @@ MDHub is a desktop app for keeping personal notes and journals locally. It has n
 ## Features
 
 - **Plain `.md` files, no lock-in.** Notes and journals are saved and organized as standard Markdown files in ordinary folders. Any text editor can open them, even everyone's favorite, vim.
+- **Unsaved-work recovery.** Unsaved edits and new untitled notes return when you reopen MDHub. Recovery copies stay in app data; original files change only when you save. Recovery updates after a two-second pause, every ten seconds during continuous editing, and when switching tabs, leaving the app, or quitting. Closing an unsaved tab still offers Save / Discard / Cancel. If another program changes a file, unchanged tabs reload automatically when activated; edited tabs offer Replace disk file / Reload / Cancel.
 - **Fully offline.** Everything works locally, with no account, no cloud and no network.
 - **Fast search.** Find anything across all your saved notes in moments.
 - **A familiar editor.** The editor works like VS Code and uses similar keyboard shortcuts. Vertical editing, **(ctrl+p)quick open**, mini-map in editor are supported.

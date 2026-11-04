@@ -54,6 +54,7 @@ public partial class MainView
             if (!close) return;
             RememberClosedTab(document);
             RemoveDocument(document);
+            await FlushRecoveryAsync();
         }
     }
 }
