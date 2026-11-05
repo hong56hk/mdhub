@@ -28,18 +28,19 @@
   </UserControl.Styles>
   <UserControl.ContextMenu>
     <ContextMenu x:Name="ViewerMenu">
-      <!-- Item 99: same as the toolbar buttons / Ctrl+= and Ctrl+-; gesture text comes from the shortcut table. -->
+      <!-- Item 99: same as the toolbar buttons / Ctrl+= and Ctrl+-; gesture text comes from the shortcut table.
+           Item 100: headers are set in code (LocResources.Track) and relabelled on Opening, not DynamicResource. -->
       <MenuItem x:Name="MenuZoomIn" />
       <MenuItem x:Name="MenuZoomOut" />
       <Separator />
-      <MenuItem x:Name="MenuRotateLeft" Header="{DynamicResource ImageRotateLeft}" />
-      <MenuItem x:Name="MenuRotateRight" Header="{DynamicResource ImageRotateRight}" />
-      <MenuItem x:Name="MenuFlipHorizontal" Header="{DynamicResource ImageFlipHorizontal}" />
-      <MenuItem x:Name="MenuFlipVertical" Header="{DynamicResource ImageFlipVertical}" />
+      <MenuItem x:Name="MenuRotateLeft" />
+      <MenuItem x:Name="MenuRotateRight" />
+      <MenuItem x:Name="MenuFlipHorizontal" />
+      <MenuItem x:Name="MenuFlipVertical" />
       <Separator />
-      <MenuItem x:Name="MenuFit" Header="{DynamicResource ImageFitWindow}" />
-      <MenuItem x:Name="MenuActualSize" Header="{DynamicResource ImageActualSize}" />
-      <MenuItem x:Name="MenuResetView" Header="{DynamicResource ImageResetView}" />
+      <MenuItem x:Name="MenuFit" />
+      <MenuItem x:Name="MenuActualSize" />
+      <MenuItem x:Name="MenuResetView" />
     </ContextMenu>
   </UserControl.ContextMenu>
   <Grid>

@@ -66,6 +66,10 @@ public partial class ImageViewer : UserControl
         FlipVerticalButton.Click += (_, _) => Flip(false);
         FitButton.Click += (_, _) => FitToWindow();
         ActualSizeButton.Click += (_, _) => ActualSize();
+        foreach (var (item, key) in new[] { (MenuZoomIn, "ImageZoomIn"), (MenuZoomOut, "ImageZoomOut"), (MenuRotateLeft, "ImageRotateLeft"), (MenuRotateRight, "ImageRotateRight"),
+            (MenuFlipHorizontal, "ImageFlipHorizontal"), (MenuFlipVertical, "ImageFlipVertical"), (MenuFit, "ImageFitWindow"), (MenuActualSize, "ImageActualSize"), (MenuResetView, "ImageResetView") })
+            LocResources.Track(item, key);
+        ViewerMenu.Opening += (_, _) => LocResources.Refresh(ViewerMenu);
         MenuZoomIn.Click += (_, _) => StepZoom(1);
         MenuZoomOut.Click += (_, _) => StepZoom(-1);
         ShortcutKeys.SetId(MenuZoomIn, "zoom.in");
@@ -420,8 +424,5 @@ public partial class ImageViewer : UserControl
     {
         ToolTip.SetTip(ZoomInButton, Loc.F("ImageZoomInTip", Hint("zoom.in")));
         ToolTip.SetTip(ZoomOutButton, Loc.F("ImageZoomOutTip", Hint("zoom.out")));
-        // Set in code (not DynamicResource) so a closed menu's headers follow a language change immediately.
-        MenuZoomIn.Header = Loc.T("ImageZoomIn");
-        MenuZoomOut.Header = Loc.T("ImageZoomOut");
     }
 }

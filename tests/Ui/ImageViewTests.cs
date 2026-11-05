@@ -225,7 +225,7 @@ internal static class ImageViewTests
         viewer.ShowImage(bitmap); Pump(); viewer.ResetView(); Pump();
         foreach (var code in Mdhub.Localization.Loc.Languages.Select(l => l.Code))
         {
-            Mdhub.Localization.Loc.Set(code); Pump();
+            Mdhub.Localization.Loc.Set(code); Mdhub.Localization.LocResources.Refresh(viewer.ContextMenu!); Pump(); // as on Opening (item 100; real opens: --menulang-only)
             Check(mIn!.Header as string == Mdhub.Localization.Loc.T("ImageZoomIn") && mOut!.Header as string == Mdhub.Localization.Loc.T("ImageZoomOut")
                 && (code == Mdhub.Localization.Loc.English || (Mdhub.Localization.Loc.T("ImageZoomIn") != "Zoom in" && Mdhub.Localization.Loc.T("ImageZoomOut") != "Zoom out")),
                 $"menu Zoom In / Out localized ({code}: {mIn.Header} / {mOut.Header})");

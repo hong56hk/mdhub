@@ -56,9 +56,13 @@ public static class LocResources
         Services.SessionManager.SaveSettings();
     }
 
-    public static MenuItem Item(string key)
+    public static MenuItem Item(string key) => Track(new MenuItem(), key);
+
+    // Item 100: an existing (e.g. XAML) item labelled from a key; Refresh relabels it when its menu opens.
+    // DynamicResource headers in a closed ContextMenu miss the resource swap and stay in the old language.
+    public static MenuItem Track(MenuItem item, string key)
     {
-        var item = new MenuItem { Header = Loc.T(key) };
+        item.Header = Loc.T(key);
         MenuKeys.AddOrUpdate(item, key);
         return item;
     }
@@ -120,7 +124,7 @@ public static class LocResources
                     var outside = e.TryGetPosition((Control)source, out var at) && !new Rect(((Control)source).Bounds.Size).Contains(at);
                     var target = outside && e.TryGetPosition(owner, out var p) && new Rect(owner.Bounds.Size).Contains(p) ? owner : (Control)source;
                     menu.PlacementRect = e.TryGetPosition(target, out var point) ? AtPointer(point, target.Bounds.Size) : null;
-                    if (target != source && !e.Handled) { e.Handled = true; menu.Open(owner); }
+                    if (target != source && !e.Handled) { e.Handled = true; Open(menu, owner); }
                 }
                 return;
             }
@@ -131,6 +135,15 @@ public static class LocResources
     // source's padding (the editor reports the text presenter as source) is clamped onto its edge.
     public static Rect AtPointer(Point point, Size bounds) =>
         new(Math.Clamp(point.X, 0, Math.Max(0, bounds.Width - 1)), Math.Clamp(point.Y, 0, Math.Max(0, bounds.Height - 1)), 1, 1);
+
+    // Item 100: ContextMenu.Open(control) does not raise Opening (only a ContextRequested on the owner does), so a menu
+    // opened in code would keep the headers of the language it was last opened in. Relabel and pad first.
+    public static void Open(ContextMenu menu, Control owner)
+    {
+        ApplyItemPadding(menu);
+        Refresh(menu);
+        menu.Open(owner);
+    }
 
     public static ContextMenu Localized(this ContextMenu menu)
     {
