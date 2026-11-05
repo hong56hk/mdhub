@@ -122,7 +122,6 @@ public static class Shortcuts
         // Item 91: image viewer (viewer focused). Ctrl+=/-/0 above zoom the image instead of the window while one is shown.
         I("image.actualSize", "Image: actual size (100%)", C("D1"), C("NumPad1")),
         I("image.handTool", "Image: hand tool", P("H")),
-        I("image.zoomTool", "Image: zoom tool", P("Z")),
         I("image.rotateTool", "Image: rotate view tool", P("R")),
         I("image.tempHand", "Image: hand while held", P("Space")),
         I("image.resetView", "Image: reset view", P("Escape")),

@@ -11,7 +11,7 @@ using Mdhub.Services;
 namespace Mdhub.Components;
 
 // Item 91: the viewer's pointer tools (Photoshop-style: H hand, Z zoom, R rotate view; Space holds the hand).
-public enum ImageTool { Hand, Zoom, Rotate }
+public enum ImageTool { Hand, Rotate }
 
 // Item 91: one image's view (zoom, pan, rotation, flip). View-only: nothing here touches the file or the document.
 public sealed class ImageViewState
@@ -53,12 +53,12 @@ public partial class ImageViewer : UserControl
         AddHandler(KeyUpEvent, OnKeyUp, RoutingStrategies.Bubble);
         LostFocus += (_, _) => { if (!IsKeyboardFocusWithin) SetSpaceHand(false); };
         HandButton.Click += (_, _) => Tool = ImageTool.Hand;
-        ZoomToolButton.Click += (_, _) => Tool = ImageTool.Zoom;
+        ZoomInButton.Click += (_, _) => StepZoom(1);
         ZoomOutButton.Click += (_, _) => StepZoom(-1);
-        AttachedToVisualTree += (_, _) => { Loc.Changed += UpdateZoomOutTip; Shortcuts.Changed += UpdateZoomOutTip; UpdateZoomOutTip(); };
-        DetachedFromVisualTree += (_, _) => { Loc.Changed -= UpdateZoomOutTip; Shortcuts.Changed -= UpdateZoomOutTip; };
-        UpdateZoomOutTip();
-        UpdateZoomOut();
+        AttachedToVisualTree += (_, _) => { Loc.Changed += UpdateZoomTips; Shortcuts.Changed += UpdateZoomTips; UpdateZoomTips(); };
+        DetachedFromVisualTree += (_, _) => { Loc.Changed -= UpdateZoomTips; Shortcuts.Changed -= UpdateZoomTips; };
+        UpdateZoomTips();
+        UpdateZoomButtons();
         RotateToolButton.Click += (_, _) => Tool = ImageTool.Rotate;
         RotateLeftButton.Click += (_, _) => Rotate90(-1);
         RotateRightButton.Click += (_, _) => Rotate90(1);
@@ -260,16 +260,13 @@ public partial class ImageViewer : UserControl
         }
         if (!point.Properties.IsLeftButtonPressed || Picture.Source is null) return;
         e.Handled = true;
-        // Double-click resets the view; with the zoom tool every click zooms, so quick clicks keep zooming.
-        if (e.ClickCount >= 2 && !afterRight && EffectiveTool != ImageTool.Zoom) { EndDrag(); ResetView(); return; }
+        // Double-click resets the view.
+        if (e.ClickCount >= 2 && !afterRight) { EndDrag(); ResetView(); return; }
         switch (EffectiveTool)
         {
             case ImageTool.Hand:
                 Pin();
                 BeginDrag(Drag.Pan, point.Position, e);
-                break;
-            case ImageTool.Zoom:
-                StepZoom(e.KeyModifiers.HasFlag(KeyModifiers.Alt) ? -1 : 1, e.GetPosition(this));
                 break;
             case ImageTool.Rotate:
                 Pin();
@@ -352,7 +349,6 @@ public partial class ImageViewer : UserControl
         switch (id)
         {
             case "image.handTool": Tool = ImageTool.Hand; break;
-            case "image.zoomTool": Tool = ImageTool.Zoom; break;
             case "image.rotateTool": Tool = ImageTool.Rotate; break;
             case "image.tempHand": SetSpaceHand(true); break;
             case "image.resetView": ResetView(); break;
@@ -377,7 +373,6 @@ public partial class ImageViewer : UserControl
     private void UpdateTool()
     {
         HandButton.Classes.Set("on", EffectiveTool == ImageTool.Hand);
-        ZoomToolButton.Classes.Set("on", EffectiveTool == ImageTool.Zoom);
         RotateToolButton.Classes.Set("on", EffectiveTool == ImageTool.Rotate);
         UpdateCursor();
     }
@@ -403,12 +398,22 @@ public partial class ImageViewer : UserControl
         var flip = new ScaleTransform(_state.FlipHorizontal ? -1 : 1, _state.FlipVertical ? -1 : 1);
         Picture.RenderTransform = _state.Rotation == 0 && !_state.FlipHorizontal && !_state.FlipVertical ? null
             : new TransformGroup { Children = { flip, new RotateTransform(_state.Rotation) } };
-        UpdateZoomOut();
+        UpdateZoomButtons();
         ZoomChanged?.Invoke(ZoomPercent);
     }
 
-    // Item 96: disabled at the 10% floor (and with no image).
-    private void UpdateZoomOut() => ZoomOutButton.IsEnabled = Picture.Source is not null && ImageZoom.StepZoom(Scale, -1) < Scale - 1e-9;
-    private void UpdateZoomOutTip() =>
-        ToolTip.SetTip(ZoomOutButton, Loc.F("ImageZoomOutTip", Shortcuts.Format("zoom.out", ShortcutKeys.IsMac).Split(" / ")[0]));
+    // Items 96/98: Zoom In / Zoom Out buttons, one step around the view centre (Ctrl+= / Ctrl+-); each is disabled at
+    // its limit (3200% / 10%) and with no image. Tooltips carry the live shortcut from the registry.
+    private void UpdateZoomButtons()
+    {
+        var has = Picture.Source is not null;
+        ZoomInButton.IsEnabled = has && ImageZoom.StepZoom(Scale, 1) > Scale + 1e-9;
+        ZoomOutButton.IsEnabled = has && ImageZoom.StepZoom(Scale, -1) < Scale - 1e-9;
+    }
+    private static string Hint(string id) => Shortcuts.Format(id, ShortcutKeys.IsMac).Split(" / ")[0];
+    private void UpdateZoomTips()
+    {
+        ToolTip.SetTip(ZoomInButton, Loc.F("ImageZoomInTip", Hint("zoom.in")));
+        ToolTip.SetTip(ZoomOutButton, Loc.F("ImageZoomOutTip", Hint("zoom.out")));
+    }
 }

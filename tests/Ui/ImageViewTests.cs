@@ -121,11 +121,39 @@ internal static class ImageViewTests
         viewer.FitToWindow();
         Check(viewer.PixelAt(new Point(220, 30)) is null, "outside the image there is no pixel");
 
-        // Item 96: Zoom Out button right after the zoom tool; one step around the view centre; disabled at 10%.
+        // Item 98 (Hong): the zoom tool is gone; a plain Zoom In button sits directly left of Zoom Out.
         viewer.ResetView(); Pump();
         var buttons = viewer.FindControl<Border>("Toolbar")!.GetVisualDescendants().OfType<Button>().ToList();
         var zoomOut = viewer.FindControl<Button>("ZoomOutButton")!;
-        Check(buttons.IndexOf(zoomOut) == buttons.IndexOf(viewer.FindControl<Button>("ZoomToolButton")!) + 1, "Zoom Out button sits right after the zoom tool");
+        var zoomIn = viewer.FindControl<Button>("ZoomInButton")!;
+        void Click(Button b) => b.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Check(viewer.FindControl<Button>("ZoomToolButton") is null && !Enum.GetNames<ImageTool>().Contains("Zoom") && !Shortcuts.All.Any(s => s.Id == "image.zoomTool"),
+            "no zoom tool: no button, no tool value, no shortcut");
+        Check(buttons.IndexOf(zoomIn) >= 0 && buttons.IndexOf(zoomOut) == buttons.IndexOf(zoomIn) + 1, "Zoom In sits directly left of Zoom Out");
+        Check(zoomIn.Content is Avalonia.Controls.Shapes.Path pin && pin.Data is not null, "Zoom In icon is path geometry (no glyph)");
+        var ci0 = CenterImage(); var zi0 = viewer.Scale;
+        Click(zoomIn); Pump();
+        var ci1 = CenterImage();
+        Check(Math.Abs(viewer.Scale - ImageZoom.StepZoom(zi0, 1)) < 1e-9 && Math.Abs(ci0.X - ci1.X) < 1e-6 && Math.Abs(ci0.Y - ci1.Y) < 1e-6, $"Zoom In click: one step, anchored at the view centre ({viewer.ZoomPercent}%)");
+        for (var i = 0; i < 40 && zoomIn.IsEnabled; i++) Click(zoomIn);
+        Pump();
+        Check(viewer.ZoomPercent == 3200 && !zoomIn.IsEnabled && zoomOut.IsEnabled, "Zoom In is disabled at 3200%");
+        viewer.StepZoom(-1); Pump();
+        Check(zoomIn.IsEnabled, "Zoom In is enabled again after zooming out");
+        viewer.ShowImage(null); Pump();
+        Check(!zoomIn.IsEnabled && !zoomOut.IsEnabled, "Zoom In and Zoom Out are disabled with no image");
+        viewer.ShowImage(bitmap); viewer.ResetView(); Pump();
+        foreach (var code in Mdhub.Localization.Loc.Languages.Select(l => l.Code))
+        {
+            Mdhub.Localization.Loc.Set(code); Pump();
+            var tip = ToolTip.GetTip(zoomIn) as string ?? "";
+            var word = Mdhub.Localization.Loc.T("ImageZoomIn");
+            Check(tip.StartsWith(word) && tip.Contains(Shortcuts.Format("zoom.in", ShortcutKeys.IsMac).Split(" / ")[0]) && (code == Mdhub.Localization.Loc.English || word != "Zoom in"),
+                $"Zoom In tooltip localized with the Ctrl+= hint ({code})");
+        }
+        Mdhub.Localization.Loc.Set(Mdhub.Localization.Loc.English); Pump();
+
+        // Item 96: Zoom Out: one step around the view centre; disabled at 10%.
         Check(zoomOut.Content is Avalonia.Controls.Shapes.Path, "Zoom Out icon is path geometry (no glyph)");
         var c0 = CenterImage(); var z0 = viewer.Scale;
         zoomOut.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent)); Pump();
@@ -148,7 +176,7 @@ internal static class ImageViewTests
 
         // Item 97: right-button drag pans with any tool; a still right click opens the menu97; a drag suppresses it.
         var menu97 = viewer.ContextMenu!;
-        foreach (var tool in new[] { ImageTool.Zoom, ImageTool.Rotate, ImageTool.Hand })
+        foreach (var tool in new[] { ImageTool.Rotate, ImageTool.Hand })
         {
             viewer.Tool = tool; viewer.ActualSize(); Pump();
             var o97 = viewer.Offset; var rot = viewer.Rotation; var zoom = viewer.ZoomPercent;
@@ -187,7 +215,7 @@ internal static class ImageViewTests
         // Keys while the viewer has focus.
         viewer.Focus(); Pump();
         void Key(Key k, RawInputModifiers m = RawInputModifiers.None) { window.KeyPress(k, m, PhysicalKey.None, null); window.KeyRelease(k, m, PhysicalKey.None, null); Pump(); }
-        Key(Avalonia.Input.Key.Z); Check(viewer.Tool == ImageTool.Zoom, "Z selects the zoom tool");
+        Key(Avalonia.Input.Key.Z); Check(viewer.Tool == ImageTool.Hand, "Z no longer selects a tool (zoom tool removed)");
         Key(Avalonia.Input.Key.R); Check(viewer.Tool == ImageTool.Rotate && viewer.CursorType == StandardCursorType.Cross, "R selects free rotate");
         window.KeyPress(Avalonia.Input.Key.Space, RawInputModifiers.None, PhysicalKey.None, null); Pump();
         Check(viewer.EffectiveTool == ImageTool.Hand && viewer.Tool == ImageTool.Rotate && viewer.CursorType == StandardCursorType.Hand, "holding Space is a temporary hand");
@@ -199,17 +227,17 @@ internal static class ImageViewTests
         viewer.Rotate90(1);
         Key(Avalonia.Input.Key.Escape); Check(viewer.IsFit && viewer.Rotation == 0, "Esc resets the view");
 
-        // Mouse: hand drag pans, zoom-tool click / Alt+click, double-click resets.
+        // Mouse: hand drag pans, Alt+wheel zooms, double-click resets.
         viewer.ActualSize(); Pump();
         var start = viewer.Offset;
         window.MouseDown(new Point(200, 200), MouseButton.Left); window.MouseMove(new Point(230, 190)); window.MouseUp(new Point(230, 190), MouseButton.Left); Pump();
         Check(viewer.Offset == start + new Point(30, -10), $"hand drag pans ({viewer.Offset - start})");
-        viewer.Tool = ImageTool.Zoom;
         var z = viewer.ZoomPercent;
         window.MouseDown(new Point(300, 250), MouseButton.Left); window.MouseUp(new Point(300, 250), MouseButton.Left); Pump();
-        Check(viewer.ZoomPercent == 150 && z == 100, $"zoom tool click zooms in ({viewer.ZoomPercent})");
-        window.MouseDown(new Point(300, 250), MouseButton.Left, RawInputModifiers.Alt); window.MouseUp(new Point(300, 250), MouseButton.Left, RawInputModifiers.Alt); Pump();
-        Check(viewer.ZoomPercent == 100, $"Alt+click zooms out ({viewer.ZoomPercent})");
+        Check(viewer.ZoomPercent == 100, $"a click no longer zooms ({viewer.ZoomPercent})");
+        window.MouseDown(new Point(120, 330), MouseButton.Left, RawInputModifiers.Alt); window.MouseUp(new Point(120, 330), MouseButton.Left, RawInputModifiers.Alt); Pump(); // away from the first click: not a double-click
+        Check(viewer.ZoomPercent == 100 && z == 100, $"Alt+click no longer zooms ({viewer.ZoomPercent})");
+        viewer.ActualSize(); Pump();
         window.MouseWheel(new Point(300, 250), new Vector(0, 2), RawInputModifiers.Alt); Pump();
         Check(viewer.ZoomPercent == 121, $"Alt+wheel zooms ({viewer.ZoomPercent})");
         viewer.Tool = ImageTool.Hand;
@@ -255,8 +283,8 @@ internal static class ImageViewTests
             var viewer = window.GetVisualDescendants().OfType<ImageViewer>().First(v => v.IsVisible);
             var status = window.GetVisualDescendants().OfType<BottomStatusBar>().First();
             Check(viewer.IsKeyboardFocusWithin, "the image tab takes keyboard focus from the hidden editor");
-            Key(Avalonia.Input.Key.Z);
-            Check(viewer.Tool == ImageTool.Zoom, "Z works in the focused image tab");
+            Key(Avalonia.Input.Key.R);
+            Check(viewer.Tool == ImageTool.Rotate, "R works in the focused image tab");
             Key(Avalonia.Input.Key.H);
             var windowZoom = window.ZoomPercent;
             var imageZoom = viewer.ZoomPercent;
@@ -294,7 +322,7 @@ internal static class ImageViewTests
             Key(Avalonia.Input.Key.D0, ctrl);
             Check(window.ZoomPercent == windowZoom, "Ctrl+0 resets the window zoom in a text tab");
             Check(!Shortcuts.Conflicts().Any(), "the shortcut table has no conflicts");
-            Check(new[] { "image.actualSize", "image.handTool", "image.zoomTool", "image.rotateTool", "image.tempHand", "image.resetView" }
+            Check(new[] { "image.actualSize", "image.handTool", "image.rotateTool", "image.tempHand", "image.resetView" }
                 .All(id => Shortcuts.Get(id) is { ImageOnly: true, IsCustomizable: true, Area: ShortcutArea.Image }), "image shortcuts are registered and customizable");
             Check(Shortcuts.FindConflicts("image.handTool", new ShortcutGesture("Escape", ShortcutMods.None)).Select(s => s.Id).SequenceEqual(["image.resetView"]),
                 "Esc in the viewer does not clash with closing the find bar");
