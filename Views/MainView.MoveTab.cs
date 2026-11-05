@@ -15,9 +15,13 @@ public partial class MainView
     // Shown only when the tab's split keeps at least one tab after the move.
     internal static bool CanMoveTab(EditorPane pane) => pane.Documents.Count >= 2;
 
-    internal void MoveTabToSide(EditorPane source, NoteDocument document, int direction)
+    // Bug 95: the split is the one that owns the tab right now (never a pane reference the caller held on to), and a
+    // tab alone in its split never moves. allowLast lets a caller move it anyway; the emptied split then closes.
+    internal void MoveTabToSide(EditorPane source, NoteDocument document, int direction, bool allowLast = false)
     {
-        if (_busy || !_panes.Contains(source) || !source.Documents.Contains(document) || !CanMoveTab(source)) return;
+        if (_busy || _panes.FirstOrDefault(p => p.Documents.Contains(document)) is not { } owner) return;
+        source = owner;
+        if (!allowLast && !CanMoveTab(source)) return;
         var targetIndex = _panes.IndexOf(source) + Math.Sign(direction);
         EditorPane target;
         if (targetIndex >= 0 && targetIndex < _panes.Count) target = _panes[targetIndex];
@@ -50,6 +54,8 @@ public partial class MainView
             document.RestoreSelection();
             Dispatcher.UIThread.Post(() => { if (_active == document) { document.RestoreSelection(); SetEditorScroll(document, scroll); } }, DispatcherPriority.Loaded);
         }
+        // A move that leaves its split empty closes that split (as closing its last tab does).
+        if (source.Documents.Count == 0 && _panes.Count > 1 && _panes.Contains(source)) { RemovePane(source, target); ActivatePane(target); }
         FocusEditor();
         Dispatcher.UIThread.Post(() => { if (_activePane == target) FocusEditor(); }, DispatcherPriority.Loaded);
     }

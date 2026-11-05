@@ -325,7 +325,11 @@ public partial class MainView
     // Item 90: the shortcut form of item 89's tab menu entries, on the active tab (no-op when its split has one tab).
     internal void MoveActiveTab(int direction)
     {
-        if (_active is { } document) MoveTabToSide(_activePane, document, direction);
+        // Bug 95: act on the split that holds keyboard focus (else the active split) and the tab it shows, so a stale
+        // active-pane/active-tab pair can never move a tab out of a split that has only that tab.
+        var pane = _panes.FirstOrDefault(p => p.IsKeyboardFocusWithin) ?? _activePane;
+        if ((pane.Active ?? (pane == _activePane ? _active : null)) is { } document && pane.Documents.Contains(document))
+            MoveTabToSide(pane, document, direction);
     }
 
     private bool EditorFocused => _active?.Editor.IsKeyboardFocusWithin == true;

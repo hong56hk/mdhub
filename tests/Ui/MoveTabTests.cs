@@ -38,7 +38,7 @@ internal static class MoveTabTests
             EditorPane ActivePane() => (EditorPane)typeof(MainView).GetProperty("ActivePane", Flags)!.GetValue(view)!;
             IReadOnlyList<EditorPane> Panes() => ((IReadOnlyList<EditorPane>)typeof(MainView).GetProperty("EditorPanes", Flags)!.GetValue(view)!).ToList();
             Task Invoke(string method, params object?[] args) => (Task)typeof(MainView).GetMethod(method, Flags)!.Invoke(view, args)!;
-            void Move(EditorPane pane, NoteDocument d, int dir) { typeof(MainView).GetMethod("MoveTabToSide", Flags)!.Invoke(view, [pane, d, dir]); Pump(); Pump(); }
+            void Move(EditorPane pane, NoteDocument d, int dir) { typeof(MainView).GetMethod("MoveTabToSide", Flags)!.Invoke(view, [pane, d, dir, false]); Pump(); Pump(); }
             NoteDocument Doc(EditorPane pane, string path) => pane.Documents.First(d => d.Path is { } p && Path.GetFullPath(p) == Path.GetFullPath(path));
             Wait(view.OpenFolderPathAsync(root));
             Wait(Invoke("OpenPathAsync", a));

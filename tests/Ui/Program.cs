@@ -51,6 +51,7 @@ if (args.Contains("--autocomplete-only")) { AutoCompleteTests.Run(); return; }
 if (args.Contains("--spelling-only")) { SpellCheckTests.Run(); return; }
 if (args.Contains("--tabmenu-only")) { TabMenuTests.Run(); return; }
 if (args.Contains("--movetab-only")) { MoveTabTests.Run(); return; }
+if (args.Contains("--movetabsingle-only")) { MoveTabSingleTests.Run(); return; }
 if (args.Contains("--movetabkeys-only")) { MoveTabKeysTests.Run(); return; }
 if (args.Contains("--tabs-only")) { TabSettingsTests.Run(); return; }
 if (args.Contains("--fileicons-only")) { FileIconTests.Run(); return; }
