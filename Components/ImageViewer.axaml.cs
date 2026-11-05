@@ -69,7 +69,8 @@ public partial class ImageViewer : UserControl
         foreach (var (item, key) in new[] { (MenuZoomIn, "ImageZoomIn"), (MenuZoomOut, "ImageZoomOut"), (MenuRotateLeft, "ImageRotateLeft"), (MenuRotateRight, "ImageRotateRight"),
             (MenuFlipHorizontal, "ImageFlipHorizontal"), (MenuFlipVertical, "ImageFlipVertical"), (MenuFit, "ImageFitWindow"), (MenuActualSize, "ImageActualSize"), (MenuResetView, "ImageResetView") })
             LocResources.Track(item, key);
-        ViewerMenu.Opening += (_, _) => LocResources.Refresh(ViewerMenu);
+        // Item 101: the shared menu setup (padding, pointer placement, relabel on Opening) like every other context menu.
+        ViewerMenu.Localized();
         MenuZoomIn.Click += (_, _) => StepZoom(1);
         MenuZoomOut.Click += (_, _) => StepZoom(-1);
         ShortcutKeys.SetId(MenuZoomIn, "zoom.in");

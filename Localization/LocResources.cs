@@ -124,7 +124,10 @@ public static class LocResources
                     var outside = e.TryGetPosition((Control)source, out var at) && !new Rect(((Control)source).Bounds.Size).Contains(at);
                     var target = outside && e.TryGetPosition(owner, out var p) && new Rect(owner.Bounds.Size).Contains(p) ? owner : (Control)source;
                     menu.PlacementRect = e.TryGetPosition(target, out var point) ? AtPointer(point, target.Bounds.Size) : null;
-                    if (target != source && !e.Handled) { e.Handled = true; Open(menu, owner); }
+                    // Item 101: retarget instead of opening here. The owner's own ContextMenu handler (later in this
+                    // bubble) then opens it on the owner through the normal route, raising Opening, so a click below
+                    // the text runs every opening handler (Undo/Redo state, spelling, pane activation) like any other.
+                    if (target != source && !e.Handled) e.Source = owner;
                 }
                 return;
             }

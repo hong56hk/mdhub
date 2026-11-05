@@ -31,6 +31,7 @@ internal static class MenuPaddingTests
         var root = Path.Combine(Path.GetTempPath(), $"mdhub-menupad-{Guid.NewGuid():N}");
         Directory.CreateDirectory(Path.Combine(root, "sub"));
         var file = Path.Combine(root, "a.md"); File.WriteAllText(file, "x");
+        var png = Path.Combine(root, "pic.png");
         var w = new MainWindow { Width = 1100, Height = 700 };
         try
         {
@@ -42,6 +43,11 @@ internal static class MenuPaddingTests
             var fileRow = tree.GetVisualDescendants().OfType<TreeViewItem>().First(t => t.Tag is FolderEntry { IsDirectory: false });
             var folderRow = tree.GetVisualDescendants().OfType<TreeViewItem>().First(t => t.Tag is FolderEntry { IsDirectory: true });
             var editor = ((NoteDocument)typeof(MainView).GetField("_active", Flags)!.GetValue(v)!).Editor;
+            // Item 101: the image viewer's menu (in a second split, so the editor stays shown) gets the same treatment.
+            using (var bmp = new Avalonia.Media.Imaging.RenderTargetBitmap(new PixelSize(300, 200))) bmp.Save(png);
+            Wait((Task)typeof(MainView).GetMethod("OpenPathAsync", Flags)!.Invoke(v, [png])!);
+            var viewer = w.GetVisualDescendants().OfType<ImageViewer>().First(x => x.IsEffectivelyVisible);
+            Wait((Task)typeof(MainView).GetMethod("OpenPathAsync", Flags)!.Invoke(v, [file])!);
             // A real right click (pointer-placed ContextRequested) into a native PopupRoot, as on Windows. Before the fix
             // the first open's popup window kept its first-pass size (Avalonia #22573): narrower than the menu, the menu
             // centered in it at a negative offset, so its border, left padding and hint ends were cut off.
@@ -52,7 +58,7 @@ internal static class MenuPaddingTests
                 for (var open = 1; open <= 2; open++)
                 {
                     var tag = $"{label} @{zoom}%: open {open}";
-                    var at = owner.TranslatePoint(owner == tree ? new Point(20, owner.Bounds.Height - 12) : owner == editor ? new Point(60, 60) : new Point(20, 8), w)!.Value;
+                    var at = owner.TranslatePoint(owner == tree ? new Point(20, owner.Bounds.Height - 12) : owner == editor ? new Point(60, 60) : owner is ImageViewer ? new Point(owner.Bounds.Width / 2, owner.Bounds.Height / 2) : new Point(20, 8), w)!.Value;
                     w.MouseMove(at); w.MouseDown(at, MouseButton.Right); w.MouseUp(at, MouseButton.Right);
                     for (var k = 0; k < 6; k++) Pump();
                     var popup = TopLevel.GetTopLevel(menu) as PopupRoot;
@@ -97,6 +103,9 @@ internal static class MenuPaddingTests
                 Verify("folder menu", folderRow, zoom);
                 Verify("explorer background menu", tree, zoom);
                 Verify("editor menu", editor, zoom);
+                Wait((Task)typeof(MainView).GetMethod("OpenPathAsync", Flags)!.Invoke(v, [png])!);
+                Verify("image viewer menu", viewer, zoom);
+                Wait((Task)typeof(MainView).GetMethod("OpenPathAsync", Flags)!.Invoke(v, [file])!);
             }
         }
         finally { foreach (var o in w.OwnedWindows.ToList()) o.Close(); try { w.Close(); Pump(); } catch { } try { Directory.Delete(root, true); } catch { } }
