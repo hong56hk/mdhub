@@ -12,6 +12,12 @@
     <Style Selector="Button.emojiCell:pointerover /template/ ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource HoverBackground}" />
     </Style>
+    <!-- Item 92: the keyboard highlight uses the item 29 selection colours, so it reads like a selected explorer row. -->
+    <Style Selector="Button.emojiCell.highlighted /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ExplorerSelectionBackground}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ExplorerSelectionBorder}" />
+      <Setter Property="BorderThickness" Value="2" />
+    </Style>
     <Style Selector="ToggleButton.emojiCategory">
       <Setter Property="Width" Value="34" /><Setter Property="Height" Value="34" /><Setter Property="MinWidth" Value="0" />
       <Setter Property="Padding" Value="0" /><Setter Property="FontSize" Value="18" />
@@ -35,5 +41,6 @@
       </ScrollViewer>
       <TextBlock x:Name="EmojiNoResults" Text="{DynamicResource EmojiNoResults}" Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="False" />
     </Grid>
+    <TextBlock x:Name="EmojiFooter" FontSize="12" MinHeight="16" Foreground="{DynamicResource TextSecondary}" TextTrimming="CharacterEllipsis" />
   </StackPanel>
 </UserControl>
