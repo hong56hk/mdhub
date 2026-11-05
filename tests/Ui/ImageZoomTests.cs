@@ -12,10 +12,10 @@ internal static class ImageZoomTests
 {
     public static void Run()
     {
-        Check(ImageZoom.Clamp(0.01) == ImageZoom.Min && ImageZoom.Clamp(50) == ImageZoom.Max && ImageZoom.Clamp(double.NaN) == 1, "scale clamps to 10%-1000%");
+        Check(ImageZoom.Clamp(0.01) == ImageZoom.Min && ImageZoom.Clamp(50) == ImageZoom.Max && ImageZoom.Clamp(double.NaN) == 1, "scale clamps to 10%-3200%");
         Check(Math.Abs(ImageZoom.Wheel(1, 1) - 1.1) < 1e-9 && Math.Abs(ImageZoom.Wheel(1, -1) - 1 / 1.1) < 1e-9, "one wheel notch is a 10% step");
         var s = 1.0; for (var i = 0; i < 200; i++) s = ImageZoom.Wheel(s, 1);
-        Check(s == ImageZoom.Max, "zooming in stops at 1000%");
+        Check(s == ImageZoom.Max, "zooming in stops at 3200%");
         for (var i = 0; i < 200; i++) s = ImageZoom.Wheel(s, -1);
         Check(s == ImageZoom.Min, "zooming out stops at 10%");
         var (x, y) = ImageZoom.ZoomAt(10, 20, 1, 2, 110, 70);
@@ -43,7 +43,7 @@ internal static class ImageZoomTests
         var local = point - new Point(20, 20); // the viewer's padding
         Check(Math.Abs((local.X - before.X) / beforeScale - (local.X - after.X) / viewer.Scale) < 1e-6, "viewer keeps the point under the cursor fixed");
         Check(viewer.ZoomPercent == 61 && reported.Last() == 61, $"zoom change is reported for the status bar ({viewer.ZoomPercent})");
-        Check(viewer.ResetZoom() && viewer.ZoomPercent == 100 && !viewer.IsFit, "reset shows the image at 100%");
+        Check(viewer.ActualSize() && viewer.ZoomPercent == 100 && !viewer.IsFit, "actual size shows the image at 100%");
         viewer.ShowImage(new RenderTargetBitmap(new PixelSize(100, 100)));
         Check(viewer.IsFit && viewer.ZoomPercent == 100, "another image starts fitted again");
         window.Close();

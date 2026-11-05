@@ -81,7 +81,18 @@ public partial class BottomStatusBar : UserControl
         _imageZoom = percent;
         if (_counts is not null) Counts.Text = _counts();
     }
-    private string ImageZoomSuffix() => _imageZoom is { } percent ? "  \u00b7  " + Loc.F("ImageZoomPercent", percent) : "";
+    // Item 91: the image pixel under the pointer (image coordinates, after undoing rotation and flip); a dash outside the image.
+    private Avalonia.PixelPoint? _imageCursor;
+    public Avalonia.PixelPoint? ImageCursor => _imageCursor;
+    public void SetImageCursor(Avalonia.PixelPoint? pixel)
+    {
+        if (_imageCursor == pixel) return;
+        _imageCursor = pixel;
+        if (_counts is not null && _imageZoom is not null) Counts.Text = _counts();
+    }
+    private string ImageZoomSuffix() => _imageZoom is { } percent
+        ? "  \u00b7  " + Loc.F("ImageZoomPercent", percent) + "  \u00b7  " + (_imageCursor is { } c ? Loc.F("ImageCursorPosition", c.X, c.Y) : "\u2014")
+        : "";
     public void SetMessage(string message) { SetPath(null); Status.Text = message; SetAction(null, null); }
 
     // Item 51: a clickable action shown after the current message; any later status update clears it.

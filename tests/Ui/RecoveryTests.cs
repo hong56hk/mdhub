@@ -38,7 +38,8 @@ internal static class RecoveryTests
         {
             var w = new MainWindow { Width = 1000, Height = 700 }; windows.Add(w); w.Show(); Pump(); return w;
         }
-        List<RecoveryDocument> Stored() => SessionStore.Load(SessionManager.RecoveryPath)!.Windows.SelectMany(w => w.Recovery).ToList();
+        // Polled while the app rewrites the file: a read that lands mid-replace yields null (seen as "nothing stored yet").
+        List<RecoveryDocument> Stored() => SessionStore.Load(SessionManager.RecoveryPath)?.Windows.SelectMany(w => w.Recovery).ToList() ?? [];
         void Choice(MainWindow w, string value) => typeof(MainView).GetProperty("ConflictChoiceOverride", flags)!.SetValue(View(w), (Func<NoteDocument, Task<string?>>)(_ => Task.FromResult<string?>(value)));
         void Close(MainWindow w)
         {

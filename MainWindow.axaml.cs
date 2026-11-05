@@ -67,8 +67,8 @@ public partial class MainWindow : Window
 
     private void OnZoomKey(object? sender, KeyEventArgs e)
     {
-        // Item 37: with an image open, Reset zoom (Ctrl+0) shows it at 100% instead of resetting the window zoom.
-        if (ShortcutKeys.Match(e, s => s.Area == ShortcutArea.Zoom) == "zoom.reset" && MainView.ResetImageZoom()) { e.Handled = true; return; }
+        // Item 37/91: with an image tab active, Ctrl+=/-/0 zoom the image (steps, fit to window) instead of the window.
+        if (ShortcutKeys.Match(e, s => s.Area == ShortcutArea.Zoom) is { } imageZoom && MainView.ImageZoomKey(imageZoom)) { e.Handled = true; return; }
         int? next = ShortcutKeys.Match(e, s => s.Area == ShortcutArea.Zoom) switch
         {
             "zoom.in" => ZoomLevel.In(ZoomPercent),

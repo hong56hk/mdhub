@@ -49,6 +49,7 @@ public partial class MainView
         pane.MdEditor.MessageChanged += message => { if (pane == _activePane) BottomStatusBar.SetMessage(message); };
         pane.TextEditor.SpellCountChanged += count => { if (pane == _activePane) BottomStatusBar.SetSpellCount(count); };
         pane.ImageViewer.ZoomChanged += percent => { if (pane == _activePane && pane.ImageViewer.IsVisible) BottomStatusBar.SetImageZoom(percent); };
+        pane.ImageViewer.CursorPixelChanged += pixel => { if (pane == _activePane && pane.ImageViewer.IsVisible) BottomStatusBar.SetImageCursor(pixel); };
         pane.BinaryPlaceholder.OpenDefaultRequested += async () => { if (pane.Active is { IsBinary: true, Path: { } path }) await OpenWithDefaultAppAsync(path); };
         pane.BinaryPlaceholder.OpenAsTextRequested += async () => { if (_busy) return; ActivatePane(pane); if (_active is { IsBinary: true } document) await RunAsync(() => OpenAsTextAsync(document)); };
     }

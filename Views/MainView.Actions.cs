@@ -285,7 +285,7 @@ public partial class MainView
             return;
         }
         // Built-in TextBox keys and zoom (MainWindow) are listed in the table but handled elsewhere.
-        var id = ShortcutKeys.Match(e, s => !s.HandledByTextBox && s.Area != ShortcutArea.Zoom && s.Id is not ("find.next" or "find.previous" or "find.close"));
+        var id = ShortcutKeys.Match(e, s => !s.HandledByTextBox && s.Area is not (ShortcutArea.Zoom or ShortcutArea.Image) && s.Id is not ("find.next" or "find.previous" or "find.close"));
         Func<Task>? action = id switch
         {
             "view.splitEditor" => () => OpenToSideAsync(),
