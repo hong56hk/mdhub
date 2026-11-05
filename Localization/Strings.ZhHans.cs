@@ -28,6 +28,8 @@ public static partial class Loc
         ["EmojiCategoryFlags"] = "旗帜",
         ["OpenToSide"] = "在侧边打开",
         ["SplitRight"] = "向右拆分",
+        ["MoveToRightSplit"] = "移动到右侧拆分",
+        ["MoveToLeftSplit"] = "移动到左侧拆分",
         ["SplitEditorRight"] = "向右拆分编辑器",
         ["Sc.view.splitEditor"] = "向右拆分编辑器",
         ["SplitLimitReached"] = "最多可打开 {0} 个编辑器窗格。",

@@ -49,7 +49,7 @@ internal static class TabMenuTests
                 Settle();
             }
 
-            Check(menu is not null && menu.Items.OfType<MenuItem>().Select(i => i.Name).SequenceEqual(["TabCloseMenuItem", "TabCloseOthersMenuItem", "TabCloseAllMenuItem", "TabSplitRightMenuItem"]), "The tab strip has a context menu: Close tab, Close other tabs, Close all tabs, Split Right");
+            Check(menu is not null && menu.Items.OfType<MenuItem>().Select(i => i.Name).SequenceEqual(["TabCloseMenuItem", "TabCloseOthersMenuItem", "TabCloseAllMenuItem", "TabSplitRightMenuItem", "TabMoveRightMenuItem", "TabMoveLeftMenuItem"]), "The tab strip has a context menu: Close tab, Close other tabs, Close all tabs, Split Right");
             Check(tabs.SelectedDocument == c, "c is active");
             RightClick(TabOf(a));
             Check(menu.IsOpen && tabs.MenuTarget == a, "Right-clicking a tab opens the menu for that tab");

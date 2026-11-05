@@ -28,6 +28,8 @@ public static partial class Loc
         ["EmojiCategoryFlags"] = "Drapeaux",
         ["OpenToSide"] = "Ouvrir sur le côté",
         ["SplitRight"] = "Scinder à droite",
+        ["MoveToRightSplit"] = "Déplacer vers la division de droite",
+        ["MoveToLeftSplit"] = "Déplacer vers la division de gauche",
         ["SplitEditorRight"] = "Scinder l’éditeur à droite",
         ["Sc.view.splitEditor"] = "Scinder l’éditeur à droite",
         ["SplitLimitReached"] = "Vous pouvez ouvrir jusqu’à {0} volets d’éditeur.",

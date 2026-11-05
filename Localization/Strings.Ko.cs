@@ -28,6 +28,8 @@ public static partial class Loc
         ["EmojiCategoryFlags"] = "깃발",
         ["OpenToSide"] = "옆에서 열기",
         ["SplitRight"] = "오른쪽으로 분할",
+        ["MoveToRightSplit"] = "오른쪽 분할로 이동",
+        ["MoveToLeftSplit"] = "왼쪽 분할로 이동",
         ["SplitEditorRight"] = "편집기를 오른쪽으로 분할",
         ["Sc.view.splitEditor"] = "편집기를 오른쪽으로 분할",
         ["SplitLimitReached"] = "편집기 창은 최대 {0}개까지 열 수 있습니다.",

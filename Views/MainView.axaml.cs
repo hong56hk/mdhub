@@ -211,7 +211,9 @@ public partial class MainView : UserControl
         {
             Folder = FolderExplorer.OpenedFolder,
             Tabs = saved.Select(d => d.Path!).ToList(),
-            ActiveTab = _active is null ? -1 : saved.FindIndex(d => d.Buffer == _active.Buffer)
+            ActiveTab = _active is null ? -1 : saved.FindIndex(d => d.Buffer == _active.Buffer),
+            Panes = CapturePaneLayout(saved),
+            ActivePane = Math.Max(0, _panes.IndexOf(_activePane))
         };
     }
 
@@ -247,6 +249,7 @@ public partial class MainView : UserControl
             catch (Exception) { failed++; }
         }
         if (opened.Count > 0 && placeholder is not null && _documents.Contains(placeholder)) await CloseDocumentAsync(placeholder);
+        if (opened.Count > 0) RestorePaneLayout(session);
         if (session.ActiveTab >= 0 && session.ActiveTab < session.Tabs.Count
             && openedByKey.TryGetValue(session.Tabs[session.ActiveTab], out var active))
             FileTabs.SelectedDocument = active;

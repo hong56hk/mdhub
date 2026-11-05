@@ -28,6 +28,8 @@ public static partial class Loc
         ["EmojiCategoryFlags"] = "旗",
         ["OpenToSide"] = "横に開く",
         ["SplitRight"] = "右に分割",
+        ["MoveToRightSplit"] = "右の分割に移動",
+        ["MoveToLeftSplit"] = "左の分割に移動",
         ["SplitEditorRight"] = "エディターを右に分割",
         ["Sc.view.splitEditor"] = "エディターを右に分割",
         ["SplitLimitReached"] = "エディターは最大 {0} 個まで開けます。",

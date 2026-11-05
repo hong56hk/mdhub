@@ -10,6 +10,9 @@ public sealed record WindowSession
     public List<string> Tabs { get; init; } = [];
     public List<RecoveryDocument> Recovery { get; init; } = [];
     public int ActiveTab { get; init; } = -1;
+    // Item 89: tab indices per editor split, left to right (null/missing = one split, as in old files).
+    public List<List<int>>? Panes { get; init; }
+    public int ActivePane { get; init; }
     public double X { get; init; }
     public double Y { get; init; }
     public double Width { get; init; }
