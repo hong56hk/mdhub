@@ -112,7 +112,16 @@ public static class LocResources
             {
                 if (v is not Control { ContextMenu: { } menu }) continue;
                 if (Pointed.TryGetValue(menu, out _))
-                    menu.PlacementRect = e.TryGetPosition(source, out var point) ? AtPointer(point, source.Bounds.Size) : null;
+                {
+                    // Bug 94b: a source smaller than the click area (the editor reports its text presenter, which is only
+                    // as big as the text) clamped a click below the text onto the presenter's edge, so the menu opened
+                    // above the pointer. Then open the menu on its owner (which contains the click) at the click.
+                    var owner = (Control)v;
+                    var outside = e.TryGetPosition((Control)source, out var at) && !new Rect(((Control)source).Bounds.Size).Contains(at);
+                    var target = outside && e.TryGetPosition(owner, out var p) && new Rect(owner.Bounds.Size).Contains(p) ? owner : (Control)source;
+                    menu.PlacementRect = e.TryGetPosition(target, out var point) ? AtPointer(point, target.Bounds.Size) : null;
+                    if (target != source && !e.Handled) { e.Handled = true; menu.Open(owner); }
+                }
                 return;
             }
         }, RoutingStrategies.Bubble, handledEventsToo: true);
