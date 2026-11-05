@@ -32,6 +32,8 @@ public static partial class Loc
         ["MoveToLeftSplit"] = "왼쪽 분할로 이동",
         ["SplitEditorRight"] = "편집기를 오른쪽으로 분할",
         ["Sc.view.splitEditor"] = "편집기를 오른쪽으로 분할",
+        ["Sc.view.moveTabRight"] = "탭을 오른쪽 분할로 이동",
+        ["Sc.view.moveTabLeft"] = "탭을 왼쪽 분할로 이동",
         ["SplitLimitReached"] = "편집기 창은 최대 {0}개까지 열 수 있습니다.",
         ["EditorMinimap"] = "미니맵 표시",
         ["EmojiInput"] = "이모지 삽입",

@@ -32,6 +32,8 @@ public static partial class Loc
         ["MoveToLeftSplit"] = "Déplacer vers la division de gauche",
         ["SplitEditorRight"] = "Scinder l’éditeur à droite",
         ["Sc.view.splitEditor"] = "Scinder l’éditeur à droite",
+        ["Sc.view.moveTabRight"] = "Déplacer l’onglet vers la division de droite",
+        ["Sc.view.moveTabLeft"] = "Déplacer l’onglet vers la division de gauche",
         ["SplitLimitReached"] = "Vous pouvez ouvrir jusqu’à {0} volets d’éditeur.",
         ["EditorMinimap"] = "Afficher la minicarte",
         ["EmojiInput"] = "Insérer un emoji",

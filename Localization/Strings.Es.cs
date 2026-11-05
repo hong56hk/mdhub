@@ -32,6 +32,8 @@ public static partial class Loc
         ["MoveToLeftSplit"] = "Mover a la división izquierda",
         ["SplitEditorRight"] = "Dividir editor a la derecha",
         ["Sc.view.splitEditor"] = "Dividir editor a la derecha",
+        ["Sc.view.moveTabRight"] = "Mover pestaña a la división derecha",
+        ["Sc.view.moveTabLeft"] = "Mover pestaña a la división izquierda",
         ["SplitLimitReached"] = "Puede abrir hasta {0} paneles de editor.",
         ["EditorMinimap"] = "Mostrar minimapa",
         ["EmojiInput"] = "Insertar emoji",

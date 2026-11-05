@@ -289,6 +289,7 @@ public partial class MainView
         Func<Task>? action = id switch
         {
             "view.splitEditor" => () => OpenToSideAsync(),
+            "view.moveTabRight" or "view.moveTabLeft" when !_busy && _active is not null => Sync(() => MoveActiveTab(id == "view.moveTabRight" ? 1 : -1)),
             "file.new" => () => { AddDocument(null, ""); return Task.CompletedTask; },
             "file.open" => OpenAsync,
             "file.openFolder" => OpenFolderAsync,
@@ -316,8 +317,15 @@ public partial class MainView
         if (!Shortcuts.BeginPress(id!, e.Key.ToString())) return; // bug 87: a held one-shot key fires once per press
         ShortcutFired?.Invoke(id!);
         if (id == "edit.paste") await PasteAsync(); // runs busy only while saving an image
+        else if (id is "view.moveTabRight" or "view.moveTabLeft") await action(); // MoveTabToSide refuses while busy
         else if (id is "find.find" or "find.replace" or "view.wordWrap" or "view.togglePreview" or "view.toggleEditor" || id!.StartsWith("editor.") && id != "editor.goToLine" || id == "view.previewCaret") await action(); // find: focus must land in the find bar
         else await RunAsync(action);
+    }
+
+    // Item 90: the shortcut form of item 89's tab menu entries, on the active tab (no-op when its split has one tab).
+    internal void MoveActiveTab(int direction)
+    {
+        if (_active is { } document) MoveTabToSide(_activePane, document, direction);
     }
 
     private bool EditorFocused => _active?.Editor.IsKeyboardFocusWithin == true;

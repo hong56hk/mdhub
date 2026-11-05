@@ -32,6 +32,8 @@ public static partial class Loc
         ["MoveToLeftSplit"] = "左の分割に移動",
         ["SplitEditorRight"] = "エディターを右に分割",
         ["Sc.view.splitEditor"] = "エディターを右に分割",
+        ["Sc.view.moveTabRight"] = "タブを右の分割に移動",
+        ["Sc.view.moveTabLeft"] = "タブを左の分割に移動",
         ["SplitLimitReached"] = "エディターは最大 {0} 個まで開けます。",
         ["EditorMinimap"] = "ミニマップを表示",
         ["EmojiInput"] = "絵文字を挿入",

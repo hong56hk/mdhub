@@ -32,6 +32,8 @@ public static partial class Loc
         ["MoveToLeftSplit"] = "移至左側分割",
         ["SplitEditorRight"] = "向右分割編輯器",
         ["Sc.view.splitEditor"] = "向右分割編輯器",
+        ["Sc.view.moveTabRight"] = "將分頁移至右側分割",
+        ["Sc.view.moveTabLeft"] = "將分頁移至左側分割",
         ["SplitLimitReached"] = "最多可開啟 {0} 個編輯器窗格。",
         ["EditorMinimap"] = "顯示縮圖",
         ["EmojiInput"] = "插入表情符號",

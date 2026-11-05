@@ -32,6 +32,8 @@ public static partial class Loc
         ["MoveToLeftSplit"] = "In linke Teilung verschieben",
         ["SplitEditorRight"] = "Editor rechts teilen",
         ["Sc.view.splitEditor"] = "Editor rechts teilen",
+        ["Sc.view.moveTabRight"] = "Tab in rechte Teilung verschieben",
+        ["Sc.view.moveTabLeft"] = "Tab in linke Teilung verschieben",
         ["SplitLimitReached"] = "Sie können bis zu {0} Editorbereiche öffnen.",
         ["EditorMinimap"] = "Minimap anzeigen",
         ["EmojiInput"] = "Emoji einfügen",

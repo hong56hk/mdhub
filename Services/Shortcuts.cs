@@ -2,8 +2,9 @@ namespace Mdhub.Services;
 
 public enum ShortcutArea { File, Edit, View, Find, Zoom, Editor }
 
-// Command is Ctrl on Windows/Linux and Cmd on macOS.
-[Flags] public enum ShortcutMods { None = 0, Command = 1, Shift = 2, Alt = 4 }
+// Command is Ctrl on Windows/Linux and Cmd on macOS. Control is the physical Ctrl key on macOS (item 90: Cmd+Ctrl);
+// on Windows/Linux it is the same key as Command.
+[Flags] public enum ShortcutMods { None = 0, Command = 1, Shift = 2, Alt = 4, Control = 8 }
 
 // Key is an Avalonia Key enum name (kept as a string so this file stays UI-free).
 // KeyLabel overrides the key name for display; Hidden gestures work but are not shown.
@@ -19,6 +20,7 @@ public readonly record struct ShortcutGesture(string Key, ShortcutMods Mods, str
     {
         var parts = new List<string>();
         if (Mods.HasFlag(ShortcutMods.Command)) parts.Add(mac ? "Cmd" : "Ctrl");
+        if (Mods.HasFlag(ShortcutMods.Control) && (mac || !Mods.HasFlag(ShortcutMods.Command))) parts.Add("Ctrl");
         if (Mods.HasFlag(ShortcutMods.Alt)) parts.Add(mac ? "Option" : "Alt");
         if (Mods.HasFlag(ShortcutMods.Shift)) parts.Add("Shift");
         parts.Add(KeyLabel ?? (KeyNames.TryGetValue(Key, out var name) ? name : Key));
@@ -56,6 +58,9 @@ public static class Shortcuts
     private static ShortcutGesture CS(string key) => ShortcutGesture.CmdShift(key);
     private static ShortcutGesture P(string key) => ShortcutGesture.Plain(key);
     private static Shortcut Once(Shortcut s) => s with { NoRepeat = true };
+    // Item 90: Ctrl+Alt+arrow on Windows/Linux, Cmd+Ctrl+arrow on macOS (the Mac counterpart of VS Code's Ctrl+Alt+arrow).
+    private static ShortcutGesture MoveTab(string key) =>
+        new(key, OperatingSystem.IsMacOS() ? ShortcutMods.Command | ShortcutMods.Control : ShortcutMods.Command | ShortcutMods.Alt);
 
     public static readonly IReadOnlyList<Shortcut> All =
     [
@@ -66,6 +71,8 @@ public static class Shortcuts
         Once(S("file.save", ShortcutArea.File, "Save", C("S"))),
         Once(S("file.saveAs", ShortcutArea.File, "Save as", CS("S"))),
         Once(S("view.splitEditor", ShortcutArea.View, "Split editor right", C("OemPipe"), CS("OemPipe"))),
+        Once(S("view.moveTabRight", ShortcutArea.View, "Move tab to right split", MoveTab("Right"))),
+        Once(S("view.moveTabLeft", ShortcutArea.View, "Move tab to left split", MoveTab("Left"))),
         S("view.focusLeftPane", ShortcutArea.View, "Focus left pane", new ShortcutGesture("Left", ShortcutMods.Alt)),
         S("view.focusRightPane", ShortcutArea.View, "Focus right pane", new ShortcutGesture("Right", ShortcutMods.Alt)),
         Once(S("file.closeTab", ShortcutArea.File, "Close tab", C("W"))),

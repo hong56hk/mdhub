@@ -44,9 +44,11 @@ public partial class MainView
         // Item 89: move the tab into the split on that side (a new split when there is none).
         var moveRight = LocResources.Item("MoveToRightSplit");
         moveRight.Name = "TabMoveRightMenuItem";
+        ShortcutKeys.SetId(moveRight, "view.moveTabRight"); // item 90: hint only; the click acts on the clicked tab
         moveRight.Click += (_, _) => { if (pane.FileTabs.MenuTarget is { } d) MoveTabToSide(pane, d, 1); };
         var moveLeft = LocResources.Item("MoveToLeftSplit");
         moveLeft.Name = "TabMoveLeftMenuItem";
+        ShortcutKeys.SetId(moveLeft, "view.moveTabLeft");
         moveLeft.Click += (_, _) => { if (pane.FileTabs.MenuTarget is { } d) MoveTabToSide(pane, d, -1); };
         menu.Items.Add(moveRight);
         menu.Items.Add(moveLeft);
@@ -58,7 +60,7 @@ public partial class MainView
         // Opening covers a right-click; Opened also covers a menu opened from code or the keyboard.
         menu.Opening += (_, _) => Refresh();
         menu.Opened += (_, _) => Refresh();
-        ShortcutKeys.ApplyGestures([close, split]);
+        ShortcutKeys.ApplyGestures([close, split, moveRight, moveLeft]);
         return menu.Localized();
     }
 
