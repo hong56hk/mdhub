@@ -12,16 +12,26 @@ namespace Mdhub.Views;
 // The NoteDocument itself moves (its editor control keeps text, undo history, caret, selection and scroll); nothing reloads.
 public partial class MainView
 {
-    // Shown only when the tab's split keeps at least one tab after the move.
-    internal static bool CanMoveTab(EditorPane pane) => pane.Documents.Count >= 2;
+    // Bug 95 (revised): a tab can move unless it would change nothing. Blocked only for
+    //  - the one tab of the one split, and
+    //  - the one tab of the outermost split moving outward (a new split would open and the emptied one close: same
+    //    layout), so that direction's menu item is hidden and its shortcut is a no-op.
+    // A side split's last tab moving inward is allowed; the emptied split then closes.
+    internal bool CanMoveTab(EditorPane pane, int direction)
+    {
+        var index = _panes.IndexOf(pane);
+        if (index < 0 || pane.Documents.Count == 0) return false;
+        if (pane.Documents.Count >= 2) return true;
+        var target = index + Math.Sign(direction);
+        return _panes.Count > 1 && target >= 0 && target < _panes.Count;
+    }
 
-    // Bug 95: the split is the one that owns the tab right now (never a pane reference the caller held on to), and a
-    // tab alone in its split never moves. allowLast lets a caller move it anyway; the emptied split then closes.
-    internal void MoveTabToSide(EditorPane source, NoteDocument document, int direction, bool allowLast = false)
+    // The split is the one that owns the tab right now (never a pane reference the caller held on to).
+    internal void MoveTabToSide(EditorPane source, NoteDocument document, int direction)
     {
         if (_busy || _panes.FirstOrDefault(p => p.Documents.Contains(document)) is not { } owner) return;
         source = owner;
-        if (!allowLast && !CanMoveTab(source)) return;
+        if (!CanMoveTab(source, direction)) return;
         var targetIndex = _panes.IndexOf(source) + Math.Sign(direction);
         EditorPane target;
         if (targetIndex >= 0 && targetIndex < _panes.Count) target = _panes[targetIndex];
@@ -70,6 +80,8 @@ public partial class MainView
             ActivatePane(pane);
             FileTabs.SelectedDocument = pane.Documents[index + 1 < pane.Documents.Count ? index + 1 : index - 1];
         }
+        // Its last tab: the split still hosts that editor control, which must be free before another split shows it.
+        if (pane.Documents.Count == 1) pane.TextEditor.ReleaseDocument();
         pane.Documents.Remove(document);
     }
 

@@ -38,7 +38,7 @@ internal static class MoveTabTests
             EditorPane ActivePane() => (EditorPane)typeof(MainView).GetProperty("ActivePane", Flags)!.GetValue(view)!;
             IReadOnlyList<EditorPane> Panes() => ((IReadOnlyList<EditorPane>)typeof(MainView).GetProperty("EditorPanes", Flags)!.GetValue(view)!).ToList();
             Task Invoke(string method, params object?[] args) => (Task)typeof(MainView).GetMethod(method, Flags)!.Invoke(view, args)!;
-            void Move(EditorPane pane, NoteDocument d, int dir) { typeof(MainView).GetMethod("MoveTabToSide", Flags)!.Invoke(view, [pane, d, dir, false]); Pump(); Pump(); }
+            void Move(EditorPane pane, NoteDocument d, int dir) { typeof(MainView).GetMethod("MoveTabToSide", Flags)!.Invoke(view, [pane, d, dir]); Pump(); Pump(); }
             NoteDocument Doc(EditorPane pane, string path) => pane.Documents.First(d => d.Path is { } p && Path.GetFullPath(p) == Path.GetFullPath(path));
             Wait(view.OpenFolderPathAsync(root));
             Wait(Invoke("OpenPathAsync", a));
@@ -56,7 +56,7 @@ internal static class MoveTabTests
             }
             Check(first.Documents.Count == 1, "Single tab in the split");
             OpenMenu(docA);
-            Check(!Item("TabMoveRightMenuItem").IsVisible && !Item("TabMoveLeftMenuItem").IsVisible, "Move items hidden when the split has one tab");
+            Check(!Item("TabMoveRightMenuItem").IsVisible && !Item("TabMoveLeftMenuItem").IsVisible, "Move items hidden when the only split has one tab (bug 95: nothing to move to)");
             menu.Close(); Pump();
             Wait(Invoke("OpenPathAsync", b));
             Wait(Invoke("OpenPathAsync", c));

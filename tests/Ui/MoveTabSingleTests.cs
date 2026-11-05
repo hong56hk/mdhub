@@ -12,8 +12,8 @@ using Mdhub.Models;
 using Mdhub.Services;
 using Mdhub.Views;
 
-// Bug 95: a tab alone in its split never moves out of it (menu hidden, shortcut a no-op), whichever split it is in
-// and however the split was made (Ctrl+\, a move, a restored session); a move that empties its split closes it.
+// Bug 95 (revised): the move is blocked only when it changes nothing (one split with one tab, or the outermost
+// split's only tab moving outward); any other move is allowed, and a split left with no tabs closes.
 internal static class MoveTabSingleTests
 {
     private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.NonPublic;
@@ -58,65 +58,80 @@ internal static class MoveTabSingleTests
             }
             void Focus(EditorPane pane, NoteDocument d)
             {
+                if (pane.Active != d) { pane.FindControl<FileTabs>("FileTabs")!.SelectedDocument = d; Settle(); }
                 window.MouseDown(d.Editor.TranslatePoint(new Point(20, 10), window)!.Value, MouseButton.Left);
                 window.MouseUp(d.Editor.TranslatePoint(new Point(20, 10), window)!.Value, MouseButton.Left); Settle();
                 Check(ActivePane() == pane && pane.Active == d, $"clicked editor is active ({Layout()})");
             }
+            void ClickMenu(EditorPane pane, NoteDocument d, string name)
+            {
+                var list = pane.FindControl<FileTabs>("FileTabs")!.FindControl<ListBox>("Tabs")!;
+                var item = list.GetVisualDescendants().OfType<ListBoxItem>().First(i => i.DataContext == d);
+                var at = item.TranslatePoint(new Point(item.Bounds.Width / 2, item.Bounds.Height / 2), window)!.Value;
+                window.MouseDown(at, MouseButton.Right); window.MouseUp(at, MouseButton.Right); Settle();
+                var menu = list.ContextMenu!;
+                menu.Items.OfType<MenuItem>().Single(i => i.Name == name).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+                menu.Close(); Settle();
+            }
+            bool Has(EditorPane pane, string path) => pane.Documents.Any(d => d.Path == path);
             Wait(view.OpenFolderPathAsync(root));
             Wait(Invoke("OpenPathAsync", a));
             var left = ActivePane();
-            Wait(Invoke("CloseOtherDocumentsAsync", left.Documents.First(d => d.Path == a)));
+            var docA = left.Documents.First(d => d.Path == a);
+            Wait(Invoke("CloseOtherDocumentsAsync", docA));
+
+            // 1. One split with one tab: nothing to move to, both directions hidden and no-ops.
+            Focus(left, docA);
+            var menu = MenuFor(left, docA);
+            Check(!menu.Right && !menu.Left, $"1. single split, single tab: both Move items hidden ({menu})");
+            Press(Key.Right, move); Press(Key.Left, move);
+            Check(Panes().Count == 1 && left.Documents.Single() == docA, $"1. single split, single tab: Ctrl+Alt+Right/Left do nothing ({Layout()})");
+
+            // Two splits via Ctrl+\ : a,b | b'
             Wait(Invoke("OpenPathAsync", b));
-            var docB = left.Active!;
-            // Ctrl+\ : split editor right, the right split has one tab (a second view of b).
             Press(Key.OemPipe, ctrl);
             Check(Panes().Count == 2 && Panes()[1].Documents.Count == 1, $"Ctrl+\\ made a one-tab right split ({Layout()})");
             var right = Panes()[1];
             var single = right.Documents[0];
             Focus(right, single);
-            var menu = MenuFor(right, single);
-            Check(!menu.Right && !menu.Left, $"1. single-tab rightmost split: no Move items in its tab menu ({menu})");
+            menu = MenuFor(right, single);
+            Check(!menu.Right && menu.Left, $"2. rightmost split's only tab: Move to Right hidden (outward = no change), Move to Left shown ({menu})");
             Press(Key.Right, move);
-            Check(Panes().Count == 2 && right.Documents.Single() == single, $"1. single-tab rightmost split: Ctrl+Alt+Right does nothing ({Layout()})");
+            Check(Panes().Count == 2 && right.Documents.Single() == single, $"2. outward Ctrl+Alt+Right is a no-op ({Layout()})");
             Press(Key.Left, move);
-            Check(Panes().Count == 2 && right.Documents.Single() == single && left.Documents.Count == 2, $"single tab does not move left either ({Layout()})");
+            Check(Panes().Count == 1 && Panes()[0] == left && left.Documents.Count == 2 && Has(left, b) && ActivePane() == left && left.Active?.Path == b,
+                $"3. last tab of the right split moves left (same file: joins its open tab) and the emptied split closes ({Layout()})");
 
-            // Alt+Right pane focus, then the move keys act on the newly focused split.
-            Focus(left, docB);
-            Press(Key.Right, RawInputModifiers.Alt);
-            Check(ActivePane() == right, "Alt+Right focused the right split");
-            Press(Key.Right, move);
-            Check(Panes().Count == 2 && right.Documents.Single() == single && left.Documents.Count == 2, $"after Alt+Right, Ctrl+Alt+Right on the single tab does nothing ({Layout()})");
-            // Leftmost split with one tab.
-            Focus(left, docB);
-            Wait(Invoke("CloseOtherDocumentsAsync", docB));
-            Check(left.Documents.Count == 1, $"left split down to one tab ({Layout()})");
-            Focus(left, docB);
-            menu = MenuFor(left, docB);
-            Check(!menu.Right && !menu.Left, $"2. single-tab leftmost split: no Move items ({menu})");
-            Press(Key.Left, move);
-            Check(Panes().Count == 2 && left.Documents.Single() == docB, $"2. single-tab leftmost split: Ctrl+Alt+Left does nothing ({Layout()})");
-            Press(Key.Right, move);
-            Check(Panes().Count == 2 && left.Documents.Single() == docB && right.Documents.Single() == single, $"single tab does not move right into the other split ({Layout()})");
-
-            // Multi-tab split moves.
+            // Leftmost split's only tab: a | b,c  (built with the menu)
             Wait(Invoke("OpenPathAsync", c));
-            var docC = left.Active!;
-            Focus(left, docC);
-            menu = MenuFor(left, docC);
-            Check(menu.Right && menu.Left, "3. two-tab split shows both Move items");
-            Press(Key.Right, move);
-            Check(Panes().Count == 2 && right.Documents.Contains(docC) && left.Documents.Single() == docB, $"3. a tab in a multi-tab split moves ({Layout()})");
+            var docB = left.Documents.First(d => d.Path == b);
+            ClickMenu(left, docB, "TabMoveRightMenuItem");
+            right = Panes()[1];
+            ClickMenu(left, left.Documents.First(d => d.Path == c), "TabMoveRightMenuItem");
+            Check(Panes().Count == 2 && left.Documents.Single() == docA && right.Documents.Count == 2, $"two-tab split moves (menu) ({Layout()})");
+            Focus(left, docA);
+            menu = MenuFor(left, docA);
+            Check(menu.Right && !menu.Left, $"4. leftmost split's only tab: Move to Left hidden, Move to Right shown ({menu})");
+            Press(Key.Left, move);
+            Check(Panes().Count == 2 && left.Documents.Single() == docA, $"4. outward Ctrl+Alt+Left is a no-op ({Layout()})");
+            ClickMenu(left, docA, "TabMoveRightMenuItem");
+            Check(Panes().Count == 1 && Panes()[0] == right && right.Documents.Contains(docA) && right.Active == docA && ActivePane() == right && !Panes().Contains(left),
+                $"5. menu: last tab of the left split moves right and the emptied split closes ({Layout()})");
 
-            // A move that empties its split closes that split (defensive path: call the move on the last tab directly).
-            Focus(left, docB);
-            var bypass = typeof(MainView).GetMethod("MoveTabToSide", Flags)!;
-            Check(left.Documents.Count == 1, "left has one tab");
-            var three = Panes().Count;
-            bypass.Invoke(view, [left, docB, 1, false]); Settle();
-            Check(Panes().Count == three && left.Documents.Single() == docB, "the last tab stays without allowLast");
-            bypass.Invoke(view, [left, docB, 1, true]); Settle();
-            Check(!Panes().Contains(left) && Panes().Count == three - 1 && Panes()[0].Documents.Any(d => d.Path == b) && ActivePane() == Panes()[0], $"4. the emptied source split closes ({Layout()})");
+            // Middle split of three: its only tab moves either way.
+            var docC = right.Documents.First(d => d.Path == c);
+            Focus(right, docC);
+            Press(Key.Right, move);                       // b,a | c
+            var third = Panes()[1];
+            Focus(right, right.Documents.First(d => d.Path == b));
+            Press(Key.Left, move);                        // b | a | c
+            var mid = Panes()[1];
+            Check(Panes().Count == 3 && mid.Documents.Single() == docA, $"three splits b | a | c ({Layout()})");
+            menu = MenuFor(mid, docA);
+            Check(menu.Right && menu.Left, "6. middle split's only tab: both Move items shown");
+            Focus(mid, docA);
+            Press(Key.Right, move);
+            Check(Panes().Count == 2 && !Panes().Contains(mid) && Panes()[1] == third && third.Documents.Contains(docA) && ActivePane() == third, $"6. middle split's only tab moves right and its split closes ({Layout()})");
             Console.WriteLine("ALL MOVETAB SINGLE TESTS PASSED");
         }
         finally

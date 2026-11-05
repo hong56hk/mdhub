@@ -322,7 +322,7 @@ public partial class MainView
         else await RunAsync(action);
     }
 
-    // Item 90: the shortcut form of item 89's tab menu entries, on the active tab (no-op when its split has one tab).
+    // Item 90: the shortcut form of item 89's tab menu entries, on the active tab (no-op when CanMoveTab says the move changes nothing).
     internal void MoveActiveTab(int direction)
     {
         // Bug 95: act on the split that holds keyboard focus (else the active split) and the tab it shows, so a stale

@@ -55,7 +55,8 @@ public partial class MainView
         void Refresh()
         {
             others.IsEnabled = pane.Documents.Count > 1;
-            moveRight.IsVisible = moveLeft.IsVisible = CanMoveTab(pane);
+            moveRight.IsVisible = CanMoveTab(pane, 1);
+            moveLeft.IsVisible = CanMoveTab(pane, -1);
         }
         // Opening covers a right-click; Opened also covers a menu opened from code or the keyboard.
         menu.Opening += (_, _) => Refresh();

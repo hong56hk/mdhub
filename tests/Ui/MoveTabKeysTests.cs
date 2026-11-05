@@ -81,8 +81,15 @@ internal static class MoveTabKeysTests
             Check(docC.Editor.IsKeyboardFocusWithin, "Moved tab's editor has focus");
             Up(Key.Right);
             var right = Panes()[1];
+            Press(Key.Right);
+            Check(Panes().Count == 2 && right.Documents.Single() == docC && ActivePane() == right, "Ctrl+Alt+Right is a no-op for the one tab of the rightmost split (outward)");
+            // Bug 95 (revised): the last tab of a side split moves inward and the emptied split closes.
             Press(Key.Left);
-            Check(Panes().Count == 2 && right.Documents.Single() == docC && ActivePane() == right, "Ctrl+Alt+Left is a no-op on a one-tab split");
+            Check(Panes().Count == 1 && Panes()[0] == first && first.Documents.Contains(docC) && first.Active == docC && ActivePane() == first, "Ctrl+Alt+Left moves a side split's last tab back and closes that split");
+            Check(docC.IsDirty && docC.Text == "charlie!" && docC.Editor.IsKeyboardFocusWithin, "Edit kept and editor focused after the split closed");
+            Press(Key.Right);
+            right = Panes()[1];
+            Check(Panes().Count == 2 && right.Documents.Single() == docC, "and moves right again into a new split");
             void Show(EditorPane pane, NoteDocument d)
             {
                 typeof(MainView).GetMethod("ActivatePane", Flags)!.Invoke(view, [pane]);
