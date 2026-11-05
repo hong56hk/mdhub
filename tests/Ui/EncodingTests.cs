@@ -126,7 +126,7 @@ internal static class EncodingTests
             foreach (var encoding in TextEncodings.All.Select(o => o.Create()).Concat([new UTF32Encoding(false, true, true), new UTF32Encoding(true, true, true)]))
             {
                 emojiDoc.Encoding = encoding;
-                formatter.UpdateEmoji(emojiDoc);
+                formatter.UpdateInsertButtons(emojiDoc);
                 const string sample = "👩‍💻👍🏽🏳️‍🌈";
                 bool roundTrips;
                 try { roundTrips = encoding.GetString(encoding.GetBytes(sample)) == sample; }
@@ -151,7 +151,7 @@ internal static class EncodingTests
             Check(emojiDoc.Text == "hello world", "An encoding change while the picker is open blocks insertion");
             emojiDoc.Editor.IsReadOnly = true;
             emojiDoc.Encoding = TextFileStore.DefaultEncoding;
-            formatter.UpdateEmoji(emojiDoc);
+            formatter.UpdateInsertButtons(emojiDoc);
             Check(!emojiButton.IsEnabled, "Read-only documents disable emoji input");
             emojiDoc.Editor.IsReadOnly = false;
             emojiDoc.Editor.Text = ""; emojiDoc.SavedText = "";

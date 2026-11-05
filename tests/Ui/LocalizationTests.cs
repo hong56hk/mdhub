@@ -127,7 +127,7 @@ internal static class LocalizationTests
                 if (m.Groups[2].Value.Any(char.IsLetter) && !allowed.Contains(m.Groups[2].Value)) found.Add($"{Path.GetFileName(file)}: {m.Value}");
         // C#: an English phrase (two or more words, starting with a capital) passed to UI text.
         var phrase = new Regex("\"\\$?(?:[A-Z][a-z']+)(?: [A-Za-z'·]+)+[.?…]?\"|\\$\"[A-Z][a-z]+ \\{");
-        string[] skip = ["FileIndex.cs", "ExplorerFileOperations.cs", "FolderService.cs"];
+        string[] skip = ["FileIndex.cs", "ExplorerFileOperations.cs", "FolderService.cs", "CodeHighlighter.cs"]; // CodeHighlighter: language keyword/type lists, not UI text
         var dirs = new[] { "Components", "Views", "Services", "Text", "Rendering" }.Select(d => Path.Combine(repo, d));
         foreach (var file in dirs.Where(Directory.Exists).SelectMany(d => Directory.EnumerateFiles(d, "*.cs", SearchOption.AllDirectories)).Append(Path.Combine(repo, "MainWindow.axaml.cs")).Append(Path.Combine(repo, "App.axaml.cs")))
         {

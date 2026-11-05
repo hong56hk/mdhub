@@ -13,16 +13,24 @@ public partial class MainView
     private static FilePickerFileType TextFiles => new(Loc.T("TextAndMarkdown")) { Patterns = ["*.txt", "*.md", "*.markdown", "*.html", "*.htm"] };
     private NoteDocument AddDocument(string? path, string text, string? name = null, System.Text.Encoding? encoding = null)
     {
+        if (name is null)
+        {
+            do { name = $"Untitled {++_untitled}.md"; }
+            while (AllDocuments.Any(d => d.Path is null && d.UntitledName == name));
+        }
         var document = new NoteDocument
         {
-            Path = path, SavedText = text, UntitledName = name ?? $"Untitled {++_untitled}.md",
+            Path = path, SavedText = text, UntitledName = name,
             Encoding = encoding ?? TextFileStore.DefaultEncoding
         };
+        document.Buffer.SavedEncoding = document.Encoding;
         document.SetLoadedLineEnding(Mdhub.Text.LineEndings.Detect(text, LineEndingSettings.ForNewFile)); // item 68
         InitializeTextDocument(document, text);
         document.Buffer.ResetHistory();
         _documents.Add(document);
+        TrackRecovery(document);
         FileTabs.SelectedDocument = document;
+        if (path is null && GlobalSearch.IsVisible) GlobalSearch.Schedule();
         return document;
     }
 
@@ -129,15 +137,21 @@ public partial class MainView
                 throw new IOException(Loc.T("AlreadyOpenSaveAs"));
         }
         if (!await EnsureEncodableAsync(document)) return false; // item 67
-        await TextFileStore.WriteAsync(path, document.Text, document.Encoding);
+        var savedText = document.Text;
+        var savedLineEnding = document.LineEnding;
+        var savedEncoding = document.Encoding;
+        await TextFileStore.WriteAsync(path, savedText, savedEncoding);
         var isNewPath = document.Path is null || !SamePath(document.Path, Path.GetFullPath(path));
         document.Path = path;
-        document.SavedText = document.Text;
-        document.SavedLineEnding = document.LineEnding; // item 68
+        document.SavedText = savedText;
+        document.Buffer.SavedEncoding = savedEncoding;
+        document.SavedLineEnding = savedLineEnding; // item 68
         document.Refresh();
         RefreshPaneDocuments();
         UpdateStatus(Loc.F("Saved", path));
+        if (GlobalSearch.IsVisible) GlobalSearch.Schedule();
         MdEditor.ScheduleRefresh();
+        await FlushRecoveryAsync();
         if (isNewPath && FolderExplorer.Contains(path)) await FolderExplorer.RevealCreatedAsync(path);
         return true;
     }
@@ -156,6 +170,7 @@ public partial class MainView
         if (!AllDocuments.Any(d => d != document && d.Buffer == document.Buffer) && !await ConfirmCloseAsync(document)) return;
         RememberClosedTab(document);
         RemoveDocument(document);
+        await FlushRecoveryAsync();
     }
 
     // Keep lightweight snapshots, never editor controls or disposed image bitmaps.

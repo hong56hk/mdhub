@@ -56,9 +56,13 @@ public static class LocResources
         Services.SessionManager.SaveSettings();
     }
 
-    public static MenuItem Item(string key)
+    public static MenuItem Item(string key) => Track(new MenuItem(), key);
+
+    // Item 100: an existing (e.g. XAML) item labelled from a key; Refresh relabels it when its menu opens.
+    // DynamicResource headers in a closed ContextMenu miss the resource swap and stay in the old language.
+    public static MenuItem Track(MenuItem item, string key)
     {
-        var item = new MenuItem { Header = Loc.T(key) };
+        item.Header = Loc.T(key);
         MenuKeys.AddOrUpdate(item, key);
         return item;
     }
@@ -75,7 +79,7 @@ public static class LocResources
 
     // Item 45: the padding every context menu gets, set as a local value so it applies from the very first measure
     // (a style can land after the popup first lays out, which left the first open without padding).
-    public static readonly Thickness MenuPadding = new(2, 2, 2, 2);
+    public static readonly Thickness MenuPadding = new(2, 4, 2, 6);
     // Bug 55: the item padding. It used to come only from the Fluent MenuItem theme, which resolves when the item
     // joins the popup's tree; on a menu's first open the items could be laid out before that, so the text touched
     // the left edge until the second open. A local value is there before the first measure.
@@ -112,7 +116,19 @@ public static class LocResources
             {
                 if (v is not Control { ContextMenu: { } menu }) continue;
                 if (Pointed.TryGetValue(menu, out _))
-                    menu.PlacementRect = e.TryGetPosition(source, out var point) ? AtPointer(point, source.Bounds.Size) : null;
+                {
+                    // Bug 94b: a source smaller than the click area (the editor reports its text presenter, which is only
+                    // as big as the text) clamped a click below the text onto the presenter's edge, so the menu opened
+                    // above the pointer. Then open the menu on its owner (which contains the click) at the click.
+                    var owner = (Control)v;
+                    var outside = e.TryGetPosition((Control)source, out var at) && !new Rect(((Control)source).Bounds.Size).Contains(at);
+                    var target = outside && e.TryGetPosition(owner, out var p) && new Rect(owner.Bounds.Size).Contains(p) ? owner : (Control)source;
+                    menu.PlacementRect = e.TryGetPosition(target, out var point) ? AtPointer(point, target.Bounds.Size) : null;
+                    // Item 101: retarget instead of opening here. The owner's own ContextMenu handler (later in this
+                    // bubble) then opens it on the owner through the normal route, raising Opening, so a click below
+                    // the text runs every opening handler (Undo/Redo state, spelling, pane activation) like any other.
+                    if (target != source && !e.Handled) e.Source = owner;
+                }
                 return;
             }
         }, RoutingStrategies.Bubble, handledEventsToo: true);
@@ -122,6 +138,15 @@ public static class LocResources
     // source's padding (the editor reports the text presenter as source) is clamped onto its edge.
     public static Rect AtPointer(Point point, Size bounds) =>
         new(Math.Clamp(point.X, 0, Math.Max(0, bounds.Width - 1)), Math.Clamp(point.Y, 0, Math.Max(0, bounds.Height - 1)), 1, 1);
+
+    // Item 100: ContextMenu.Open(control) does not raise Opening (only a ContextRequested on the owner does), so a menu
+    // opened in code would keep the headers of the language it was last opened in. Relabel and pad first.
+    public static void Open(ContextMenu menu, Control owner)
+    {
+        ApplyItemPadding(menu);
+        Refresh(menu);
+        menu.Open(owner);
+    }
 
     public static ContextMenu Localized(this ContextMenu menu)
     {

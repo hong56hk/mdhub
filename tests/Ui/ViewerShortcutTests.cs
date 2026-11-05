@@ -62,7 +62,7 @@ internal static class ViewerShortcutTests
             }
             // Focus inside the view still goes through the normal handler exactly once.
             Open(plainPdf);
-            view.FindControl<Control>("BinaryPlaceholder")!.GetVisualDescendants().OfType<Button>().First().Focus(); Pump();
+            view.GetVisualDescendants().OfType<Mdhub.Components.BinaryPlaceholder>().First(p => p.IsVisible).GetVisualDescendants().OfType<Button>().First().Focus(); Pump();
             var before = tabs.ItemCount;
             Key(Avalonia.Input.Key.W, ctrl); WaitFor(() => tabs.ItemCount < before);
             Check(tabs.ItemCount == before - 1 && Active()?.Path == note, "Ctrl+W from the placeholder's button closes just that tab");

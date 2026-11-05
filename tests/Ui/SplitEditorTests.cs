@@ -42,11 +42,24 @@ internal static class SplitEditorTests
             Wait(Invoke("OpenPathAsync", note));
             var first = ActivePane();
             var source = first.Active!;
+            Key(Avalonia.Input.Key.Left, RawInputModifiers.Alt);
+            Key(Avalonia.Input.Key.Right, RawInputModifiers.Alt);
+            Check(Panes().Count == 1 && ActivePane() == first, "Pane shortcuts leave a single pane unchanged");
             source.Editor.CaretIndex = 4;
             Key(Avalonia.Input.Key.OemPipe, RawInputModifiers.Control);
             Check(Panes().Count == 2 && ActivePane() != first, "Ctrl+backslash creates and focuses a right pane");
             var second = ActivePane();
             var copy = second.Active!;
+            Key(Avalonia.Input.Key.Left, RawInputModifiers.Alt);
+            Check(ActivePane() == first && source.Editor.IsKeyboardFocusWithin, "Alt+Left focuses the adjacent left editor");
+            Key(Avalonia.Input.Key.Left, RawInputModifiers.Alt);
+            Check(ActivePane() == first, "Alt+Left stops at the left edge");
+            Key(Avalonia.Input.Key.Right, RawInputModifiers.Alt);
+            Check(ActivePane() == second && copy.Editor.IsKeyboardFocusWithin, "Alt+Right focuses the adjacent right editor");
+            Key(Avalonia.Input.Key.Right, RawInputModifiers.Alt);
+            Check(ActivePane() == second, "Alt+Right stops at the right edge");
+            Check(source.Editor.CaretIndex == 4 && copy.Editor.CaretIndex == 4 && source.Text == "# Shared\nsecond\nthird",
+                "Switching panes preserves editor positions and content");
             Check(copy.Buffer == source.Buffer && copy.Editor != source.Editor, "Split views share file state and own independent editor controls");
             Check(first.FindControl<TextEditor>("TextEditor")!.IsVisible && second.FindControl<TextEditor>("TextEditor")!.IsVisible
                 && !first.FindControl<MdEditor>("MdEditor")!.IsVisible, "Splitting gives both panes room for their source editors");
@@ -72,6 +85,16 @@ internal static class SplitEditorTests
             for (var i = 0; i < 10 && Panes().Count < 3; i++) Pump();
             Check(Panes().Count == 3 && ActivePane().Active?.Path == other, "Quick Open Ctrl+Enter opens the selected file in a new pane");
             Check(ActivePane().Active!.Editor.CaretIndex == 4, "Quick Open preserves the requested line in the new pane");
+            var middle = ActivePane();
+            Key(Avalonia.Input.Key.Left, RawInputModifiers.Alt);
+            Check(ActivePane() == first, "Alt+Left follows pane layout order after inserting a split");
+            Key(Avalonia.Input.Key.Right, RawInputModifiers.Alt);
+            Key(Avalonia.Input.Key.Right, RawInputModifiers.Alt);
+            Check(ActivePane() == second, "Alt+Right navigates through multiple panes");
+            Check(Shortcuts.Rebind("view.focusLeftPane", ShortcutGesture.Cmd("PageUp")), "Pane focus shortcuts can be customized");
+            Key(Avalonia.Input.Key.PageUp, RawInputModifiers.Control);
+            Check(ActivePane() == middle && middle.Active!.Editor.IsKeyboardFocusWithin, "Custom pane shortcut focuses the adjacent editor");
+            Shortcuts.ResetAll();
             var explorer = window.GetVisualDescendants().OfType<FolderExplorer>().Single();
             var menu = (ContextMenu)typeof(FolderExplorer).GetMethod("CreateContextMenu", Flags)!.Invoke(explorer, [note, false])!;
             var side = menu.Items.OfType<MenuItem>().Single(m => m.Name == "OpenToSideMenuItem");

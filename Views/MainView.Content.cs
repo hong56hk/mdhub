@@ -41,6 +41,9 @@ public partial class MainView
             TextFormatter.SetViewMode(hasPreview ? (int)mode : 0);
             TextFormatter.SetSettingsVisibility(document is not null && !image && !binary, hasPreview);
             BottomStatusBar.SetImageZoom(image ? pane.ImageViewer.ZoomPercent : null);
+            BottomStatusBar.SetImageCursor(image ? pane.ImageViewer.CursorPixel : null);
+            // Item 91: the image tab takes the keyboard (its H/Z/R/Space/Esc tools) unless focus is elsewhere, e.g. the explorer.
+            if (image && ImageViewerShouldTakeFocus(pane)) pane.ImageViewer.Focus();
         }
     }
 
@@ -59,5 +62,20 @@ public partial class MainView
         var viewer = _panes.Select(p => p.ImageViewer).FirstOrDefault(v => v.IsVisible && v.IsPointerOver);
         return viewer is not null && viewer.ZoomAt(e.Delta.Y, e.GetPosition(viewer));
     }
-    internal bool ResetImageZoom() => ImageViewer.IsVisible && ImageViewer.ResetZoom();
+    // Focus moves to the image only from nowhere or from the pane's (now hidden) editor or preview.
+    private bool ImageViewerShouldTakeFocus(Mdhub.Components.EditorPane pane)
+    {
+        if (TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is not Avalonia.Visual focused || !focused.IsEffectivelyVisible) return true;
+        bool Within(Avalonia.Visual host) => host == focused || Avalonia.VisualTree.VisualExtensions.IsVisualAncestorOf(host, focused);
+        return Within(pane.TextEditor) || Within(pane.MdEditor);
+    }
+    internal bool ResetImageZoom() => ImageViewer.IsVisible && ImageViewer.FitToWindow();
+    // Item 91: Ctrl+= / Ctrl+- step the active image's zoom, Ctrl+0 fits it to the window.
+    internal bool ImageZoomKey(string id) => ImageViewer.IsVisible && id switch
+    {
+        "zoom.in" => ImageViewer.StepZoom(1),
+        "zoom.out" => ImageViewer.StepZoom(-1),
+        "zoom.reset" => ImageViewer.FitToWindow(),
+        _ => false
+    };
 }

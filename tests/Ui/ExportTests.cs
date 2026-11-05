@@ -72,7 +72,8 @@ internal static class ExportTests
             var selector = (Control)toggle.Parent!.Parent!;
             var row = (Panel)selector.Parent!;
             var index = row.Children.IndexOf(selector);
-            Check(row.Children.IndexOf(htmlButton) == index + 1 && row.Children.IndexOf(pdfButton) == index + 2, "Order: preview toggle, HTML, PDF");
+            // 17667c6 added a separator between the view-mode controls and Export HTML.
+            Check(row.Children[index + 1] is Border && row.Children.IndexOf(htmlButton) == index + 2 && row.Children.IndexOf(pdfButton) == index + 3, "Order: preview toggle, separator, HTML, PDF");
             Check(htmlButton.Bounds.Left > selector.Bounds.Right - 0.5 && pdfButton.Bounds.Left > htmlButton.Bounds.Right - 0.5 && htmlButton.Bounds.Height >= toggle.Bounds.Height, "Export buttons sit right of the toggle with the same height");
             foreach (var b in new[] { htmlButton, pdfButton })
             {
@@ -81,8 +82,9 @@ internal static class ExportTests
             }
             var pen = new Pen(Brushes.Black, 1.25);
             var g = ((Avalonia.Controls.Shapes.Path)htmlButton.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().Single()).Data!;
-            // Bug 82: 20f95af restored the item 51 '</>' icon (bug 73's '<html>' was reverted on purpose).
-            Check(g.StrokeContains(pen, new Point(1.5, 7)) && g.StrokeContains(pen, new Point(14.5, 7)) && g.StrokeContains(pen, new Point(8, 7)), "HTML icon is '</>'");
+            // f21d44a redrew the HTML icon: a folded page (like PDF) with '< >' code brackets over its lower left.
+            Check(g.StrokeContains(pen, new Point(1.5, 10.5)) && g.StrokeContains(pen, new Point(9, 10.5)) && g.StrokeContains(pen, new Point(13, 8)) && g.StrokeContains(pen, new Point(9.5, 1)),
+                "HTML icon is a folded page with code brackets");
             g = pdfButton.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().Single().Data!;
             Check(g.StrokeContains(pen, new Point(9.5, 3)) && g.StrokeContains(pen, new Point(11, 4.5)) && g.StrokeContains(pen, new Point(3.5, 12)), "PDF icon is a page with a folded corner");
             foreach (var code in Loc.Languages.Select(l => l.Code))

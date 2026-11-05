@@ -17,7 +17,49 @@ namespace Mdhub.Rendering;
 public static class MarkdownPreview
 {
     private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder().UsePreciseSourceLocation().UsePipeTables().UseEmphasisExtras().Build();
-    public static MarkdownDocument Parse(string text) => Markdown.Parse(text, Pipeline);
+    public static MarkdownDocument Parse(string text)
+    {
+        var document = Markdown.Parse(text, Pipeline);
+        NestIndentedBullets(document);
+        return document;
+    }
+
+    // Accept bullets indented less than the ordered marker's full width (e.g. two spaces
+    // below "1. "). Reparent parsed blocks so their original source offsets stay intact.
+    private static void NestIndentedBullets(ContainerBlock container)
+    {
+        for (var i = 1; i < container.Count; i++)
+        {
+            if (container[i - 1] is not ListBlock { IsOrdered: true } ordered ||
+                ordered.LastOrDefault() is not ListItemBlock parent ||
+                container[i] is not ListBlock { IsOrdered: false } bullets ||
+                !bullets.OfType<ListItemBlock>().All(item => item.Column > parent.Column)) continue;
+
+            container.RemoveAt(i);
+            parent.Add(bullets);
+            parent.Span.End = bullets.Span.End;
+            ordered.Span.End = bullets.Span.End;
+
+            // Markdig splits the following numbered items into another list. Join a
+            // continuation back to its parent so numbering and item spacing stay consistent.
+            if (i < container.Count && container[i] is ListBlock { IsOrdered: true } next &&
+                next.Column == ordered.Column && next.OrderedDelimiter == ordered.OrderedDelimiter &&
+                int.TryParse(ordered.OrderedStart, out var start) &&
+                int.TryParse(next.OrderedStart, out var continuation) && continuation == start + ordered.Count)
+            {
+                container.RemoveAt(i);
+                while (next.Count > 0)
+                {
+                    var item = next[0];
+                    next.RemoveAt(0);
+                    ordered.Add(item);
+                }
+                ordered.Span.End = next.Span.End;
+            }
+            i--;
+        }
+        foreach (var child in container.OfType<ContainerBlock>()) NestIndentedBullets(child);
+    }
 
     [ThreadStatic] private static string? _baseDirectory;
     [ThreadStatic] private static bool _suppressInlineCode;

@@ -49,6 +49,7 @@ public partial class MainView
         pane.MdEditor.MessageChanged += message => { if (pane == _activePane) BottomStatusBar.SetMessage(message); };
         pane.TextEditor.SpellCountChanged += count => { if (pane == _activePane) BottomStatusBar.SetSpellCount(count); };
         pane.ImageViewer.ZoomChanged += percent => { if (pane == _activePane && pane.ImageViewer.IsVisible) BottomStatusBar.SetImageZoom(percent); };
+        pane.ImageViewer.CursorPixelChanged += pixel => { if (pane == _activePane && pane.ImageViewer.IsVisible) BottomStatusBar.SetImageCursor(pixel); };
         pane.BinaryPlaceholder.OpenDefaultRequested += async () => { if (pane.Active is { IsBinary: true, Path: { } path }) await OpenWithDefaultAppAsync(path); };
         pane.BinaryPlaceholder.OpenAsTextRequested += async () => { if (_busy) return; ActivatePane(pane); if (_active is { IsBinary: true } document) await RunAsync(() => OpenAsTextAsync(document)); };
     }
@@ -64,12 +65,22 @@ public partial class MainView
         _active = pane.Active;
         _viewMode = (ViewMode)pane.ViewMode;
         _syncFromPreview = false;
+        _ = FlushRecoveryAsync();
+        ScheduleExternalCheck();
         pane.SetActive(true);
         if (_active is not null) FolderExplorer.MarkActive(_active.Path);
         UpdateContentLayout();
         UpdateStatus();
         BottomStatusBar.SetSpellCount(pane.TextEditor.Spelling.Count);
         if (_active?.IsMarkdown == true) BottomStatusBar.UpdateStatistics(Mdhub.Text.TextStatistics.Count(_active.Text));
+    }
+
+    private void FocusAdjacentPane(int step)
+    {
+        var index = _panes.IndexOf(_activePane) + step;
+        if (index < 0 || index >= _panes.Count) return;
+        ActivatePane(_panes[index]);
+        FocusEditor();
     }
 
     private EditorPane? CreatePaneToSide()

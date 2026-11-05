@@ -11,9 +11,38 @@ public static class SessionManager
     {
         public MainWindow Window { get; } = window;
         public WindowSession? Snapshot { get; set; }
+        public WindowSession? RecoverySnapshot { get; set; }
+        public WindowSession? PendingRestore { get; set; }
     }
 
     private static readonly List<Entry> Entries = [];
+    private static readonly List<WindowSession> ClosedRecovery = [];
+    private static Task _recoveryWrite = Task.CompletedTask;
+    private static bool _buildingRestore;
+    public static string RecoveryPath => Path.Combine(Path.GetDirectoryName(Path.GetFullPath(SessionPath))!, "recovery.json");
+
+    // Snapshots are captured on the UI thread; disk writes are serialized off it.
+    public static Task SaveRecoveryAsync()
+    {
+        if (!Enabled || _buildingRestore || (Entries.Count == 0 && ClosedRecovery.Count == 0)) return Task.CompletedTask;
+        return QueueRecovery(ClosedRecovery.Concat(Entries.Select(e => e.PendingRestore ?? e.Window.CaptureRecoverySession())).ToList());
+    }
+
+    private static Task QueueRecovery(List<WindowSession> windows)
+    {
+        var path = RecoveryPath;
+        var previous = _recoveryWrite;
+        return _recoveryWrite = Task.Run(async () =>
+        {
+            try { await previous; } catch { /* A later write may recover from an earlier failure. */ }
+            SessionStore.Save(path, new SessionData { Windows = windows.Where(w => !w.IsEmpty).ToList() });
+        });
+    }
+
+    public static void CompleteRestore(MainWindow window)
+    {
+        if (Entries.FirstOrDefault(e => e.Window == window) is { } entry) entry.PendingRestore = null;
+    }
 
     // Off unless the app (or a test) turns it on, so stray windows never touch the real session file.
     public static bool Enabled { get; set; }
@@ -31,7 +60,11 @@ public static class SessionManager
     // Called once a close has been accepted (after the unsaved prompt), so a cancelled close changes nothing.
     private static void Capture(MainWindow window)
     {
-        if (Entries.FirstOrDefault(e => e.Window == window) is { } entry) FolderTabsStore.Record(FolderTabsStore.PathFor(SessionPath), entry.Snapshot = window.CaptureSession());
+        if (Entries.FirstOrDefault(e => e.Window == window) is { } entry)
+        {
+            FolderTabsStore.Record(FolderTabsStore.PathFor(SessionPath), entry.Snapshot = window.CaptureSession());
+            entry.RecoverySnapshot = window.CaptureRecoverySession();
+        }
     }
 
     private static bool _shuttingDown;
@@ -42,6 +75,9 @@ public static class SessionManager
     {
         if (Entries.FirstOrDefault(e => e.Window == window) is not { } entry) return;
         Entries.Remove(entry);
+        if (entry.RecoverySnapshot is { } recovery && (_shuttingDown || recovery.Recovery.Count > 0 || Entries.Count == 0)) ClosedRecovery.Add(recovery);
+        // Closing is already flushed by MainView. Persist removal of explicitly closed clean windows too.
+        _ = ObserveRecoveryAsync();
         if (_shuttingDown) { if (Entries.Count == 0) _shuttingDown = false; return; }
         var windows = Entries.Count == 0
             ? [entry.Snapshot ?? new WindowSession()]
@@ -87,24 +123,37 @@ public static class SessionManager
         Write(SessionStore.Load(SessionPath)?.Windows ?? []);
     }
 
-    public static void Reset() { Entries.Clear(); _shuttingDown = false; }
+    private static async Task ObserveRecoveryAsync()
+    {
+        try { await SaveRecoveryAsync(); } catch { /* MainView reports failures on its next flush. */ }
+    }
+
+    public static void Reset() { Entries.Clear(); ClosedRecovery.Clear(); _shuttingDown = false; }
 
     // Builds windows for every valid saved window; empty when there is nothing to restore.
     // Each window loads its folder and tabs when it opens; skipped items are noted in the first window's status bar.
     public static List<MainWindow> Restore(Func<MainWindow>? factory = null)
     {
-        var (sessions, skipped) = SessionStore.Validate(SessionStore.Load(SessionPath), Directory.Exists, File.Exists);
+        var (sessions, skipped) = SessionStore.Validate(SessionStore.Load(RecoveryPath) ?? SessionStore.Load(SessionPath), Directory.Exists, File.Exists);
         var windows = new List<MainWindow>();
-        foreach (var session in sessions)
+        // Constructors select their initial tab; do not let those selections overwrite recovery
+        // with a partially constructed set of windows before every pending session is registered.
+        _buildingRestore = true;
+        try
         {
-            var window = (factory ?? (() => new MainWindow()))();
-            window.ApplyBounds(session);
-            var note = windows.Count == 0 && skipped > 0
-                ? Mdhub.Localization.Loc.Plural("SessionSkippedOne", "SessionSkippedMany", skipped)
-                : null;
-            window.RestoreOnOpen(session, note);
-            windows.Add(window);
+            foreach (var session in sessions)
+            {
+                var window = (factory ?? (() => new MainWindow()))();
+                window.ApplyBounds(session);
+                var note = windows.Count == 0 && skipped > 0
+                    ? Mdhub.Localization.Loc.Plural("SessionSkippedOne", "SessionSkippedMany", skipped)
+                    : null;
+                if (Entries.FirstOrDefault(e => e.Window == window) is { } entry) entry.PendingRestore = session;
+                window.RestoreOnOpen(session, note);
+                windows.Add(window);
+            }
         }
+        finally { _buildingRestore = false; }
         return windows;
     }
 

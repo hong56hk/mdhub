@@ -7,11 +7,13 @@ namespace Mdhub.Models;
 // File state has no editor control; panes create independent NoteDocument views over it.
 public sealed class NoteBuffer
 {
+    public string RecoveryKey { get; } = "recovery:" + Guid.NewGuid().ToString("N");
     public string? Path { get; set; }
     public string UntitledName { get; set; } = "Untitled.md";
     public string Text { get; private set; } = "";
     public string SavedText { get; set; } = "";
     public Encoding Encoding { get; set; } = TextFileStore.DefaultEncoding;
+    public Encoding SavedEncoding { get; set; } = TextFileStore.DefaultEncoding;
     public Avalonia.Media.Imaging.Bitmap? Image { get; set; }
     public bool IsBinary { get; set; }
     public bool IsReadOnlyText { get; set; }

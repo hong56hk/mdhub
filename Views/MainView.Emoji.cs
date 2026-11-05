@@ -28,6 +28,11 @@ public partial class MainView
         var picker = new EmojiPicker();
         var flyout = new Flyout { Content = picker };
         picker.EmojiSelected += emoji => InsertEmojiCore(document, emoji, focusEditor: false);
+        picker.EmojiCommitted += emoji =>
+        {
+            flyout.Hide();
+            InsertEmojiCore(document, emoji, focusEditor: true);
+        };
         picker.DismissRequested += () =>
         {
             flyout.Hide();

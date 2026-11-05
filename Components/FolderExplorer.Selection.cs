@@ -1,4 +1,4 @@
-﻿using Avalonia.Controls;
+using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Mdhub.Localization;
@@ -214,7 +214,7 @@ public partial class FolderExplorer
         if (!IsMultiSelect || ItemAt(e.Source) is not { } row) return;
         if (!_multi.Contains(row)) { ClearMultiSelection(); return; }
         e.Handled = true;
-        MultiMenu.Open(row);
+        LocResources.Open(MultiMenu, row);
     }
 
     private void RequestMulti(ExplorerAction action)

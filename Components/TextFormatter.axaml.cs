@@ -8,14 +8,17 @@ public partial class TextFormatter : UserControl
     public event Action<WorkspaceAction>? ActionRequested;
     public event Action<string>? EditRequested;
     public event Action<string>? FormatRequested;
-    public void UpdateEmoji(Mdhub.Models.NoteDocument document)
+    public event Action<string>? CommandRequested;
+    public void UpdateInsertButtons(Mdhub.Models.NoteDocument document)
     {
-        EmojiButton.IsEnabled = !document.IsViewOnly && !document.IsReadOnlyText && !document.Editor.IsReadOnly && Mdhub.Services.TextEncodings.SupportsEmoji(document.Encoding);
+        InsertDateTimeButton.IsEnabled = !document.IsViewOnly && !document.IsReadOnlyText && !document.Editor.IsReadOnly;
+        EmojiButton.IsEnabled = InsertDateTimeButton.IsEnabled && Mdhub.Services.TextEncodings.SupportsEmoji(document.Encoding);
         ToolTip.SetTip(EmojiButton, Mdhub.Localization.Loc.T(Mdhub.Services.TextEncodings.SupportsEmoji(document.Encoding) ? "EmojiInput" : "EmojiUnsupported"));
     }
 
     public event Action<Control>? EmojiRequested;
     private void EmojiButton_Click(object? sender, RoutedEventArgs e) => EmojiRequested?.Invoke(EmojiButton);
+    private void InsertDateTime_Click(object? sender, RoutedEventArgs e) => CommandRequested?.Invoke("editor.insertTime");
 
     public TextFormatter()
     {
@@ -33,6 +36,7 @@ public partial class TextFormatter : UserControl
         BuildHtmlButtons();
         // Item 50: the link icon's tooltip names its (live) shortcut, e.g. "Insert link (Ctrl+L)".
         ToolTip.SetTip(LinkButton, $"{Mdhub.Localization.Loc.T("InsertLink")} ({Mdhub.Services.Shortcuts.Format("editor.link", ShortcutKeys.IsMac)})");
+        ToolTip.SetTip(InsertDateTimeButton, $"{Mdhub.Localization.Loc.T("MenuInsertDateTime")} ({Mdhub.Services.Shortcuts.Format("editor.insertTime", ShortcutKeys.IsMac)})");
         ToolTip.SetTip(EditorOnlyButton, $"{Mdhub.Localization.Loc.T("ViewModeEditor")} ({Mdhub.Services.Shortcuts.Format("view.togglePreview", ShortcutKeys.IsMac)})");
         ToolTip.SetTip(TogglePreviewButton, Mdhub.Localization.Loc.T("ViewModeSplit"));
         ToolTip.SetTip(SyncButton, $"{Mdhub.Localization.Loc.T("Sc.view.previewCaret")} ({Mdhub.Services.Shortcuts.Format("view.previewCaret", ShortcutKeys.IsMac)})");

@@ -39,7 +39,8 @@ public partial class MainWindow : Window
         // Bug 87: NoRepeat shortcuts re-arm on key release; losing activation (a dialog, another app) re-arms everything.
         // (Not on in-window focus moves: Ctrl+W moves focus to the next tab, and its auto-repeat must stay swallowed.)
         AddHandler(KeyUpEvent, (_, e) => Shortcuts.KeyReleased(e.Key.ToString()), RoutingStrategies.Tunnel, handledEventsToo: true);
-        Deactivated += (_, _) => Shortcuts.ReleaseAll();
+        Deactivated += (_, _) => { Shortcuts.ReleaseAll(); _ = MainView.FlushRecoveryAsync(); };
+        Activated += (_, _) => MainView.ScheduleExternalCheck();
         // A modal dialog swallows the owner's KeyUp, so any window opening re-arms everything too.
         if (Interlocked.Exchange(ref _dialogHookInstalled, 1) == 0)
             WindowOpenedEvent.AddClassHandler<Window>((_, _) => Shortcuts.ReleaseAll(), handledEventsToo: true);
@@ -66,8 +67,8 @@ public partial class MainWindow : Window
 
     private void OnZoomKey(object? sender, KeyEventArgs e)
     {
-        // Item 37: with an image open, Reset zoom (Ctrl+0) shows it at 100% instead of resetting the window zoom.
-        if (ShortcutKeys.Match(e, s => s.Area == ShortcutArea.Zoom) == "zoom.reset" && MainView.ResetImageZoom()) { e.Handled = true; return; }
+        // Item 37/91: with an image tab active, Ctrl+=/-/0 zoom the image (steps, fit to window) instead of the window.
+        if (ShortcutKeys.Match(e, s => s.Area == ShortcutArea.Zoom) is { } imageZoom && MainView.ImageZoomKey(imageZoom)) { e.Handled = true; return; }
         int? next = ShortcutKeys.Match(e, s => s.Area == ShortcutArea.Zoom) switch
         {
             "zoom.in" => ZoomLevel.In(ZoomPercent),
@@ -88,6 +89,7 @@ public partial class MainWindow : Window
         SetZoom(ZoomLevel.Wheel(ZoomPercent, e.Delta.Y));
     }
 
+    public WindowSession CaptureRecoverySession() => SessionManager.Bounds(this, MainView.CaptureRecoverySession());
     public WindowSession CaptureSession() => SessionManager.Bounds(this, MainView.CaptureSession());
     public void ApplyBounds(WindowSession session) => SessionManager.Apply(this, session);
 
@@ -99,7 +101,8 @@ public partial class MainWindow : Window
         {
             if (started) return;
             started = true;
-            await MainView.RestoreSessionAsync(session, note);
+            try { await MainView.RestoreSessionAsync(session, note); }
+            finally { SessionManager.CompleteRestore(this); }
             Title = MainView.DocumentTitle;
         };
     }

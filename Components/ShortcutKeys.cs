@@ -22,6 +22,7 @@ public sealed class ShortcutKeys : AvaloniaObject
         if (mods.HasFlag(ShortcutMods.Command)) result |= IsMac ? KeyModifiers.Meta : KeyModifiers.Control;
         if (mods.HasFlag(ShortcutMods.Shift)) result |= KeyModifiers.Shift;
         if (mods.HasFlag(ShortcutMods.Alt)) result |= KeyModifiers.Alt;
+        if (mods.HasFlag(ShortcutMods.Control)) result |= KeyModifiers.Control;
         return result;
     }
 
@@ -44,6 +45,7 @@ public sealed class ShortcutKeys : AvaloniaObject
         if (modifiers.HasFlag(IsMac ? KeyModifiers.Meta : KeyModifiers.Control)) mods |= ShortcutMods.Command;
         if (modifiers.HasFlag(KeyModifiers.Shift)) mods |= ShortcutMods.Shift;
         if (modifiers.HasFlag(KeyModifiers.Alt)) mods |= ShortcutMods.Alt;
+        if (IsMac && modifiers.HasFlag(KeyModifiers.Control)) mods |= ShortcutMods.Control;
         return new ShortcutGesture(key.ToString(), mods);
     }
 

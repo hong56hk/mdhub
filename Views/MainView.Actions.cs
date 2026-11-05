@@ -226,6 +226,16 @@ public partial class MainView
             CycleTab(tabId == "view.nextTab" ? 1 : -1);
             return;
         }
+        if (ShortcutKeys.Match(e, s => s.Id is "view.focusLeftPane" or "view.focusRightPane") is { } paneId)
+        {
+            e.Handled = true;
+            if (!_busy)
+            {
+                ShortcutFired?.Invoke(paneId);
+                FocusAdjacentPane(paneId == "view.focusLeftPane" ? -1 : 1);
+            }
+            return;
+        }
         if (HandleSidebarShortcut(e)) return;
         if (!_busy && FolderExplorer.IsKeyboardFocusWithin && ShortcutKeys.Match(e, s => s.Id == "explorer.rename") is not null)
         {
@@ -275,10 +285,11 @@ public partial class MainView
             return;
         }
         // Built-in TextBox keys and zoom (MainWindow) are listed in the table but handled elsewhere.
-        var id = ShortcutKeys.Match(e, s => !s.HandledByTextBox && s.Area != ShortcutArea.Zoom && s.Id is not ("find.next" or "find.previous" or "find.close"));
+        var id = ShortcutKeys.Match(e, s => !s.HandledByTextBox && s.Area is not (ShortcutArea.Zoom or ShortcutArea.Image) && s.Id is not ("find.next" or "find.previous" or "find.close"));
         Func<Task>? action = id switch
         {
             "view.splitEditor" => () => OpenToSideAsync(),
+            "view.moveTabRight" or "view.moveTabLeft" when !_busy && _active is not null => Sync(() => MoveActiveTab(id == "view.moveTabRight" ? 1 : -1)),
             "file.new" => () => { AddDocument(null, ""); return Task.CompletedTask; },
             "file.open" => OpenAsync,
             "file.openFolder" => OpenFolderAsync,
@@ -306,8 +317,19 @@ public partial class MainView
         if (!Shortcuts.BeginPress(id!, e.Key.ToString())) return; // bug 87: a held one-shot key fires once per press
         ShortcutFired?.Invoke(id!);
         if (id == "edit.paste") await PasteAsync(); // runs busy only while saving an image
+        else if (id is "view.moveTabRight" or "view.moveTabLeft") await action(); // MoveTabToSide refuses while busy
         else if (id is "find.find" or "find.replace" or "view.wordWrap" or "view.togglePreview" or "view.toggleEditor" || id!.StartsWith("editor.") && id != "editor.goToLine" || id == "view.previewCaret") await action(); // find: focus must land in the find bar
         else await RunAsync(action);
+    }
+
+    // Item 90: the shortcut form of item 89's tab menu entries, on the active tab (no-op when CanMoveTab says the move changes nothing).
+    internal void MoveActiveTab(int direction)
+    {
+        // Bug 95: act on the split that holds keyboard focus (else the active split) and the tab it shows, so a stale
+        // active-pane/active-tab pair can never move a tab out of a split that has only that tab.
+        var pane = _panes.FirstOrDefault(p => p.IsKeyboardFocusWithin) ?? _activePane;
+        if ((pane.Active ?? (pane == _activePane ? _active : null)) is { } document && pane.Documents.Contains(document))
+            MoveTabToSide(pane, document, direction);
     }
 
     private bool EditorFocused => _active?.Editor.IsKeyboardFocusWithin == true;

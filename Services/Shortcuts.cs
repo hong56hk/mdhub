@@ -1,9 +1,10 @@
 namespace Mdhub.Services;
 
-public enum ShortcutArea { File, Edit, View, Find, Zoom, Editor }
+public enum ShortcutArea { File, Edit, View, Find, Zoom, Editor, Image }
 
-// Command is Ctrl on Windows/Linux and Cmd on macOS.
-[Flags] public enum ShortcutMods { None = 0, Command = 1, Shift = 2, Alt = 4 }
+// Command is Ctrl on Windows/Linux and Cmd on macOS. Control is the physical Ctrl key on macOS (item 90: Cmd+Ctrl);
+// on Windows/Linux it is the same key as Command.
+[Flags] public enum ShortcutMods { None = 0, Command = 1, Shift = 2, Alt = 4, Control = 8 }
 
 // Key is an Avalonia Key enum name (kept as a string so this file stays UI-free).
 // KeyLabel overrides the key name for display; Hidden gestures work but are not shown.
@@ -19,6 +20,7 @@ public readonly record struct ShortcutGesture(string Key, ShortcutMods Mods, str
     {
         var parts = new List<string>();
         if (Mods.HasFlag(ShortcutMods.Command)) parts.Add(mac ? "Cmd" : "Ctrl");
+        if (Mods.HasFlag(ShortcutMods.Control) && (mac || !Mods.HasFlag(ShortcutMods.Command))) parts.Add("Ctrl");
         if (Mods.HasFlag(ShortcutMods.Alt)) parts.Add(mac ? "Option" : "Alt");
         if (Mods.HasFlag(ShortcutMods.Shift)) parts.Add("Shift");
         parts.Add(KeyLabel ?? (KeyNames.TryGetValue(Key, out var name) ? name : Key));
@@ -35,7 +37,9 @@ public readonly record struct ShortcutGesture(string Key, ShortcutMods Mods, str
 // ExplorerOnly (item 53): acts only while the explorer has focus, so it may share a gesture with an Edit entry
 // (Ctrl+C/X/V) without conflicting: the editor keeps its keys and the explorer gets them only when focused.
 // NoRepeat (bug 87): a one-shot command (save, close tab, a dialog) fires once per press; key auto-repeat is ignored until release.
-public sealed record Shortcut(string Id, ShortcutArea Area, string Label, IReadOnlyList<ShortcutGesture> Defaults, bool HandledByTextBox = false, bool ExplorerOnly = false, bool NoRepeat = false)
+// ImageOnly (item 91): acts only while an image viewer has focus (plain H/Z/R/Space/Esc), so it never conflicts with the
+// editor's typing, editing or find keys.
+public sealed record Shortcut(string Id, ShortcutArea Area, string Label, IReadOnlyList<ShortcutGesture> Defaults, bool HandledByTextBox = false, bool ExplorerOnly = false, bool NoRepeat = false, bool ImageOnly = false)
 {
     public IReadOnlyList<ShortcutGesture> Gestures => Shortcuts.GesturesFor(this);
     // Only mdhub's own handlers read the live table; gestures built into the TextBox cannot be rebound.
@@ -52,10 +56,14 @@ public static class Shortcuts
     private static Shortcut S(string id, ShortcutArea area, string label, params ShortcutGesture[] g) => new(id, area, label, g);
     private static Shortcut T(string id, ShortcutArea area, string label, params ShortcutGesture[] g) => new(id, area, label, g, true);
     private static Shortcut E(string id, string label, params ShortcutGesture[] g) => new(id, ShortcutArea.File, label, g, ExplorerOnly: true);
+    private static Shortcut I(string id, string label, params ShortcutGesture[] g) => new(id, ShortcutArea.Image, label, g, ImageOnly: true);
     private static ShortcutGesture C(string key) => ShortcutGesture.Cmd(key);
     private static ShortcutGesture CS(string key) => ShortcutGesture.CmdShift(key);
     private static ShortcutGesture P(string key) => ShortcutGesture.Plain(key);
     private static Shortcut Once(Shortcut s) => s with { NoRepeat = true };
+    // Item 90: Ctrl+Alt+arrow on Windows/Linux, Cmd+Ctrl+arrow on macOS (the Mac counterpart of VS Code's Ctrl+Alt+arrow).
+    private static ShortcutGesture MoveTab(string key) =>
+        new(key, OperatingSystem.IsMacOS() ? ShortcutMods.Command | ShortcutMods.Control : ShortcutMods.Command | ShortcutMods.Alt);
 
     public static readonly IReadOnlyList<Shortcut> All =
     [
@@ -66,6 +74,10 @@ public static class Shortcuts
         Once(S("file.save", ShortcutArea.File, "Save", C("S"))),
         Once(S("file.saveAs", ShortcutArea.File, "Save as", CS("S"))),
         Once(S("view.splitEditor", ShortcutArea.View, "Split editor right", C("OemPipe"), CS("OemPipe"))),
+        Once(S("view.moveTabRight", ShortcutArea.View, "Move tab to right split", MoveTab("Right"))),
+        Once(S("view.moveTabLeft", ShortcutArea.View, "Move tab to left split", MoveTab("Left"))),
+        S("view.focusLeftPane", ShortcutArea.View, "Focus left pane", new ShortcutGesture("Left", ShortcutMods.Alt)),
+        S("view.focusRightPane", ShortcutArea.View, "Focus right pane", new ShortcutGesture("Right", ShortcutMods.Alt)),
         Once(S("file.closeTab", ShortcutArea.File, "Close tab", C("W"))),
         Once(S("file.reopenTab", ShortcutArea.File, "Reopen closed tab", CS("T"))),
         Once(S("explorer.rename", ShortcutArea.File, "Rename selected explorer item (explorer focused)", P("F2"))),
@@ -107,6 +119,12 @@ public static class Shortcuts
         S("zoom.in", ShortcutArea.Zoom, "Zoom in", C("OemPlus"), CS("OemPlus"), C("Add")),
         S("zoom.out", ShortcutArea.Zoom, "Zoom out", C("OemMinus"), C("Subtract")),
         S("zoom.reset", ShortcutArea.Zoom, "Reset zoom", C("D0"), C("NumPad0")),
+        // Item 91: image viewer (viewer focused). Ctrl+=/-/0 above zoom the image instead of the window while one is shown.
+        I("image.actualSize", "Image: actual size (100%)", C("D1"), C("NumPad1")),
+        I("image.handTool", "Image: hand tool", P("H")),
+        I("image.rotateTool", "Image: rotate view tool", P("R")),
+        I("image.tempHand", "Image: hand while held", P("Space")),
+        I("image.resetView", "Image: reset view", P("Escape")),
         // Item 49: VS Code tab cycling (wraps at both ends); handled at window level so the editor never inserts a tab.
         S("view.nextTab", ShortcutArea.View, "Next tab", C("Tab")),
         S("view.previousTab", ShortcutArea.View, "Previous tab", CS("Tab")),
@@ -147,7 +165,8 @@ public static class Shortcuts
 
     // Whether two entries can both fire for the same key press: explorer-only entries never meet the editor's Edit keys.
     public static bool Overlap(Shortcut a, Shortcut b) =>
-        !(a.ExplorerOnly && b.Area == ShortcutArea.Edit || b.ExplorerOnly && a.Area == ShortcutArea.Edit);
+        !(a.ExplorerOnly && b.Area == ShortcutArea.Edit || b.ExplorerOnly && a.Area == ShortcutArea.Edit)
+        && !(a.ImageOnly != b.ImageOnly && (a.ImageOnly ? b : a).Area is ShortcutArea.Edit or ShortcutArea.Editor or ShortcutArea.Find);
 
     // Binds the gesture to the entry. With conflicts nothing changes unless reassign is set, and a gesture the
     // TextBox handles itself is never taken away. Returns false when nothing changed.

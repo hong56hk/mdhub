@@ -20,11 +20,13 @@ public partial class GlobalSearch : UserControl
     private readonly DispatcherTimer _debounce = new() { Interval = TimeSpan.FromMilliseconds(250) };
     private bool _replacing;
     private string _resultQuery = "";
-    private string? _resultRoot; // item 61: the folder the shown results belong to (null: none shown)
+    private string? _resultRoot; // null also supports searching untitled tabs without a folder
+    private bool _hasResult;
     private FindOptions _resultOptions;
     public WorkspaceSearchResult Result { get; private set; } = new([]);
     internal int SearchRuns { get; private set; } // searches actually started (tests)
     public Func<IReadOnlyDictionary<string, string>>? OpenBuffers { get; set; }
+    public Func<IReadOnlyList<UnsavedSearchBuffer>>? UnsavedBuffers { get; set; }
     public event Action<SearchFile, SearchHit>? HitRequested;
     public Func<WorkspaceReplaceRequest, Task<string>>? ReplaceRequested { get; set; }
     private FindOptions Options => new(GlobalMatchCase.IsChecked == true, GlobalWholeWord.IsChecked == true, GlobalRegex.IsChecked == true, GlobalPreserveCase.IsChecked == true);
@@ -57,8 +59,8 @@ public partial class GlobalSearch : UserControl
     }
     // Item 61: results shown (or being searched) still match the folder, query and options, so returning to the
     // search view keeps them, with their expanded groups and scroll position, instead of searching again.
-    internal bool IsCurrent => _root is not null && (_debounce.IsEnabled || _search is not null
-        || (_resultRoot == _root && _resultQuery == (GlobalQuery.Text ?? "") && _resultOptions == Options));
+    internal bool IsCurrent => _debounce.IsEnabled || _search is not null
+        || (_hasResult && _resultRoot == _root && _resultQuery == (GlobalQuery.Text ?? "") && _resultOptions == Options);
     public void SetFolder(string? root)
     {
         if (_root == root) return;
@@ -81,10 +83,10 @@ public partial class GlobalSearch : UserControl
         _search?.Cancel();
         _debounce.Stop();
         Result = new([]);
+        _hasResult = false;
         _resultRoot = null;
         GlobalResults.Items.Clear();
         UpdateButtons();
-        if (_root is null) { SetSummary(() => Loc.T("GlobalOpenFolder")); return; }
         if (string.IsNullOrEmpty(GlobalQuery.Text)) { SetSummary(() => Loc.T("GlobalHint")); return; }
         SetSummary(() => Loc.T("Searching"));
         _debounce.Start();
@@ -93,7 +95,7 @@ public partial class GlobalSearch : UserControl
     {
         _debounce.Stop();
         _search?.Cancel();
-        if (_replacing || _root is null || string.IsNullOrEmpty(GlobalQuery.Text)) { if (!_replacing) Schedule(); return; }
+        if (_replacing || string.IsNullOrEmpty(GlobalQuery.Text)) { if (!_replacing) Schedule(); return; }
         using var cancellation = new CancellationTokenSource();
         _search = cancellation;
         SearchRuns++;
@@ -101,6 +103,7 @@ public partial class GlobalSearch : UserControl
         var options = Options;
         SetSummary(() => Loc.T("Searching"));
         Result = new([]);
+        _hasResult = false;
         GlobalResults.Items.Clear();
         UpdateButtons();
         try
@@ -133,12 +136,13 @@ public partial class GlobalSearch : UserControl
             {
                 arrived.Enqueue(file);
                 if (Interlocked.Exchange(ref flushPosted, 1) == 0) Dispatcher.UIThread.Post(Flush, DispatcherPriority.Background);
-            });
+            }, UnsavedBuffers?.Invoke());
             if (cancellation.IsCancellationRequested || result.Cancelled) return;
             Flush();
             _resultQuery = query;
             _resultOptions = options;
             _resultRoot = root;
+            _hasResult = true;
             if (result.Error is not null || streamed.Count != result.Files.Count)
             {
                 GlobalResults.Items.Clear();
@@ -155,12 +159,12 @@ public partial class GlobalSearch : UserControl
         catch (Exception ex) { if (!cancellation.IsCancellationRequested) SetSummary(() => ex.Message); }
         finally { if (_search == cancellation) _search = null; UpdateButtons(); }
     }
-    private static TreeViewItem BuildGroup(string root, SearchFile file)
+    private static TreeViewItem BuildGroup(string? root, SearchFile file)
     {
-        var relative = System.IO.Path.GetRelativePath(root, file.Path);
+        var relative = file.UnsavedName ?? (root is null ? file.Path : System.IO.Path.GetRelativePath(root, file.Path));
         var groupHeader = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = FileRowHeader.Gap };
         // Item 78: the file-type icon, then the path and hit count; match rows below start at the path text.
-        groupHeader.Children.Add(new FileTypeIcon(file.Path));
+        groupHeader.Children.Add(new FileTypeIcon(file.UnsavedName ?? file.Path));
         groupHeader.Children.Add(new TextBlock { Text = $"{relative}  ({file.Hits.Count})", VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center });
         var group = new TreeViewItem { Header = groupHeader, Tag = file, IsExpanded = true };
         ToolTip.SetTip(group, relative);

@@ -36,6 +36,8 @@ public partial class TextEditor : UserControl
         LineGutter.InvalidateMeasure();
         LineGutter.InvalidateVisual();
     }
+    // Lets another TextEditor host the document's editor control (a tab moved out of this split).
+    public void ReleaseDocument() { EditorHost.Content = null; _document = null; }
     public void FocusEditor() { if (_document?.IsViewOnly == false) _document.Editor.Focus(); }
     public void Edit(string action)
     {

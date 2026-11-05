@@ -9,6 +9,9 @@ using Mdhub;
 using Mdhub.Models;
 using Mdhub.Views;
 using Mdhub.Components;
+if (args.Contains("--nested-lists-only")) { NestedListTests.Run(); return; }
+if (args.Contains("--recovery-only")) { try { RecoveryTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
+if (args.Contains("--emojikeys-only")) { try { EmojiKeysTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
 if (args.Contains("--emoji-picker-only")) { try { EmojiPickerTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
 if (args.Contains("--split-editor-only")) { try { SplitEditorTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
 if (args.Contains("--unused-images-only")) { UnusedImageTests.Run(); return; }
@@ -47,6 +50,10 @@ if (args.Contains("--editorcolors-only")) { EditorColorsTests.Run(); return; }
 if (args.Contains("--autocomplete-only")) { AutoCompleteTests.Run(); return; }
 if (args.Contains("--spelling-only")) { SpellCheckTests.Run(); return; }
 if (args.Contains("--tabmenu-only")) { TabMenuTests.Run(); return; }
+if (args.Contains("--menulang-only")) { MenuLanguageTests.Run(); return; }
+if (args.Contains("--movetab-only")) { MoveTabTests.Run(); return; }
+if (args.Contains("--movetabsingle-only")) { MoveTabSingleTests.Run(); return; }
+if (args.Contains("--movetabkeys-only")) { MoveTabKeysTests.Run(); return; }
 if (args.Contains("--tabs-only")) { TabSettingsTests.Run(); return; }
 if (args.Contains("--fileicons-only")) { FileIconTests.Run(); return; }
 if (args.Contains("--multiselect-only")) { MultiSelectTests.Run(); return; }
@@ -70,10 +77,12 @@ if (args.Contains("--explorerclip-only")) { ExplorerClipboardKeyTests.Run(); ret
 if (args.Contains("--viewerkeys-only")) { ViewerShortcutTests.Run(); return; }
 if (args.Contains("--explorerrefresh-only")) { ExplorerRefreshTests.Run(); return; }
 if (args.Contains("--menupadding-only")) { MenuPaddingTests.Run(); return; }
+if (args.Contains("--menuopen-only")) { MenuOpenPathTests.Run(); return; }
 if (args.Contains("--about-only")) { AboutTests.Run(); return; }
 if (args.Contains("--sidebar-only")) { SidebarPersistTests.Run(); return; }
 if (args.Contains("--longtext-only")) { LongTextLayoutTests.Run(); return; }
 if (args.Contains("--imagezoom-only")) { ImageZoomTests.Run(); return; }
+if (args.Contains("--imageview-only")) { ImageViewTests.Run(); return; }
 if (args.Contains("--search-bench")) { SearchBench.Run(args); return; }
 if (args.Contains("--search-only")) { SearchSpeedTests.Run(); WorkspaceSearchTests.Run(); SearchClickTests.Run(); return; }
 if (args.Contains("--shortcuts-only")) { ShortcutTests.Run(); return; }
@@ -917,19 +926,16 @@ try
     var afterFirst = Mdhub.Services.SessionStore.Load(sessionFile);
     Require(afterFirst is { Windows.Count: 1 } && afterFirst.Windows[0].Folder == folderB,
         "Closing a window while others stay open removes it from the session and keeps the open ones (safe if killed)");
-    var savedText = File.ReadAllText(sessionFile);
-    wb.Close(); Pump();
-    Require(wb.IsVisible && wb.OwnedWindows.Count == 1, "Closing a window with unsaved text still prompts");
-    wb.OwnedWindows.Single().GetVisualDescendants().OfType<Button>().Single(b => Equals(b.Content, "Cancel")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-    Pump();
-    Require(wb.IsVisible && File.ReadAllText(sessionFile) == savedText, "A cancelled close does not change the saved session");
+    var recoveryFlush = ViewOf(wb).FlushRecoveryAsync();
+    while (!recoveryFlush.IsCompleted) Pump();
+    recoveryFlush.GetAwaiter().GetResult();
+    Require(Mdhub.Services.SessionStore.Load(Mdhub.Services.SessionManager.RecoveryPath)!.Windows
+        .Any(w => w.Recovery.Any(r => r.Text == "unsaved scratch")), "Unsaved scratch is kept separately in recovery");
     wa = OpenAlpha();
     Mdhub.Services.SessionManager.BeginShutdown();
     var atShutdown = File.ReadAllText(sessionFile);
     wa.Close(); Pump();
     wb.Close(); Pump();
-    wb.OwnedWindows.Single().GetVisualDescendants().OfType<Button>().Single(b => Equals(b.Content, "Discard")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-    Pump();
     var final = Mdhub.Services.SessionStore.Load(sessionFile)!;
     var fa = final.Windows.FirstOrDefault(w => w.Folder == folderA);
     var fb = final.Windows.FirstOrDefault(w => w.Folder == folderB);
@@ -939,6 +945,10 @@ try
         "Shutdown saves every window open at that point (folder, tabs, active tab, size, state); untitled buffers are not saved");
     Require(!File.ReadAllText(sessionFile).Contains("unsaved scratch"), "Unsaved buffer text is never written to the session");
 
+    var recoveryDrain = Mdhub.Services.SessionManager.SaveRecoveryAsync();
+    while (!recoveryDrain.IsCompleted) Pump();
+    recoveryDrain.GetAwaiter().GetResult();
+    Mdhub.Services.SessionManager.Reset();
     var restored = Mdhub.Services.SessionManager.Restore();
     foreach (var w in restored) w.Show();
     var until = DateTime.UtcNow.AddSeconds(10);
@@ -948,12 +958,18 @@ try
     Require(S<TextBlock>(restored[0], "FolderName").Text == "Alpha" && TabsOf(restored[0]).Select(d => d.Path).SequenceEqual([a1, a2])
         && ((NoteDocument)S<ListBox>(restored[0], "Tabs").SelectedItem!).Path == a1 && restored[0].Width == 900 && restored[0].Height == 640,
         "Restore reopens the folder, tabs (without the empty placeholder) and active tab, with the window size");
-    Require(S<TextBlock>(restored[1], "FolderName").Text == "Beta" && TabsOf(restored[1]).Select(d => d.Path).SequenceEqual([b1]) && restored[1].WindowState == WindowState.Maximized,
+    Require(S<TextBlock>(restored[1], "FolderName").Text == "Beta" && TabsOf(restored[1]).Where(d => d.Path is not null).Select(d => d.Path).SequenceEqual([b1])
+        && TabsOf(restored[1]).Any(d => d.Path is null && d.Text == "unsaved scratch" && d.IsDirty) && restored[1].WindowState == WindowState.Maximized,
         "The second window restores its own folder, tab and maximized state");
     restored[0].Close(); Pump();
     restored[1].Close(); Pump();
     var lastOnly = Mdhub.Services.SessionStore.Load(sessionFile);
     Require(lastOnly is { Windows.Count: 1 } && lastOnly.Windows[0].Folder == folderB, "Closing the last window saves just that window");
+    recoveryDrain = Mdhub.Services.SessionManager.SaveRecoveryAsync();
+    while (!recoveryDrain.IsCompleted) Pump();
+    recoveryDrain.GetAwaiter().GetResult();
+    File.Delete(Mdhub.Services.SessionManager.RecoveryPath);
+    Mdhub.Services.SessionManager.Reset();
     Mdhub.Services.SessionStore.Save(sessionFile, final);
 
     File.Delete(a2);
@@ -970,6 +986,11 @@ try
     foreach (var w in restored) w.Close();
     Pump();
 
+    recoveryDrain = Mdhub.Services.SessionManager.SaveRecoveryAsync();
+    while (!recoveryDrain.IsCompleted) Pump();
+    recoveryDrain.GetAwaiter().GetResult();
+    File.Delete(Mdhub.Services.SessionManager.RecoveryPath);
+    Mdhub.Services.SessionManager.Reset();
     File.WriteAllText(sessionFile, "{ not json");
     Require(Mdhub.Services.SessionManager.Restore().Count == 0, "A corrupt session file is ignored (start as today)");
     File.WriteAllText(sessionFile, "{\"Version\":99,\"Windows\":[{\"Folder\":\"C:\\\\\"}]}");
@@ -1300,7 +1321,7 @@ finally
     var sdlg = sw.OwnedWindows.Single();
     var rows = sdlg.GetVisualDescendants().OfType<Grid>().Where(g => g.Classes.Contains("shortcut-row")).ToList();
     var areas = sdlg.GetVisualDescendants().OfType<TextBlock>().Where(b => b.Classes.Contains("shortcut-area")).Select(b => b.Text).ToList();
-    Require(sdlg.Title == "Shortcuts" && rows.Count == Mdhub.Services.Shortcuts.All.Count && areas.SequenceEqual(["File", "Edit", "View", "Find", "Zoom", "Editor"]),
+    Require(sdlg.Title == "Shortcuts" && rows.Count == Mdhub.Services.Shortcuts.All.Count && areas.SequenceEqual(["File", "Edit", "View", "Find", "Zoom", "Editor", "Image"]),
         "The Shortcut dialog lists every shortcut grouped by area");
     var saveRow = rows.First(r => Equals(r.Tag, "file.saveAs"));
     Require(saveRow.Children.OfType<TextBlock>().Where(b => b.Name != "ShortcutCustomMark").Select(b => b.Text).SequenceEqual(["Save as", "Ctrl+Shift+S"]), "Dialog rows show the label and the gesture");

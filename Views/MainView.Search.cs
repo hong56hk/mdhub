@@ -35,8 +35,16 @@ public partial class MainView
 
     private async Task OpenSearchHitAsync(SearchFile file, SearchHit hit)
     {
-        await OpenPathAsync(file.Path);
-        if (_active is not { } document || !SamePath(document.Path, file.Path)) return;
+        if (file.UnsavedName is not null)
+        {
+            var tab = AllDocuments.FirstOrDefault(d => d.Buffer.RecoveryKey == file.Path);
+            if (tab is null) { GlobalSearch.Schedule(); return; }
+            ActivateDocumentPane(tab);
+            FileTabs.SelectedDocument = tab;
+        }
+        else await OpenPathAsync(file.Path);
+        if (_active is not { } document || (file.UnsavedName is not null
+            ? document.Buffer.RecoveryKey != file.Path : !SamePath(document.Path, file.Path))) return;
         if (document.Text != file.Source) { GlobalSearch.Schedule(); UpdateStatus(Loc.T("SearchRefreshed")); return; }
         document.Editor.Focus();
         document.Editor.SelectionStart = hit.Start;
@@ -65,8 +73,14 @@ public partial class MainView
                 {
                     // Lossy search text has U+FFFD in place of undecodable bytes; writing it back would corrupt the file.
                     if (file.Lossy) { skipped++; continue; }
-                    if (FolderExplorer.OpenedFolder is not { } root || !ExplorerFileOperations.Contains(root, file.Path)) { skipped++; continue; }
-                    var document = AllDocuments.FirstOrDefault(d => d.Path is { } path && SamePath(path, file.Path));
+                    var document = file.UnsavedName is not null
+                        ? AllDocuments.FirstOrDefault(d => d.Buffer.RecoveryKey == file.Path)
+                        : AllDocuments.FirstOrDefault(d => d.Path is { } path && SamePath(path, file.Path));
+                    if (file.UnsavedName is not null)
+                    {
+                        if (document is null) { skipped++; continue; }
+                    }
+                    else if (FolderExplorer.OpenedFolder is not { } root || !ExplorerFileOperations.Contains(root, file.Path)) { skipped++; continue; }
                     var current = document?.Text ?? (await TextFileStore.ReadAsync(file.Path)).Text;
                     if (current != file.Source) { skipped++; continue; }
                     var text = current;

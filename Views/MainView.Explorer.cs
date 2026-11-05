@@ -163,6 +163,13 @@ public partial class MainView
         if (_active == document && _documents.Count > 1) FileTabs.SelectedDocument = _documents[index + 1 < _documents.Count ? index + 1 : index - 1];
         _documents.Remove(document);
         document.Dispose();
+        if (!AllDocuments.Any(d => d.Buffer == document.Buffer))
+        {
+            document.Buffer.Changed -= OnRecoveryChanged;
+            _recoveryBuffers.Remove(document.Buffer);
+        }
+        OnRecoveryChanged(null);
+        if (GlobalSearch.IsVisible) GlobalSearch.Schedule();
         if (_documents.Count == 0)
         {
             if (_panes.Count > 1) RemovePane(owner);
