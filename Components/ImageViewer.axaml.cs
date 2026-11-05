@@ -1,3 +1,4 @@
+using Mdhub.Localization;
 using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Controls;
@@ -52,6 +53,11 @@ public partial class ImageViewer : UserControl
         LostFocus += (_, _) => { if (!IsKeyboardFocusWithin) SetSpaceHand(false); };
         HandButton.Click += (_, _) => Tool = ImageTool.Hand;
         ZoomToolButton.Click += (_, _) => Tool = ImageTool.Zoom;
+        ZoomOutButton.Click += (_, _) => StepZoom(-1);
+        AttachedToVisualTree += (_, _) => { Loc.Changed += UpdateZoomOutTip; Shortcuts.Changed += UpdateZoomOutTip; UpdateZoomOutTip(); };
+        DetachedFromVisualTree += (_, _) => { Loc.Changed -= UpdateZoomOutTip; Shortcuts.Changed -= UpdateZoomOutTip; };
+        UpdateZoomOutTip();
+        UpdateZoomOut();
         RotateToolButton.Click += (_, _) => Tool = ImageTool.Rotate;
         RotateLeftButton.Click += (_, _) => Rotate90(-1);
         RotateRightButton.Click += (_, _) => Rotate90(1);
@@ -367,6 +373,12 @@ public partial class ImageViewer : UserControl
         var flip = new ScaleTransform(_state.FlipHorizontal ? -1 : 1, _state.FlipVertical ? -1 : 1);
         Picture.RenderTransform = _state.Rotation == 0 && !_state.FlipHorizontal && !_state.FlipVertical ? null
             : new TransformGroup { Children = { flip, new RotateTransform(_state.Rotation) } };
+        UpdateZoomOut();
         ZoomChanged?.Invoke(ZoomPercent);
     }
+
+    // Item 96: disabled at the 10% floor (and with no image).
+    private void UpdateZoomOut() => ZoomOutButton.IsEnabled = Picture.Source is not null && ImageZoom.StepZoom(Scale, -1) < Scale - 1e-9;
+    private void UpdateZoomOutTip() =>
+        ToolTip.SetTip(ZoomOutButton, Loc.F("ImageZoomOutTip", Shortcuts.Format("zoom.out", ShortcutKeys.IsMac).Split(" / ")[0]));
 }

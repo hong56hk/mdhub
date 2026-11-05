@@ -213,6 +213,8 @@ public static partial class Loc
         ["ImageToolbar"] = "影像工具",
         ["ImageHandTool"] = "手形工具",
         ["ImageZoomTool"] = "縮放工具（Alt+按一下縮小）",
+        ["ImageZoomOut"] = "縮小",
+        ["ImageZoomOutTip"] = "縮小 ({0})",
         ["ImageRotateTool"] = "旋轉檢視工具（Shift 以 15° 對齊）",
         ["ImageRotateLeft"] = "向左旋轉 90°",
         ["ImageRotateRight"] = "向右旋轉 90°",

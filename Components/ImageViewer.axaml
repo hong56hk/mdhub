@@ -13,6 +13,9 @@
       <Setter Property="Foreground" Value="{DynamicResource AccentStrong}" />
       <Setter Property="Background" Value="{DynamicResource PreviewToggleOnBackground}" />
     </Style>
+    <Style Selector="Button.imageTool:disabled Path">
+      <Setter Property="Opacity" Value="0.35" />
+    </Style>
     <Style Selector="Button.imageTool Path">
       <Setter Property="Width" Value="16" />
       <Setter Property="Height" Value="16" />
@@ -51,6 +54,10 @@
         </Button>
         <Button x:Name="ZoomToolButton" Classes="imageTool" ToolTip.Tip="{DynamicResource ImageZoomTool}" AutomationProperties.Name="{DynamicResource ImageZoomTool}">
           <Path Data="M7 2.5a4.5 4.5 0 1 0 0.01 0 M10.3 10.3L14 14 M5 7h4 M7 5v4" />
+        </Button>
+        <!-- Item 96: one zoom-out step around the view centre (Ctrl+-); tooltip set in code with the live shortcut. -->
+        <Button x:Name="ZoomOutButton" Classes="imageTool" AutomationProperties.Name="{DynamicResource ImageZoomOut}">
+          <Path Data="M7 2.5a4.5 4.5 0 1 0 0.01 0 M10.3 10.3L14 14 M5 7h4" />
         </Button>
         <Button x:Name="RotateToolButton" Classes="imageTool" ToolTip.Tip="{DynamicResource ImageRotateTool}" AutomationProperties.Name="{DynamicResource ImageRotateTool}">
           <Path Data="M13.5 8a5.5 5.5 0 1 1-1.6-3.9 M12.2 1.6v2.6H9.6 M8 6.5v3 M6.5 8h3" />

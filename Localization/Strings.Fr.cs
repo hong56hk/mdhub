@@ -216,6 +216,8 @@ public static partial class Loc
         ["ImageToolbar"] = "Outils d’image",
         ["ImageHandTool"] = "Outil main",
         ["ImageZoomTool"] = "Outil zoom (Alt+clic pour dézoomer)",
+        ["ImageZoomOut"] = "Zoom arrière",
+        ["ImageZoomOutTip"] = "Zoom arrière ({0})",
         ["ImageRotateTool"] = "Outil rotation de la vue (Maj aligne sur 15°)",
         ["ImageRotateLeft"] = "Rotation de 90° à gauche",
         ["ImageRotateRight"] = "Rotation de 90° à droite",

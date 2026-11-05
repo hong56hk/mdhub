@@ -213,6 +213,8 @@ public static partial class Loc
         ["ImageToolbar"] = "이미지 도구",
         ["ImageHandTool"] = "손 도구",
         ["ImageZoomTool"] = "확대/축소 도구 (Alt+클릭은 축소)",
+        ["ImageZoomOut"] = "축소",
+        ["ImageZoomOutTip"] = "축소 ({0})",
         ["ImageRotateTool"] = "보기 회전 도구 (Shift는 15° 단위)",
         ["ImageRotateLeft"] = "왼쪽으로 90° 회전",
         ["ImageRotateRight"] = "오른쪽으로 90° 회전",

@@ -213,6 +213,8 @@ public static partial class Loc
         ["ImageToolbar"] = "画像ツール",
         ["ImageHandTool"] = "手のひらツール",
         ["ImageZoomTool"] = "ズームツール（Alt+クリックで縮小）",
+        ["ImageZoomOut"] = "縮小",
+        ["ImageZoomOutTip"] = "縮小 ({0})",
         ["ImageRotateTool"] = "回転ビューツール（Shift で 15° 単位）",
         ["ImageRotateLeft"] = "左に 90° 回転",
         ["ImageRotateRight"] = "右に 90° 回転",

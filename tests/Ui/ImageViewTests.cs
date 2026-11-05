@@ -121,6 +121,31 @@ internal static class ImageViewTests
         viewer.FitToWindow();
         Check(viewer.PixelAt(new Point(220, 30)) is null, "outside the image there is no pixel");
 
+        // Item 96: Zoom Out button right after the zoom tool; one step around the view centre; disabled at 10%.
+        viewer.ResetView(); Pump();
+        var buttons = viewer.FindControl<Border>("Toolbar")!.GetVisualDescendants().OfType<Button>().ToList();
+        var zoomOut = viewer.FindControl<Button>("ZoomOutButton")!;
+        Check(buttons.IndexOf(zoomOut) == buttons.IndexOf(viewer.FindControl<Button>("ZoomToolButton")!) + 1, "Zoom Out button sits right after the zoom tool");
+        Check(zoomOut.Content is Avalonia.Controls.Shapes.Path, "Zoom Out icon is path geometry (no glyph)");
+        var c0 = CenterImage(); var z0 = viewer.Scale;
+        zoomOut.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent)); Pump();
+        var c1 = CenterImage();
+        Check(Math.Abs(viewer.Scale - ImageZoom.StepZoom(z0, -1)) < 1e-9 && Math.Abs(c0.X - c1.X) < 1e-6 && Math.Abs(c0.Y - c1.Y) < 1e-6, $"Zoom Out click: one step, anchored at the view centre ({viewer.ZoomPercent}%)");
+        for (var i = 0; i < 40 && zoomOut.IsEnabled; i++) zoomOut.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Pump();
+        Check(viewer.ZoomPercent == 10 && !zoomOut.IsEnabled, "Zoom Out is disabled at 10%");
+        viewer.StepZoom(1); Pump();
+        Check(zoomOut.IsEnabled, "Zoom Out is enabled again after zooming in");
+        foreach (var code in Mdhub.Localization.Loc.Languages.Select(l => l.Code))
+        {
+            Mdhub.Localization.Loc.Set(code); Pump();
+            var tip = ToolTip.GetTip(zoomOut) as string ?? "";
+            var word = Mdhub.Localization.Loc.T("ImageZoomOut");
+            Check(tip.StartsWith(word) && tip.Contains(Shortcuts.Format("zoom.out", ShortcutKeys.IsMac).Split(" / ")[0]) && (code == Mdhub.Localization.Loc.English || word != "Zoom out"),
+                $"Zoom Out tooltip localized with the Ctrl+- hint ({code}: {tip})");
+        }
+        Mdhub.Localization.Loc.Set(Mdhub.Localization.Loc.English); Pump();
+
         // Reset (Esc / double-click) clears everything.
         viewer.Rotate90(1); viewer.Pan(5, 5);
         Check(viewer.ResetView() && viewer.IsFit && viewer.Rotation == 0 && !viewer.FlipHorizontal && !viewer.FlipVertical, "reset view: fit, no rotation, no flip");
