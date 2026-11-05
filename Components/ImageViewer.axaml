@@ -28,6 +28,10 @@
   </UserControl.Styles>
   <UserControl.ContextMenu>
     <ContextMenu x:Name="ViewerMenu">
+      <!-- Item 99: same as the toolbar buttons / Ctrl+= and Ctrl+-; gesture text comes from the shortcut table. -->
+      <MenuItem x:Name="MenuZoomIn" />
+      <MenuItem x:Name="MenuZoomOut" />
+      <Separator />
       <MenuItem x:Name="MenuRotateLeft" Header="{DynamicResource ImageRotateLeft}" />
       <MenuItem x:Name="MenuRotateRight" Header="{DynamicResource ImageRotateRight}" />
       <MenuItem x:Name="MenuFlipHorizontal" Header="{DynamicResource ImageFlipHorizontal}" />

@@ -501,6 +501,14 @@ try
         Require(Shortcuts.Format("file.save", false) == "Ctrl+K" && Shortcuts.Format("sidebar.search", false) == "Ctrl+Alt+F" && Shortcuts.Export().Count == 2, "Custom bindings survive a session save and load");
         Shortcuts.Import(new Dictionary<string, List<string>> { ["nope"] = ["Command+K"], ["edit.copy"] = ["Command+J"], ["file.open"] = ["Command+Bogus"], ["file.new"] = ["Command+F"], ["file.save"] = ["Command+K"] }, k => k != "Bogus");
         Require(Shortcuts.Export().Keys.SequenceEqual(["file.save"]) && Shortcuts.Format("file.new", false) == "Ctrl+N / Ctrl+T", "Loading ignores unknown ids, editor gestures, bad keys and clashing bindings");
+        // Item 99: the removed image.zoomTool binding is dropped from the settings file on the next save.
+        var old = SessionStore.Deserialize(SessionStore.Serialize(new SessionData { CustomShortcuts = new() { ["image.zoomTool"] = ["Command+Q"], ["file.save"] = ["Command+K"] } }))!;
+        Shortcuts.Import(old.CustomShortcuts);
+        var resaved = SessionStore.Serialize(new SessionData { CustomShortcuts = Shortcuts.AnyCustomized ? Shortcuts.Export() : null });
+        Require(!resaved.Contains("image.zoomTool") && SessionStore.Deserialize(resaved)!.CustomShortcuts!.Keys.SequenceEqual(["file.save"]), "Obsolete image.zoomTool shortcut is gone after load + save");
+        Shortcuts.Import(new Dictionary<string, List<string>> { ["image.zoomTool"] = ["Command+Q"] });
+        resaved = SessionStore.Serialize(new SessionData { CustomShortcuts = Shortcuts.AnyCustomized ? Shortcuts.Export() : null });
+        Require(!resaved.Contains("image.zoomTool"), "image.zoomTool alone: no custom shortcuts saved");
         Require(SessionStore.Deserialize("{\"Version\":1,\"Windows\":[]}")!.CustomShortcuts is null, "Old session files load with default shortcuts");
         Shortcuts.ResetAll();
         Shortcuts.Changed -= Count;

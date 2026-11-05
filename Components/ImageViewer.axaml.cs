@@ -66,6 +66,11 @@ public partial class ImageViewer : UserControl
         FlipVerticalButton.Click += (_, _) => Flip(false);
         FitButton.Click += (_, _) => FitToWindow();
         ActualSizeButton.Click += (_, _) => ActualSize();
+        MenuZoomIn.Click += (_, _) => StepZoom(1);
+        MenuZoomOut.Click += (_, _) => StepZoom(-1);
+        ShortcutKeys.SetId(MenuZoomIn, "zoom.in");
+        ShortcutKeys.SetId(MenuZoomOut, "zoom.out");
+        ShortcutKeys.ApplyGestures([MenuZoomIn, MenuZoomOut]);
         MenuRotateLeft.Click += (_, _) => Rotate90(-1);
         MenuRotateRight.Click += (_, _) => Rotate90(1);
         MenuFlipHorizontal.Click += (_, _) => Flip(true);
@@ -407,13 +412,16 @@ public partial class ImageViewer : UserControl
     private void UpdateZoomButtons()
     {
         var has = Picture.Source is not null;
-        ZoomInButton.IsEnabled = has && ImageZoom.StepZoom(Scale, 1) > Scale + 1e-9;
-        ZoomOutButton.IsEnabled = has && ImageZoom.StepZoom(Scale, -1) < Scale - 1e-9;
+        MenuZoomIn.IsEnabled = ZoomInButton.IsEnabled = has && ImageZoom.StepZoom(Scale, 1) > Scale + 1e-9;
+        MenuZoomOut.IsEnabled = ZoomOutButton.IsEnabled = has && ImageZoom.StepZoom(Scale, -1) < Scale - 1e-9;
     }
     private static string Hint(string id) => Shortcuts.Format(id, ShortcutKeys.IsMac).Split(" / ")[0];
     private void UpdateZoomTips()
     {
         ToolTip.SetTip(ZoomInButton, Loc.F("ImageZoomInTip", Hint("zoom.in")));
         ToolTip.SetTip(ZoomOutButton, Loc.F("ImageZoomOutTip", Hint("zoom.out")));
+        // Set in code (not DynamicResource) so a closed menu's headers follow a language change immediately.
+        MenuZoomIn.Header = Loc.T("ImageZoomIn");
+        MenuZoomOut.Header = Loc.T("ImageZoomOut");
     }
 }

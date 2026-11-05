@@ -199,6 +199,39 @@ internal static class ImageViewTests
         }
         viewer.Tool = ImageTool.Hand;
 
+        // Item 99: context-menu Zoom In / Zoom Out: same step around the centre, gesture hints, limits, no image, 8 languages.
+        var m99 = viewer.ContextMenu!.Items.OfType<MenuItem>().ToList();
+        var mIn = m99.FirstOrDefault(m => m.Name == "MenuZoomIn"); var mOut = m99.FirstOrDefault(m => m.Name == "MenuZoomOut");
+        Check(mIn is not null && mOut is not null, "context menu has Zoom In and Zoom Out");
+        Check(ShortcutKeys.MenuText(mIn!) == Shortcuts.Format("zoom.in", ShortcutKeys.IsMac).Split(" / ")[0] && mIn!.InputGesture is not null
+            && ShortcutKeys.MenuText(mOut!) == Shortcuts.Format("zoom.out", ShortcutKeys.IsMac).Split(" / ")[0] && mOut!.InputGesture is not null,
+            $"menu Zoom In / Out show the registry gesture hints ({ShortcutKeys.MenuText(mIn!)} / {ShortcutKeys.MenuText(mOut!)})");
+        viewer.ActualSize(); Pump();
+        foreach (var (item, dir) in new[] { (mIn!, 1), (mOut!, -1) })
+        {
+            var a99 = CenterImage(); var z99 = viewer.Scale;
+            item.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent)); Pump();
+            var b99 = CenterImage();
+            Check(Math.Abs(viewer.Scale - ImageZoom.StepZoom(z99, dir)) < 1e-9 && Math.Abs(a99.X - b99.X) < 1e-6 && Math.Abs(a99.Y - b99.Y) < 1e-6, $"menu {item.Name}: one step around the view centre ({viewer.ZoomPercent}%)");
+        }
+        for (var i = 0; i < 60 && mIn!.IsEnabled; i++) mIn.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent));
+        Pump();
+        Check(viewer.ZoomPercent == 3200 && !mIn!.IsEnabled && mOut!.IsEnabled, "menu Zoom In disabled at 3200%, Zoom Out enabled");
+        for (var i = 0; i < 60 && mOut!.IsEnabled; i++) mOut.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent));
+        Pump();
+        Check(viewer.ZoomPercent == 10 && !mOut!.IsEnabled && mIn!.IsEnabled, "menu Zoom Out disabled at 10%, Zoom In enabled");
+        viewer.ShowImage(null); Pump();
+        Check(!mIn!.IsEnabled && !mOut!.IsEnabled, "menu Zoom In / Out disabled with no image");
+        viewer.ShowImage(bitmap); Pump(); viewer.ResetView(); Pump();
+        foreach (var code in Mdhub.Localization.Loc.Languages.Select(l => l.Code))
+        {
+            Mdhub.Localization.Loc.Set(code); Pump();
+            Check(mIn!.Header as string == Mdhub.Localization.Loc.T("ImageZoomIn") && mOut!.Header as string == Mdhub.Localization.Loc.T("ImageZoomOut")
+                && (code == Mdhub.Localization.Loc.English || (Mdhub.Localization.Loc.T("ImageZoomIn") != "Zoom in" && Mdhub.Localization.Loc.T("ImageZoomOut") != "Zoom out")),
+                $"menu Zoom In / Out localized ({code}: {mIn.Header} / {mOut.Header})");
+        }
+        Mdhub.Localization.Loc.Set(Mdhub.Localization.Loc.English); Pump();
+
         // Reset (Esc / double-click) clears everything.
         viewer.Rotate90(1); viewer.Pan(5, 5);
         Check(viewer.ResetView() && viewer.IsFit && viewer.Rotation == 0 && !viewer.FlipHorizontal && !viewer.FlipVertical, "reset view: fit, no rotation, no flip");
