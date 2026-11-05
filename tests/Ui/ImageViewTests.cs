@@ -146,6 +146,31 @@ internal static class ImageViewTests
         }
         Mdhub.Localization.Loc.Set(Mdhub.Localization.Loc.English); Pump();
 
+        // Item 97: right-button drag pans with any tool; a still right click opens the menu97; a drag suppresses it.
+        var menu97 = viewer.ContextMenu!;
+        foreach (var tool in new[] { ImageTool.Zoom, ImageTool.Rotate, ImageTool.Hand })
+        {
+            viewer.Tool = tool; viewer.ActualSize(); Pump();
+            var o97 = viewer.Offset; var rot = viewer.Rotation; var zoom = viewer.ZoomPercent;
+            var p97 = new Point(200, 200);
+            window.MouseDown(p97, MouseButton.Right); Pump();
+            window.MouseMove(p97 + new Point(2, 1), RawInputModifiers.RightMouseButton); Pump();
+            Check(viewer.Offset == o97 && !viewer.IsRightPanning, $"{tool}: under 4 px the right button does not pan yet");
+            window.MouseMove(p97 + new Point(30, 12), RawInputModifiers.RightMouseButton); Pump();
+            Check(viewer.IsRightPanning && viewer.CursorType == StandardCursorType.SizeAll, $"{tool}: right-drag shows the drag cursor ({viewer.IsRightPanning} {viewer.CursorType} {viewer.Offset})");
+            Check(viewer.Offset == o97 + new Point(30, 12) && viewer.Rotation == rot && viewer.ZoomPercent == zoom, $"{tool}: right-drag pans the image by the pointer delta (no zoom/rotate)");
+            window.MouseMove(new Point(500, 500), RawInputModifiers.RightMouseButton); Pump();
+            Check(viewer.Offset == o97 + new Point(300, 300), $"{tool}: pointer captured: the pan follows outside the viewer");
+            window.MouseUp(new Point(500, 500), MouseButton.Right); Pump();
+            Check(!menu97.IsOpen && !viewer.IsRightPanning, $"{tool}: no context menu after a right-drag pan");
+            window.MouseDown(p97, MouseButton.Right); Pump();
+            window.MouseMove(p97 + new Point(3, -3), RawInputModifiers.RightMouseButton); Pump();
+            window.MouseUp(p97 + new Point(3, -3), MouseButton.Right); Pump();
+            Check(menu97.IsOpen && viewer.Offset == o97 + new Point(300, 300), $"{tool}: a right click (moved < 4 px) opens the context menu and does not pan");
+            menu97.Close(); Pump();
+        }
+        viewer.Tool = ImageTool.Hand;
+
         // Reset (Esc / double-click) clears everything.
         viewer.Rotate90(1); viewer.Pan(5, 5);
         Check(viewer.ResetView() && viewer.IsFit && viewer.Rotation == 0 && !viewer.FlipHorizontal && !viewer.FlipVertical, "reset view: fit, no rotation, no flip");

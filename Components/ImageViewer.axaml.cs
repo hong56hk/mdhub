@@ -49,6 +49,7 @@ public partial class ImageViewer : UserControl
         Surface.PointerExited += (_, _) => SetCursorPixel(null);
         AddHandler(PointerWheelChangedEvent, OnWheel, RoutingStrategies.Bubble);
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Bubble);
+        AddHandler(ContextRequestedEvent, OnContextRequested, RoutingStrategies.Tunnel);
         AddHandler(KeyUpEvent, OnKeyUp, RoutingStrategies.Bubble);
         LostFocus += (_, _) => { if (!IsKeyboardFocusWithin) SetSpaceHand(false); };
         HandButton.Click += (_, _) => Tool = ImageTool.Hand;
@@ -245,10 +246,22 @@ public partial class ImageViewer : UserControl
     {
         Focus();
         var point = e.GetCurrentPoint(Surface);
+        // Avalonia counts clicks across buttons: a left press right after a right click is not a double-click.
+        var afterRight = _lastPressRight;
+        _lastPressRight = point.Properties.IsRightButtonPressed;
+        // Item 97: the right button pans with any tool; a right click that does not move still opens the menu.
+        if (point.Properties.IsRightButtonPressed && _drag == Drag.None && Picture.Source is not null)
+        {
+            _rightDrag = true;
+            _rightMoved = false;
+            _suppressMenu = false;
+            BeginDrag(Drag.Pan, point.Position, e);
+            return;
+        }
         if (!point.Properties.IsLeftButtonPressed || Picture.Source is null) return;
         e.Handled = true;
         // Double-click resets the view; with the zoom tool every click zooms, so quick clicks keep zooming.
-        if (e.ClickCount >= 2 && EffectiveTool != ImageTool.Zoom) { EndDrag(); ResetView(); return; }
+        if (e.ClickCount >= 2 && !afterRight && EffectiveTool != ImageTool.Zoom) { EndDrag(); ResetView(); return; }
         switch (EffectiveTool)
         {
             case ImageTool.Hand:
@@ -281,7 +294,12 @@ public partial class ImageViewer : UserControl
     private void OnSurfaceMoved(object? sender, PointerEventArgs e)
     {
         var p = e.GetPosition(Surface);
-        if (_drag == Drag.Pan) { _state.Offset = _dragOffset + (p - _dragStart); Arrange(); }
+        if (_drag == Drag.Pan && _rightDrag && !_rightMoved)
+        {
+            var d = p - _dragStart;
+            if (Math.Abs(d.X) >= RightDragThreshold || Math.Abs(d.Y) >= RightDragThreshold) { _rightMoved = true; Pin(); UpdateCursor(); }
+        }
+        if (_drag == Drag.Pan && (!_rightDrag || _rightMoved)) { _state.Offset = _dragOffset + (p - _dragStart); Arrange(); }
         else if (_drag == Drag.Rotate) RotateDrag(AngleAt(p), e.KeyModifiers.HasFlag(KeyModifiers.Shift));
         SetCursorPixel(PixelAt(e.GetPosition(this)));
     }
@@ -297,11 +315,22 @@ public partial class ImageViewer : UserControl
     private void OnSurfaceReleased(object? sender, PointerReleasedEventArgs e)
     {
         if (_drag == Drag.None) return;
+        if (_rightDrag && e.InitialPressMouseButton != MouseButton.Right) return; // another button let go mid right-drag
+        _suppressMenu = _rightDrag && _rightMoved; // it was a pan: the ContextRequested that follows is swallowed
         e.Pointer.Capture(null);
         EndDrag();
     }
 
-    private void EndDrag() { _drag = Drag.None; UpdateCursor(); }
+    private void EndDrag() { _drag = Drag.None; _rightDrag = _rightMoved = false; UpdateCursor(); }
+
+    // Item 97: right-button drag state. Less than this many pixels between press and release is a click (menu).
+    public const double RightDragThreshold = 4;
+    private bool _rightDrag, _rightMoved, _suppressMenu, _lastPressRight;
+    public bool IsRightPanning => _rightDrag && _rightMoved;
+    private void OnContextRequested(object? sender, ContextRequestedEventArgs e)
+    {
+        if (_suppressMenu || IsRightPanning) { e.Handled = true; _suppressMenu = false; }
+    }
 
     // Wheel scrolls (Shift: sideways); Alt+wheel zooms at the pointer (Ctrl/Cmd+wheel arrives via the window, item 37).
     private void OnWheel(object? sender, PointerWheelEventArgs e)
@@ -357,6 +386,7 @@ public partial class ImageViewer : UserControl
     private void UpdateCursor() => Surface.Cursor = new Cursor(CursorType);
     public StandardCursorType CursorType => _drag switch
     {
+        Drag.Pan when _rightDrag && !_rightMoved => EffectiveTool switch { ImageTool.Hand => StandardCursorType.Hand, _ => StandardCursorType.Cross },
         Drag.Pan => StandardCursorType.SizeAll,
         Drag.Rotate => StandardCursorType.Cross,
         _ => EffectiveTool switch { ImageTool.Hand => StandardCursorType.Hand, _ => StandardCursorType.Cross }
