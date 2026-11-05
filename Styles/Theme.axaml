@@ -207,4 +207,38 @@
        colours, so StaticResource); their colour is the themed toolbar button foreground. Editor: gear + 'T' badge. Preview: gear + eye badge. -->
   <StreamGeometry x:Key="EditorSettingsIconGeometry">M 9.5,6.5 A 3.5,3.5 0 1 1 2.5,6.5 A 3.5,3.5 0 1 1 9.5,6.5 Z M 7.25,6.5 A 1.25,1.25 0 1 1 4.75,6.5 A 1.25,1.25 0 1 1 7.25,6.5 Z M 6,1.5 V 3 M 6,10 V 11.5 M 1,6.5 H 2.5 M 9.5,6.5 H 11 M 2.46,2.96 L 3.53,4.03 M 9.54,2.96 L 8.47,4.03 M 2.46,10.04 L 3.53,8.97 M 10,8.75 H 15 M 12.5,8.75 V 13.5</StreamGeometry>
   <StreamGeometry x:Key="PreviewSettingsIconGeometry">M 9.5,6.5 A 3.5,3.5 0 1 1 2.5,6.5 A 3.5,3.5 0 1 1 9.5,6.5 Z M 7.25,6.5 A 1.25,1.25 0 1 1 4.75,6.5 A 1.25,1.25 0 1 1 7.25,6.5 Z M 6,1.5 V 3 M 6,10 V 11.5 M 1,6.5 H 2.5 M 9.5,6.5 H 11 M 2.46,2.96 L 3.53,4.03 M 9.54,2.96 L 8.47,4.03 M 2.46,10.04 L 3.53,8.97 M 9.5,11.25 Q 12.25,8.25 15,11.25 Q 12.25,14.25 9.5,11.25 Z M 13,11.25 A 0.75,0.75 0 1 1 11.5,11.25 A 0.75,0.75 0 1 1 13,11.25 Z</StreamGeometry>
+  <!-- HTML text-colour picker (item 94a): document colours written into the note, the same in both themes. HtmlTextColorDefault is the initial pick. -->
+  <SolidColorBrush x:Key="HtmlTextColorDefault" Color="#e53935" />
+  <SolidColorBrush x:Key="HtmlColorSwatch0" Color="#000000" />
+  <SolidColorBrush x:Key="HtmlColorSwatch1" Color="#424242" />
+  <SolidColorBrush x:Key="HtmlColorSwatch2" Color="#616161" />
+  <SolidColorBrush x:Key="HtmlColorSwatch3" Color="#757575" />
+  <SolidColorBrush x:Key="HtmlColorSwatch4" Color="#9e9e9e" />
+  <SolidColorBrush x:Key="HtmlColorSwatch5" Color="#bdbdbd" />
+  <SolidColorBrush x:Key="HtmlColorSwatch6" Color="#e0e0e0" />
+  <SolidColorBrush x:Key="HtmlColorSwatch7" Color="#ffffff" />
+  <SolidColorBrush x:Key="HtmlColorSwatch8" Color="#e53935" />
+  <SolidColorBrush x:Key="HtmlColorSwatch9" Color="#ef6c00" />
+  <SolidColorBrush x:Key="HtmlColorSwatch10" Color="#f9a825" />
+  <SolidColorBrush x:Key="HtmlColorSwatch11" Color="#2e7d32" />
+  <SolidColorBrush x:Key="HtmlColorSwatch12" Color="#00897b" />
+  <SolidColorBrush x:Key="HtmlColorSwatch13" Color="#1565c0" />
+  <SolidColorBrush x:Key="HtmlColorSwatch14" Color="#8e24aa" />
+  <SolidColorBrush x:Key="HtmlColorSwatch15" Color="#d81b60" />
+  <SolidColorBrush x:Key="HtmlColorSwatch16" Color="#b71c1c" />
+  <SolidColorBrush x:Key="HtmlColorSwatch17" Color="#bf360c" />
+  <SolidColorBrush x:Key="HtmlColorSwatch18" Color="#827717" />
+  <SolidColorBrush x:Key="HtmlColorSwatch19" Color="#1b5e20" />
+  <SolidColorBrush x:Key="HtmlColorSwatch20" Color="#006064" />
+  <SolidColorBrush x:Key="HtmlColorSwatch21" Color="#0d47a1" />
+  <SolidColorBrush x:Key="HtmlColorSwatch22" Color="#4a148c" />
+  <SolidColorBrush x:Key="HtmlColorSwatch23" Color="#880e4f" />
+  <SolidColorBrush x:Key="HtmlColorSwatch24" Color="#ef9a9a" />
+  <SolidColorBrush x:Key="HtmlColorSwatch25" Color="#ffcc80" />
+  <SolidColorBrush x:Key="HtmlColorSwatch26" Color="#fff59d" />
+  <SolidColorBrush x:Key="HtmlColorSwatch27" Color="#a5d6a7" />
+  <SolidColorBrush x:Key="HtmlColorSwatch28" Color="#80cbc4" />
+  <SolidColorBrush x:Key="HtmlColorSwatch29" Color="#90caf9" />
+  <SolidColorBrush x:Key="HtmlColorSwatch30" Color="#ce93d8" />
+  <SolidColorBrush x:Key="HtmlColorSwatch31" Color="#f48fb1" />
 </ResourceDictionary>

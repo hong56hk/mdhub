@@ -71,7 +71,7 @@ public partial class TextFormatter
                 new Border
                 {
                     Name = "HtmlTextColorUnderline", Width = 14, Height = 2.5,
-                    Background = Brush.Parse("#e53935"), VerticalAlignment = VerticalAlignment.Bottom,
+                    Background = PaletteBrush("HtmlTextColorDefault"), VerticalAlignment = VerticalAlignment.Bottom,
                     HorizontalAlignment = HorizontalAlignment.Center
                 }
             }
@@ -82,21 +82,20 @@ public partial class TextFormatter
         image.Flyout = ImageFlyout();
     }
 
+    // The swatch palette lives in Styles/Theme.axaml (HtmlColorSwatch0..31); the hex text is what gets written into the note.
+    private static ISolidColorBrush PaletteBrush(string key) => (ISolidColorBrush)Application.Current!.FindResource(key)!;
+    private static string Hex(ISolidColorBrush brush) => $"#{brush.Color.R:x2}{brush.Color.G:x2}{brush.Color.B:x2}";
+
     private Flyout ColorFlyout()
     {
         var panel = new StackPanel { Spacing = 8 };
         panel.Children.Add(new TextBlock { Text = Loc.T("HtmlTextColor") });
-        var input = new TextBox { Name = "HtmlColorValue", Text = "#e53935", PlaceholderText = "#RRGGBB", Width = 240 };
+        var input = new TextBox { Name = "HtmlColorValue", Text = Hex(PaletteBrush("HtmlTextColorDefault")), PlaceholderText = "#RRGGBB", Width = 240 };
         var colors = new Avalonia.Controls.Primitives.UniformGrid { Columns = 8, Width = 240 };
-        foreach (var hex in new[]
+        for (var i = 0; Application.Current?.TryFindResource("HtmlColorSwatch" + i, out var res) == true && res is ISolidColorBrush brush; i++)
         {
-            "#000000", "#424242", "#616161", "#757575", "#9e9e9e", "#bdbdbd", "#e0e0e0", "#ffffff",
-            "#e53935", "#ef6c00", "#f9a825", "#2e7d32", "#00897b", "#1565c0", "#8e24aa", "#d81b60",
-            "#b71c1c", "#bf360c", "#827717", "#1b5e20", "#006064", "#0d47a1", "#4a148c", "#880e4f",
-            "#ef9a9a", "#ffcc80", "#fff59d", "#a5d6a7", "#80cbc4", "#90caf9", "#ce93d8", "#f48fb1"
-        })
-        {
-            var swatch = new Button { Width = 26, Height = 26, Margin = new Thickness(2), Background = Brush.Parse(hex) };
+            var hex = Hex(brush);
+            var swatch = new Button { Width = 26, Height = 26, Margin = new Thickness(2), Background = brush };
             AutomationProperties.SetName(swatch, hex);
             ToolTip.SetTip(swatch, hex);
             swatch.Click += (_, _) => input.Text = hex;

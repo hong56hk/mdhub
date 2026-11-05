@@ -67,7 +67,10 @@ internal static class GearsTests
             var group = (StackPanel)pdf.Parent!;
             var row = group.Children.ToList();
             var at = row.IndexOf(pdf);
-            Check(at >= 0 && row.IndexOf(editorGear) == at + 1 && row.IndexOf(previewGear) == at + 2 && row.Count == at + 3, "Toolbar order: ... Export PDF, editor gear, preview gear (last)");
+            // 17667c6 added a separator between Export PDF and the gears; 0207eef added the Outline button after them.
+            var outline = bar.FindControl<Button>("OutlineButton")!;
+            Check(at >= 0 && row[at + 1] is Border && row.IndexOf(editorGear) == at + 2 && row.IndexOf(previewGear) == at + 3 && row.IndexOf(outline) == at + 4 && row.Count == at + 5,
+                "Toolbar order: ... Export PDF, separator, editor gear, preview gear, Outline (last)");
             double X(Control c) => c.TranslatePoint(default, bar)!.Value.X;
             Check(X(html) < X(pdf) && X(pdf) < X(editorGear) && X(editorGear) < X(previewGear), $"Laid out left to right (PDF {X(pdf):F0}, editor {X(editorGear):F0}, preview {X(previewGear):F0})");
             Check(editorGear.Bounds.Height == pdf.Bounds.Height && previewGear.Bounds.Height == pdf.Bounds.Height && Math.Abs(editorGear.Bounds.Width - pdf.Bounds.Width) < 0.5 && Math.Abs(previewGear.Bounds.Width - pdf.Bounds.Width) < 0.5,

@@ -172,7 +172,8 @@ internal static class ThemeTests
         // Leftover hardcoded colours in app sources (Theme.axaml and the item 78 FileIcons.axaml are palettes; tests are excluded).
         var colour = new Regex(@"#[0-9A-Fa-f]{6}(?:[0-9A-Fa-f]{2})?\b|Brush\.Parse|Color\.Parse|Color\.From(?:A)?Rgb|\bBrushes\.(?!Transparent\b)\w+|\bColors\.(?!Transparent\b)\w+");
         var named = new Regex(@"\b(?:Foreground|Background|BorderBrush|Stroke|Fill|Color)=""(?!\{|Transparent"")[A-Za-z]+""");
-        var allowed = new[] { "BoxShadow=\"0 2 8 0 #66000000\"" };
+        // The built-in HTML help (MainView.Actions, 4ce3652/75dead7) shows CSS colour examples as note text, not UI colours.
+        var allowed = new[] { "BoxShadow=\"0 2 8 0 #66000000\"", "color: #1565c0;" };
         var sources = Directory.EnumerateFiles(repo, "*.*", SearchOption.AllDirectories)
             .Where(f => f.EndsWith(".cs") || f.EndsWith(".axaml"))
             .Where(f => !Regex.IsMatch(Path.GetRelativePath(repo, f), @"^(tests|bin|obj|artifacts|\.nuget|\.dotnet-home|test-folder)[\\/]"))
@@ -185,7 +186,10 @@ internal static class ThemeTests
         var fluentKeys = new HashSet<string>();
         // Localized strings are DynamicResources too; they are checked by the localization tests.
         used.RemoveWhere(Mdhub.Localization.Loc.En.ContainsKey);
-        var missing = used.Where(k => !keys.Contains(k)).ToList();
+        // Fluent theme keys (e.g. ButtonForegroundDisabled from 908d4e9, ScrollViewerScrollBarsSeparatorBackground from 8e6eb01)
+        // are not in our palette but must still resolve in both variants.
+        bool Fluent(string k) => new[] { Avalonia.Styling.ThemeVariant.Dark, Avalonia.Styling.ThemeVariant.Light }.All(t => Application.Current!.TryGetResource(k, t, out var r) && r is not null);
+        var missing = used.Where(k => !keys.Contains(k) && !Fluent(k)).ToList();
         Check(used.Count > 30 && missing.Count == 0, $"all {used.Count} theme keys used in code exist in the palette{(missing.Count > 0 ? ": " + string.Join(", ", missing) : "")}");
 
         foreach (var w in windows)

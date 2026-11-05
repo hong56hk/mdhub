@@ -326,9 +326,9 @@ public sealed partial class MarkdownTextBox
         {
             if (range.Start != range.End)
                 foreach (var rect in presenter.TextLayout.HitTestTextRange(range.Start, range.End - range.Start))
-                    context.FillRectangle(SelectionBrush ?? Brushes.LightBlue, rect);
+                    context.FillRectangle(SelectionBrush ?? Mdhub.Services.ThemeService.Brush("EditorSelectionBackground"), rect);
             var caret = presenter.TextLayout.HitTestTextPosition(range.Caret);
-            context.FillRectangle(CaretBrush ?? Foreground ?? Brushes.Black, new Rect(caret.X, caret.Y, 1, caret.Height));
+            context.FillRectangle(CaretBrush ?? Foreground ?? Mdhub.Services.ThemeService.Brush("EditorForeground"), new Rect(caret.X, caret.Y, 1, caret.Height));
         }
     }
 }

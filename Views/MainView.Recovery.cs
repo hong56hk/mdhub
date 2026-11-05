@@ -92,6 +92,19 @@ public partial class MainView
         }, DispatcherPriority.Background);
     }
 
+    // Bug 94a: re-read the file in the encoding the tab was opened/saved with. Re-detecting from scratch can pick another
+    // encoding for the same bytes (e.g. a short file with a NUL looks like BOM-less UTF-16), which made an unchanged file
+    // look externally changed and silently reloaded it as garbage. Fall back to detection only if the bytes no longer fit.
+    private static async Task<(string Text, System.Text.Encoding Encoding)> ReadKeepingEncodingAsync(string path, System.Text.Encoding encoding)
+    {
+        var bytes = await File.ReadAllBytesAsync(path);
+        var preamble = encoding.GetPreamble();
+        var hasBom = bytes is [0xEF, 0xBB, 0xBF, ..] or [0xFF, 0xFE, ..] or [0xFE, 0xFF, ..] or [0x00, 0x00, 0xFE, 0xFF, ..];
+        if ((preamble.Length > 0 ? bytes.AsSpan().StartsWith(preamble) : !hasBom)
+            && TextEncodings.TryDecode(encoding, bytes.AsSpan(preamble.Length), out var text)) return (text, encoding);
+        return await TextFileStore.ReadAsync(path);
+    }
+
     internal async Task CheckExternalChangeAsync(NoteDocument document)
     {
         if (_checkingExternal || document.IsViewOnly || document.IsReadOnlyText || document.Path is not { } path) return;
@@ -99,7 +112,7 @@ public partial class MainView
         try
         {
             var missing = !File.Exists(path);
-            var loaded = missing ? (Text: "", Encoding: document.Encoding) : await TextFileStore.ReadAsync(path);
+            var loaded = missing ? (Text: "", Encoding: document.Encoding) : await ReadKeepingEncodingAsync(path, document.Buffer.SavedEncoding);
             if (!missing && loaded.Text == document.SavedText
                 && loaded.Encoding.CodePage == document.Buffer.SavedEncoding.CodePage
                 && loaded.Encoding.GetPreamble().SequenceEqual(document.Buffer.SavedEncoding.GetPreamble())) return;
@@ -110,7 +123,7 @@ public partial class MainView
             else if (choice == "Reload" && !missing)
             {
                 // Read again: the file may have changed while the dialog was open.
-                loaded = await TextFileStore.ReadAsync(path);
+                loaded = await ReadKeepingEncodingAsync(path, document.Buffer.SavedEncoding);
                 document.Editor.IsUndoEnabled = false;
                 document.Editor.Text = loaded.Text;
                 document.Editor.IsUndoEnabled = true;
