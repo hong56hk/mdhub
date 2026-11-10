@@ -67,8 +67,8 @@ internal static class MenuTests
             var firstOpen = Measure();
             Console.WriteLine($"first open padding {firstOpen} border {edge}");
             var pad = LocResources.MenuPadding;
-            Check(pad == new Thickness(2) && Math.Abs(firstOpen.l - pad.Left - edge.Left) < 0.6 && Math.Abs(firstOpen.t - pad.Top - edge.Top) < 0.6 && Math.Abs(firstOpen.r - pad.Right - edge.Right) < 0.6 && Math.Abs(firstOpen.b - pad.Bottom - edge.Bottom) < 0.6,
-                "The first open of the editor menu already has its 2px padding on all four sides");
+            Check(pad == new Thickness(2, 4, 2, 6) && Math.Abs(firstOpen.l - pad.Left - edge.Left) < 0.6 && Math.Abs(firstOpen.t - pad.Top - edge.Top) < 0.6 && Math.Abs(firstOpen.r - pad.Right - edge.Right) < 0.6 && Math.Abs(firstOpen.b - pad.Bottom - edge.Bottom) < 0.6,
+                "The first open of the editor menu already has the shared MenuPadding (2,4,2,6)");
             var names = menu.Items.OfType<Control>().Select(c => c is MenuItem m ? m.Name : "-").ToList();
             Check(names.Take(3).SequenceEqual(new[] { "EditorUndoMenuItem", "EditorRedoMenuItem", "-" }), "Undo and Redo are at the top, followed by a separator");
             var undo = ItemOf(menu, "EditorUndoMenuItem"); var redo = ItemOf(menu, "EditorRedoMenuItem");
