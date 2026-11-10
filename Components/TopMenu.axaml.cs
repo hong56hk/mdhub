@@ -118,6 +118,7 @@ public partial class TopMenu : UserControl
     private void WordWrap_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.WordWrap);
     private void RefreshFolder_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.RefreshFolder);
     private void Guide_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.Guide);
+    private void Report_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.Report);
     private void About_Click(object? sender, RoutedEventArgs e) => ActionRequested?.Invoke(WorkspaceAction.About);
     private void Edit_Click(object? sender, RoutedEventArgs e)
     {

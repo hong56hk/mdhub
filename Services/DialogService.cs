@@ -180,6 +180,31 @@ public static class DialogService
         return dialog.ShowDialog<string?>(owner);
     }
 
+    // Item 103: Report. Same window chrome as About (size, theme colours, close button). A short description
+    // and a link to the GitHub issues page, opened in the system browser only when the link is clicked.
+    public static Task ShowReportAsync(Window owner)
+    {
+        var dialog = new Window { Name = "ReportDialog", Title = Loc.T("ReportTitle"), Width = 540, SizeToContent = SizeToContent.Height, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+        var ok = new Button { Name = "ReportOk", Content = Loc.T("OK"), IsDefault = true, IsCancel = true, MinWidth = 80, MinHeight = 42, FontSize = 16, Classes = { "textAction" }, HorizontalContentAlignment = HorizontalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right };
+        ok.Click += (_, _) => dialog.Close();
+        var issues = AboutLink("ReportLink", Loc.T("ReportLink"), () => LaunchAsync(dialog, AppInfo.IssuesUri));
+        var text = new StackPanel
+        {
+            Spacing = 4, Margin = new Thickness(16, 0, 0, 0),
+            Children =
+            {
+                new TextBlock { Name = "ReportDescription", Text = Loc.T("ReportDescription"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 12) },
+                issues
+            }
+        };
+        var logo = new Avalonia.Controls.Image { Name = "ReportLogo", Source = AppIcon.Logo(), Width = 64, Height = 64, VerticalAlignment = VerticalAlignment.Top };
+        dialog.Content = new StackPanel { Margin = new Thickness(20), Spacing = 20, Children = { new DockPanel { Children = { logo, text } }, ok } };
+        dialog.Opened += (_, _) => ok.Focus();
+        ApplyOwnerZoom(dialog, owner);
+        ThemeService.PrepareTitleBar(dialog);
+        return dialog.ShowDialog(owner);
+    }
+
     public static Task<string?> ShowAsync(Window owner, string title, string message, params string[] choices) => ShowAsync(owner, title, message, null, choices);
 
     private static Task<string?> ShowAsync(Window owner, string title, string message, Control? logo, params string[] choices)

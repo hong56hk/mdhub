@@ -88,6 +88,7 @@
       <MenuItem x:Name="LanguageMenu" Header="{DynamicResource MenuLanguage}" />
     </MenuItem>
     <MenuItem Header="{DynamicResource MenuHelp}">
+      <MenuItem Header="{DynamicResource MenuReport}" Click="Report_Click" />
       <MenuItem Header="{DynamicResource MenuGuide}" Click="Guide_Click" />
       <MenuItem Header="{DynamicResource MenuAbout}" Click="About_Click" />
     </MenuItem>

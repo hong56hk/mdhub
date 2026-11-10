@@ -79,6 +79,7 @@ if (args.Contains("--explorerrefresh-only")) { ExplorerRefreshTests.Run(); retur
 if (args.Contains("--menupadding-only")) { MenuPaddingTests.Run(); return; }
 if (args.Contains("--menuopen-only")) { MenuOpenPathTests.Run(); return; }
 if (args.Contains("--about-only")) { AboutTests.Run(); return; }
+if (args.Contains("--report-only")) { ReportTests.Run(); return; }
 if (args.Contains("--sidebar-only")) { SidebarPersistTests.Run(); return; }
 if (args.Contains("--longtext-only")) { LongTextLayoutTests.Run(); return; }
 if (args.Contains("--imagezoom-only")) { ImageZoomTests.Run(); return; }

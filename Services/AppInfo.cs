@@ -8,6 +8,8 @@ public static class AppInfo
 {
     public const string GitHubDisplay = "github.com/hong56hk/mdhub";
     public static readonly Uri GitHubUri = new("https://github.com/hong56hk/mdhub");
+    public const string IssuesDisplay = "github.com/hong56hk/mdhub/issues";
+    public static readonly Uri IssuesUri = new("https://github.com/hong56hk/mdhub/issues");
     public const string LicenseResource = "Mdhub.LICENSE";
     public const string LicenseTabName = "LICENSE";
 

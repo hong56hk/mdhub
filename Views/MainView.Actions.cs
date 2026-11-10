@@ -31,6 +31,7 @@ public partial class MainView
             case WorkspaceAction.WordWrap: WordWrap_Click(null, new RoutedEventArgs()); return;
             case WorkspaceAction.Guide: Guide_Click(null, new RoutedEventArgs()); return;
             case WorkspaceAction.About: About_Click(null, new RoutedEventArgs()); return;
+            case WorkspaceAction.Report: Report_Click(null, new RoutedEventArgs()); return;
             case WorkspaceAction.Shortcuts: await RunAsync(() => DialogService.ShowShortcutsAsync(Host)); return;
             case WorkspaceAction.ExportHtml: await ExportAsync(pdf: false); return;
             case WorkspaceAction.ExportPdf: await ExportAsync(pdf: true); return;
@@ -639,5 +640,8 @@ public partial class MainView
     {
         if (await DialogService.ShowAboutAsync(Host) == DialogService.LicenseChoice) OpenLicenseTab();
     });
+
+    // Item 103: Help > Report.
+    private async void Report_Click(object? sender, RoutedEventArgs e) => await RunAsync(() => DialogService.ShowReportAsync(Host));
 
 }
