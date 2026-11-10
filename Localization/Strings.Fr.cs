@@ -522,6 +522,12 @@ public static partial class Loc
         ["AboutLicense"] = "Licence :",
         ["AboutMitLicense"] = "Licence MIT",
         ["AboutCopyright"] = "Copyright © 2026 Hong",
+        ["PdfPageOf"] = "Page {0} sur {1}",
+        ["PdfEncrypted"] = "Ce PDF est chiffré et ne peut pas être ouvert.",
+        ["PdfCorrupt"] = "Ce PDF est endommagé et ne peut pas être ouvert.",
+        ["KindPdf"] = "PDF",
+        ["PdfViewOnly"] = "Les PDF sont en lecture seule.",
+        ["PdfToolbar"] = "Barre d'outils PDF",
         ["PathCopied"] = "Chemin copié",
         ["CopyPathTip"] = "Cliquez pour copier le chemin",
     };

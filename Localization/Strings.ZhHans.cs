@@ -522,6 +522,12 @@ public static partial class Loc
         ["AboutLicense"] = "许可证：",
         ["AboutMitLicense"] = "MIT 许可证",
         ["AboutCopyright"] = "Copyright © 2026 Hong",
+        ["PdfPageOf"] = "\u7b2c {0} \u9875\uff0c\u5171 {1} \u9875",
+        ["PdfEncrypted"] = "\u6b64 PDF \u5df2\u52a0\u5bc6\uff0c\u65e0\u6cd5\u6253\u5f00\u3002",
+        ["PdfCorrupt"] = "\u6b64 PDF \u5df2\u635f\u574f\uff0c\u65e0\u6cd5\u6253\u5f00\u3002",
+        ["KindPdf"] = "PDF",
+        ["PdfViewOnly"] = "PDF \u4ec5\u4f9b\u6d4f\u89c8\u3002",
+        ["PdfToolbar"] = "PDF \u5de5\u5177\u680f",
         ["PathCopied"] = "已复制路径",
         ["CopyPathTip"] = "单击以复制路径",
     };

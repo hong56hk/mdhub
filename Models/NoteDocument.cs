@@ -17,9 +17,11 @@ public sealed class NoteDocument : INotifyPropertyChanged, IDisposable
     public string SavedText { get => Buffer.SavedText; set { Buffer.SavedText = value; Buffer.Notify(); } }
     public Encoding Encoding { get => Buffer.Encoding; set { Buffer.Encoding = value; Buffer.Notify(); } }
     public Avalonia.Media.Imaging.Bitmap? Image { get => Buffer.Image; init => Buffer.Image = value; }
+    public Mdhub.Services.PdfDocument? Pdf { get => Buffer.Pdf; init => Buffer.Pdf = value; }
     public bool IsImage => Image is not null;
+    public bool IsPdf => Pdf is not null;
     public bool IsBinary { get => Buffer.IsBinary; init => Buffer.IsBinary = value; }
-    public bool IsViewOnly => IsImage || IsBinary;
+    public bool IsViewOnly => IsImage || IsPdf || IsBinary;
     public bool IsReadOnlyText { get => Buffer.IsReadOnlyText; init => Buffer.IsReadOnlyText = value; }
     public TextBox Editor { get; } = new Mdhub.Components.MarkdownTextBox()
     {

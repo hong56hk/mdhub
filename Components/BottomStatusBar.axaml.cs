@@ -59,7 +59,7 @@ public partial class BottomStatusBar : UserControl
         SetAction(null, null);
         SetPath(message is null ? document.Path : null);
         Status.Text = message ?? (document.IsDirty ? Loc.T("UnsavedPrefix") : "") + (document.Path ?? Loc.T("NewNote"));
-        FileKindLabel.Text = Loc.T(document.IsImage ? "KindImage" : document.IsBinary ? "KindBinary" : document.IsMarkdown ? "KindMarkdown" : "KindPlain");
+        FileKindLabel.Text = Loc.T(document.IsPdf ? "KindPdf" : document.IsImage ? "KindImage" : document.IsBinary ? "KindBinary" : document.IsMarkdown ? "KindMarkdown" : "KindPlain");
         EncodingLabel.Text = document.IsViewOnly ? "" : Mdhub.Services.TextEncodings.DisplayName(document.Encoding) + (document.IsReadOnlyText ? " \u00b7 " + Loc.T("ReadOnly") : "");
         ToolTip.SetTip(EncodingLabel, document.IsViewOnly ? null : Loc.T("EncodingMenuTip"));
         // Item 68: the line ending, and a subtle warning when the file mixes endings.
@@ -71,6 +71,15 @@ public partial class BottomStatusBar : UserControl
         MixedLineEndingsLabel.Text = counts.IsMixed ? "\u26a0 " + Loc.T("MixedLineEndings") : "";
         ToolTip.SetTip(MixedLineEndingsLabel, counts.IsMixed ? Loc.F("MixedLineEndingsReadOnlyTip", counts.CrLf, counts.Lf, counts.Cr) + (document.IsReadOnlyText ? "" : " " + Loc.F("MixedLineEndingsTip", ending)) : null);
         if (document.Image is { } image) SetCounts(() => Loc.F("ImagePixels", image.PixelSize.Width, image.PixelSize.Height) + ImageZoomSuffix());
+        else if (document.IsPdf) SetCounts(() => _pdfPage is { } p ? Loc.F("PdfPageOf", p.Page, p.Count) : "");
+    }
+    // Item 102a: "page X of Y" while a PDF is shown (null hides the counts).
+    private (int Page, int Count)? _pdfPage;
+    public (int Page, int Count)? PdfPage => _pdfPage;
+    public void SetPdfPage((int Page, int Count)? page)
+    {
+        _pdfPage = page;
+        if (_counts is not null) Counts.Text = _counts();
     }
     // Item 37: the image zoom shown after the pixel size (null when no image is shown).
     private int? _imageZoom;

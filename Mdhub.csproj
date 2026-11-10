@@ -14,6 +14,7 @@
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop" Version="12.1.4" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4" />
+    <PackageReference Include="Docnet.Core" Version="2.6.0" />
     <PackageReference Include="Markdig" Version="1.5.0" />
     <Compile Remove="tests/**/*.cs" />
     <AvaloniaResource Include="Assets\mdhub-128.png" />

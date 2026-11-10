@@ -519,6 +519,12 @@ public static partial class Loc
         ["AboutLicense"] = "授權條款：",
         ["AboutMitLicense"] = "MIT 授權條款",
         ["AboutCopyright"] = "Copyright © 2026 Hong",
+        ["PdfPageOf"] = "\u7b2c {0} \u9801\uff0c\u5171 {1} \u9801",
+        ["PdfEncrypted"] = "\u9019\u500b PDF \u5df2\u52a0\u5bc6\uff0c\u7121\u6cd5\u958b\u555f\u3002",
+        ["PdfCorrupt"] = "\u9019\u500b PDF \u5df2\u640d\u58de\uff0c\u7121\u6cd5\u958b\u555f\u3002",
+        ["KindPdf"] = "PDF",
+        ["PdfViewOnly"] = "PDF \u50c5\u4f9b\u700f\u89bd\u3002",
+        ["PdfToolbar"] = "PDF \u5de5\u5177\u5217",
         ["PathCopied"] = "\u5df2\u8907\u88fd\u8def\u5f91", ["CopyPathTip"] = "\u6309\u4e00\u4e0b\u4ee5\u8907\u88fd\u8def\u5f91",
     };
 }

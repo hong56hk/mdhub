@@ -153,3 +153,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+### Docnet.Core 2.6.0 (PDF rendering via PDFium)
+
+Package: `Docnet.Core` (no managed transitive dependencies). Source: https://github.com/GowenGit/docnet.
+Licence: **MIT**, Copyright (c) 2018 Modestas Petravicius. Licence text: `Dictionaries/Docnet.Core-LICENSE.txt`.
+
+The package also ships official-style PDFium native binaries (win-x64, win-x86, osx-arm64, osx-x64, linux, linux-arm, linux-arm64) used to render PDF pages offline. PDFium is **BSD-3-Clause** (Copyright 2014 The PDFium Authors) and includes files under **Apache License 2.0**, plus these bundled third-party libraries, each under a permissive licence: libpng, LibTIFF, Anti-Grain Geometry 2.3, FreeType (FreeType License), lcms, OpenJPEG, zlib, libjpeg-turbo and the Independent JPEG Group JPEG software, and ICU (Unicode / ICU licence). The aggregated licence texts shipped next to the native binary are in `Dictionaries/Docnet.Core-PDFium-LICENSE.txt`.

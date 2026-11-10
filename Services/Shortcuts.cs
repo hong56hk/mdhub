@@ -119,6 +119,8 @@ public static class Shortcuts
         S("zoom.in", ShortcutArea.Zoom, "Zoom in", C("OemPlus"), CS("OemPlus"), C("Add")),
         S("zoom.out", ShortcutArea.Zoom, "Zoom out", C("OemMinus"), C("Subtract")),
         S("zoom.reset", ShortcutArea.Zoom, "Reset zoom", C("D0"), C("NumPad0")),
+        // Item 91 / 102a: while an image or PDF viewer is shown, Ctrl+=/-/0 (ShortcutArea.Zoom) zoom that viewer instead of the window.
+
         // Item 91: image viewer (viewer focused). Ctrl+=/-/0 above zoom the image instead of the window while one is shown.
         I("image.actualSize", "Image: actual size (100%)", C("D1"), C("NumPad1")),
         I("image.handTool", "Image: hand tool", P("H")),

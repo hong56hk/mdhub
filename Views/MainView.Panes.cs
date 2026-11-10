@@ -23,6 +23,7 @@ public partial class MainView
     private TextEditor TextEditor => _activePane.TextEditor;
     private MdEditor MdEditor => _activePane.MdEditor;
     private ImageViewer ImageViewer => _activePane.ImageViewer;
+    private PdfViewer PdfViewer => _activePane.PdfViewer;
     private BinaryPlaceholder BinaryPlaceholder => _activePane.BinaryPlaceholder;
 
     private void InitializePanes()
@@ -50,6 +51,8 @@ public partial class MainView
         pane.TextEditor.SpellCountChanged += count => { if (pane == _activePane) BottomStatusBar.SetSpellCount(count); };
         pane.ImageViewer.ZoomChanged += percent => { if (pane == _activePane && pane.ImageViewer.IsVisible) BottomStatusBar.SetImageZoom(percent); };
         pane.ImageViewer.CursorPixelChanged += pixel => { if (pane == _activePane && pane.ImageViewer.IsVisible) BottomStatusBar.SetImageCursor(pixel); };
+        pane.PdfViewer.ZoomChanged += _ => { if (pane == _activePane && pane.PdfViewer.IsVisible) BottomStatusBar.Relocalize(); };
+        pane.PdfViewer.PageChanged += page => { if (pane == _activePane && pane.PdfViewer.IsVisible) BottomStatusBar.SetPdfPage((page, pane.PdfViewer.PageCount)); };
         pane.BinaryPlaceholder.OpenDefaultRequested += async () => { if (pane.Active is { IsBinary: true, Path: { } path }) await OpenWithDefaultAppAsync(path); };
         pane.BinaryPlaceholder.OpenAsTextRequested += async () => { if (_busy) return; ActivatePane(pane); if (_active is { IsBinary: true } document) await RunAsync(() => OpenAsTextAsync(document)); };
     }
@@ -161,6 +164,7 @@ public partial class MainView
     {
         pane.MdEditor.ShowDocument(null);
         pane.ImageViewer.ShowImage(null);
+        pane.PdfViewer.Show(null);
         var index = _panes.IndexOf(pane);
         _panes.Remove(pane);
         if (_activePane == pane) ActivatePane(next ?? _panes[Math.Clamp(index - 1, 0, _panes.Count - 1)]);

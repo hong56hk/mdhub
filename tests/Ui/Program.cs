@@ -83,6 +83,7 @@ if (args.Contains("--sidebar-only")) { SidebarPersistTests.Run(); return; }
 if (args.Contains("--longtext-only")) { LongTextLayoutTests.Run(); return; }
 if (args.Contains("--imagezoom-only")) { ImageZoomTests.Run(); return; }
 if (args.Contains("--imageview-only")) { ImageViewTests.Run(); return; }
+if (args.Contains("--pdfview-only")) { PdfViewTests.Run(); return; }
 if (args.Contains("--search-bench")) { SearchBench.Run(args); return; }
 if (args.Contains("--search-only")) { SearchSpeedTests.Run(); WorkspaceSearchTests.Run(); SearchClickTests.Run(); return; }
 if (args.Contains("--shortcuts-only")) { ShortcutTests.Run(); return; }

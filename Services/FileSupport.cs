@@ -2,15 +2,18 @@ using System.Text;
 
 namespace Mdhub.Services;
 
-public enum SupportedFileKind { Unsupported, Text, Image }
+public enum SupportedFileKind { Unsupported, Text, Image, Pdf }
 
 public static class FileSupport
 {
     public static bool IsImage(string path) => Path.GetExtension(path).ToLowerInvariant() is
         ".png" or ".jpg" or ".jpeg" or ".gif" or ".bmp" or ".webp" or ".ico" or ".tif" or ".tiff";
 
+    // Item 102a: a .pdf opens in the built-in viewer, not as a binary placeholder (item 52 still applies to other binaries).
+    public static bool IsPdf(string path) => Path.GetExtension(path).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
+
     public static bool IsKnownBinary(string path) => Path.GetExtension(path).ToLowerInvariant() is ".exe" or ".dll" or ".pdb" or ".zip" or ".7z" or ".rar"
-        or ".pdf" or ".doc" or ".docx" or ".xls" or ".xlsx" or ".ppt" or ".pptx"
+        or ".doc" or ".docx" or ".xls" or ".xlsx" or ".ppt" or ".pptx"
         or ".sqlite" or ".db" or ".mp3" or ".mp4" or ".wav" or ".woff" or ".woff2" or ".ttf";
 
     // Bug 39 / item 52: text by extension (notes, config, data and source files), whatever their encoding or stray control bytes;
@@ -30,6 +33,7 @@ public static class FileSupport
     public static SupportedFileKind Detect(string path)
     {
         if (IsImage(path)) return SupportedFileKind.Image;
+        if (IsPdf(path)) return SupportedFileKind.Pdf;
         if (IsTextByExtension(path)) return SupportedFileKind.Text;
         if (IsKnownBinary(path)) return SupportedFileKind.Unsupported;
         try

@@ -15,6 +15,7 @@ public sealed class NoteBuffer
     public Encoding Encoding { get; set; } = TextFileStore.DefaultEncoding;
     public Encoding SavedEncoding { get; set; } = TextFileStore.DefaultEncoding;
     public Avalonia.Media.Imaging.Bitmap? Image { get; set; }
+    public Mdhub.Services.PdfDocument? Pdf { get; set; }
     public bool IsBinary { get; set; }
     public bool IsReadOnlyText { get; set; }
     public LineEnding LineEnding { get; set; } = LineEndingSettings.ForNewFile;
@@ -28,7 +29,11 @@ public sealed class NoteBuffer
     internal bool CanRedo => _redo.Count > 0;
     internal int Views { get; private set; }
     internal void Attach() { Views++; if (Views > 1) HasSharedHistory = true; }
-    internal void Detach() => Views--;
+    internal void Detach()
+    {
+        Views--;
+        if (Views <= 0) { Pdf?.Dispose(); Pdf = null; }
+    }
     internal void ResetHistory() { _undo.Clear(); _redo.Clear(); }
     internal void Undo()
     {

@@ -98,6 +98,15 @@ public partial class MainView
             if (recent) RecentService.AddFile(path);
             return;
         }
+        if (kind == SupportedFileKind.Pdf)
+        {
+            var pdf = await Task.Run(() => PdfDocument.Open(path));
+            var pdfDocument = new NoteDocument { Path = path, Pdf = pdf };
+            _documents.Add(pdfDocument);
+            FileTabs.SelectedDocument = pdfDocument;
+            if (recent) RecentService.AddFile(path);
+            return;
+        }
         if (!await ConfirmLargeAsync(path)) return;
         (string Text, System.Text.Encoding Encoding) loaded;
         try { loaded = await TextFileStore.ReadAsync(path); }
@@ -116,6 +125,7 @@ public partial class MainView
     private async Task<bool> SaveAsync(NoteDocument document, bool saveAs)
     {
         if (document.IsImage) { UpdateStatus(Loc.T("ImagesViewOnly")); return true; }
+        if (document.IsPdf) { UpdateStatus(Loc.T("PdfViewOnly")); return true; }
         if (document.IsBinary || document.IsReadOnlyText) return true;
         var path = document.Path;
         if (saveAs || path is null)

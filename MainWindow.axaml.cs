@@ -67,7 +67,7 @@ public partial class MainWindow : Window
 
     private void OnZoomKey(object? sender, KeyEventArgs e)
     {
-        // Item 37/91: with an image tab active, Ctrl+=/-/0 zoom the image (steps, fit to window) instead of the window.
+        // Item 37/91/102a: with an image or PDF tab active, Ctrl+=/-/0 zoom that viewer instead of the window.
         if (ShortcutKeys.Match(e, s => s.Area == ShortcutArea.Zoom) is { } imageZoom && MainView.ImageZoomKey(imageZoom)) { e.Handled = true; return; }
         int? next = ShortcutKeys.Match(e, s => s.Area == ShortcutArea.Zoom) switch
         {
@@ -85,7 +85,7 @@ public partial class MainWindow : Window
     {
         if (!e.KeyModifiers.HasFlag(CommandModifier) || e.Delta.Y == 0) return;
         e.Handled = true; // the editor, preview and tab strip must not also scroll
-        if (MainView.ZoomImage(e)) return; // item 37: Ctrl+wheel over an image zooms the image
+        if (MainView.ZoomImage(e) || MainView.ZoomPdf(e)) return; // item 37/102a: Ctrl+wheel over an image or PDF zooms that viewer
         SetZoom(ZoomLevel.Wheel(ZoomPercent, e.Delta.Y));
     }
 
