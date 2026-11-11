@@ -52,6 +52,7 @@ public partial class MainView
             if (image && ImageViewerShouldTakeFocus(pane)) pane.ImageViewer.Focus();
             if (pdf && ImageViewerShouldTakeFocus(pane)) pane.PdfViewer.Focus();
         }
+        RefreshPdfNotesChrome();
     }
 
     private void RefreshPaneDocuments()

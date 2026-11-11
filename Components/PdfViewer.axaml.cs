@@ -74,6 +74,15 @@ public partial class PdfViewer : UserControl
     public event Action<string>? OpenDefaultRequested;
     public event Action? NotesRequested;
     public event Action? AddToNotesRequested;
+    bool _notesOpen;
+    public bool NotesOpen => _notesOpen;
+    public void SetNotesOpen(bool open)
+    {
+        if (_notesOpen == open) return;
+        _notesOpen = open;
+        UpdateToolChrome();
+    }
+
     public PdfTool Tool
     {
         get => _tool;
@@ -511,6 +520,7 @@ public partial class PdfViewer : UserControl
     {
         HandButton.Classes.Set("on", Tool == PdfTool.Hand);
         SelectButton.Classes.Set("on", Tool == PdfTool.Select);
+        NotesButton.Classes.Set("on", _notesOpen);
         var cursor = Tool == PdfTool.Hand ? new Cursor(StandardCursorType.Hand) : new Cursor(StandardCursorType.Ibeam);
         foreach (var slot in _slots) slot.Host.Cursor = cursor;
         Scroller.Cursor = Tool == PdfTool.Hand ? new Cursor(StandardCursorType.Hand) : Cursor.Default;

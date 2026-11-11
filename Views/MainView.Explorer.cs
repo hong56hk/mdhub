@@ -180,5 +180,6 @@ public partial class MainView
             owner.ImageViewer.ShowImage(owner.Active == document ? null : owner.Active?.Image);
             Avalonia.Threading.Dispatcher.UIThread.Post(image.Dispose, Avalonia.Threading.DispatcherPriority.Background);
         }
+        RefreshPdfNotesChrome();
     }
 }

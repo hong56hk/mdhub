@@ -23,12 +23,14 @@ public partial class MainView
             await CloseDocumentAsync(existing);
             if (_panes.Contains(pdfPane)) ActivatePane(pdfPane);
             pdfPane.PdfViewer.Focus();
+            RefreshPdfNotesChrome();
             return;
         }
         if (!await EnsurePdfNotesFileAsync(notesPath)) return;
         if (!await OpenPdfNotesSplitAsync(pdfPane, notesPath)) return;
         ActivatePane(pdfPane);
         pdfPane.PdfViewer.Focus();
+        RefreshPdfNotesChrome();
     }
 
     // Right-click "Add to notes": open the split if needed, append the quoted selection and page link, keep the PDF focused.
@@ -50,6 +52,7 @@ public partial class MainView
         await SaveAsync(notes, false);
         ActivatePane(pdfPane);
         pdfPane.PdfViewer.Focus();
+        RefreshPdfNotesChrome();
     }
 
     private async Task<bool> EnsurePdfNotesFileAsync(string notesPath)
@@ -85,6 +88,17 @@ public partial class MainView
         {
             if (_panes.Contains(pane)) RemovePane(pane, pdfPane);
             throw;
+        }
+    }
+
+    // Keep the Notes button's on-state in sync when the split is opened or closed (toggle, tab close, Ctrl+W).
+    private void RefreshPdfNotesChrome()
+    {
+        foreach (var pane in _panes)
+        {
+            var open = pane.Active is { IsPdf: true, Path: { Length: > 0 } pdfPath }
+                && AllDocuments.Any(d => SamePath(d.Path, PdfNotes.PathFor(pdfPath)));
+            pane.PdfViewer.SetNotesOpen(open);
         }
     }
 

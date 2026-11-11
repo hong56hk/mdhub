@@ -70,12 +70,16 @@ internal static class PdfNotesTests
             Check(notesPane.FindControl<Control>("TextEditor")!.IsVisible && notesPane.FindControl<Control>("MdEditor")!.IsVisible, "the notes split shows the editor and the preview");
             Check(pdfPane.FindControl<PdfViewer>("PdfViewer")!.IsVisible && pdfPane == (EditorPane)typeof(MainView).GetProperty("ActivePane", Flags)!.GetValue(v)!,
                 "the PDF pane stays active after Notes opens the split");
+            Check(viewer.NotesOpen && notesButton.Classes.Contains("on"), "the Notes button is on, in theme colours, while the notes split is open");
 
             File.WriteAllText(notesPath, "kept");
             // Re-open would overwrite only if we recreated; the file already exists, toggle close then... first close the split.
             notesButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Wait(Task.Delay(50)); Pump(); Pump();
             Check(Panes().Count == 1, "clicking Notes again closes the notes split");
+            viewer = Viewer();
+            notesButton = Named<Button>(viewer, "NotesButton");
+            Check(!viewer.NotesOpen && !notesButton.Classes.Contains("on"), "the Notes button turns off when the split is toggled closed");
             Check(File.ReadAllText(notesPath) == "kept" || File.ReadAllText(notesPath) == "", "toggling closed leaves the notes file (empty on first create)");
 
             // Restore 'kept' and open again: existing content must not be overwritten.
@@ -132,6 +136,15 @@ internal static class PdfNotesTests
             Check(Panes()[0].FindControl<PdfViewer>("PdfViewer")!.IsVisible && (EditorPane)typeof(MainView).GetProperty("ActivePane", Flags)!.GetValue(v)! == Panes()[0],
                 "focus stays on the PDF after Add to notes");
             Check(File.ReadAllBytes(good).SequenceEqual(pdfBytes), "Add to notes never modifies the PDF");
+            viewer = Viewer();
+            Check(viewer.NotesOpen && Named<Button>(viewer, "NotesButton").Classes.Contains("on"), "Add to notes that reopens the split turns the Notes button on");
+            typeof(MainView).GetMethod("ActivatePane", Flags)!.Invoke(v, [Panes()[1]]);
+            Panes()[1].FindControl<Control>("TextEditor")!.Focus(); Pump();
+            var closeMods = OperatingSystem.IsMacOS() ? RawInputModifiers.Meta : RawInputModifiers.Control;
+            w.KeyPress(Key.W, closeMods, PhysicalKey.None, null); w.KeyRelease(Key.W, closeMods, PhysicalKey.None, null);
+            Wait(Task.Delay(80)); Pump(); Pump();
+            Check(Panes().Count == 1 && !Viewer().NotesOpen && !Named<Button>(Viewer(), "NotesButton").Classes.Contains("on"),
+                $"closing the notes tab with Ctrl+W turns the Notes button off (panes {Panes().Count}, on={Viewer().NotesOpen})");
         }
         finally
         {
