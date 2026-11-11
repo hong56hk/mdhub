@@ -457,16 +457,13 @@ public partial class PdfViewer : UserControl
             from = Math.Clamp(from, 0, glyphs.Count - 1);
             to = Math.Clamp(to, 0, glyphs.Count - 1);
             if (p > start.Page && sb.Length > 0) sb.Append('\n');
-            double? lastTop = null;
+            var slice = new PdfText.Glyph[to - from + 1];
             for (var i = from; i <= to; i++)
             {
-                var ch = glyphs[i].Char;
-                if (ch == '\0') continue;
-                if (lastTop is { } y && Math.Abs(glyphs[i].Top - y) > Math.Max(2, glyphs[i].FontSize * 0.4))
-                    sb.Append('\n');
-                lastTop = glyphs[i].Top;
-                sb.Append(ch);
+                var c = glyphs[i];
+                slice[i - from] = new PdfText.Glyph(c.Char, c.Top, c.Bottom, c.FontSize);
             }
+            sb.Append(PdfText.FromGlyphs(slice));
         }
         return sb.ToString();
     }

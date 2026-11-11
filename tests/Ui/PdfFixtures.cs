@@ -47,6 +47,30 @@ internal static class PdfFixtures
         return Assemble(objs, encrypt: null, id: null);
     }
 
+    // One page with each string on its own visual line (item 106: real line breaks for copy).
+    public static byte[] Lines(params string[] lines)
+    {
+        var sb = new StringBuilder();
+        sb.Append("BT /F1 18 Tf 50 700 Td");
+        for (var i = 0; i < lines.Length; i++)
+        {
+            if (i > 0) sb.Append(" 0 -22 Td");
+            sb.Append(" (").Append(Esc(lines[i])).Append(") Tj");
+        }
+        sb.Append(" ET");
+        var s = sb.ToString();
+        var objs = new List<string>
+        {
+            "",
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [4 0 R] /Count 1 >>",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+            $"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 5 0 R /Resources << /Font << /F1 3 0 R >> >> >>",
+            $"<< /Length {s.Length} >> stream\n{s}\nendstream"
+        };
+        return Assemble(objs, encrypt: null, id: null);
+    }
+
     public static byte[] Corrupt() => Encoding.ASCII.GetBytes("%PDF-1.4\nthis is not a pdf\n%%EOF\n");
 
     // Standard security V=1 R=2 (40-bit RC4), user password "test".

@@ -25,6 +25,25 @@ internal static class PdfNotesTests
         void Pump() { using var t = new CancellationTokenSource(50); Dispatcher.UIThread.MainLoop(t.Token); }
         void Wait(Task t) { var end = DateTime.UtcNow.AddSeconds(15); while (!t.IsCompleted && DateTime.UtcNow < end) Pump(); t.GetAwaiter().GetResult(); Pump(); }
         const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        static string Show(string s) => s.Replace("\r", "\\r").Replace("\n", "\\n");
+
+        Check(PdfText.NormalizeForNotes("Most\n \nimportant") == "Most important"
+            && PdfText.NormalizeForNotes("a\r\n\t b  ") == "a b"
+            && PdfText.NormalizeForNotes("x\u2028y\u2029z") == "x y z",
+            "CR/LF, line/paragraph separators and whitespace runs collapse, then trim");
+        Check(PdfText.NormalizeForNotes("\u4e2d \u6587") == "\u4e2d\u6587" && PdfText.NormalizeForNotes("\u3072\u3089\n\u304c\u306a") == "\u3072\u3089\u304c\u306a"
+            && PdfText.NormalizeForNotes("\u30ab\u30bf \u30ab\u30ca") == "\u30ab\u30bf\u30ab\u30ca",
+            "CJK joining drops spaces between Han, Hiragana and Katakana");
+        Check(PdfText.NormalizeForNotes("\uc548\ub155 \ud558\uc138\uc694") == "\uc548\ub155 \ud558\uc138\uc694"
+            && PdfText.NormalizeForNotes("\uc548\ub155\n\ud558\uc138\uc694") == "\uc548\ub155 \ud558\uc138\uc694",
+            "Hangul keeps a space when the source had one");
+        Check(PdfNotes.Quote("Most\n \nimportant") == "> Most important"
+            && PdfNotes.ApplyAppend("kept", "Most\n \nimportant", "guide.pdf", 2).Replace("\r\n", "\n")
+                == "kept\n\n> Most important\n[p. 2](../guide.pdf#page=2)\n",
+            "Add to notes quotes one line and keeps the blank line and the [p. N] link");
+        static PdfText.Glyph G(char ch, double top, double bottom, double font = 18) => new(ch, top, bottom, font);
+        Check(PdfText.FromGlyphs([G('M', 79, 92), G('o', 82, 92), G('s', 82, 92), G('t', 79, 92), G(' ', 92, 92), G('i', 79, 92)]) == "Most i",
+            "FromGlyphs does not break a visual line at a baseline-level space");
 
         var root = Path.Combine(Path.GetTempPath(), "mdhub-pdfnotes-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
@@ -100,8 +119,9 @@ internal static class PdfNotesTests
             var image = viewer.GetVisualDescendants().OfType<Image>().First(img => img.IsVisible && img.Source is not null);
             var glyphs = viewer.Document!.Characters(0);
             var word = new string(glyphs.Select(g => g.Char).ToArray());
-            var helloAt = word.IndexOf("hello", StringComparison.Ordinal);
-            Check(helloAt >= 0, "hello is on page 1");
+            const string phrase = "hello mdhub";
+            var helloAt = word.IndexOf(phrase, StringComparison.Ordinal);
+            Check(helloAt >= 0, "hello mdhub is on page 1");
             Point OnGlyph(int i, double xFrac)
             {
                 var c = glyphs[i];
@@ -115,9 +135,10 @@ internal static class PdfNotesTests
                 return image.TranslatePoint(new Point((left + (right - left) * xFrac) * sx, (top + (bottom - top) * 0.5) * sy), w)!.Value;
             }
             w.MouseDown(OnGlyph(helloAt, 0.2), MouseButton.Left); Pump();
-            w.MouseMove(OnGlyph(helloAt + 4, 0.8)); Pump();
-            w.MouseUp(OnGlyph(helloAt + 4, 0.8), MouseButton.Left); Pump();
-            Check(viewer.HasSelection && viewer.SelectedText.Contains("hello") && viewer.SelectionPage == 1, $"selected hello on page 1 ({viewer.SelectedText})");
+            w.MouseMove(OnGlyph(helloAt + phrase.Length - 1, 0.8)); Pump();
+            w.MouseUp(OnGlyph(helloAt + phrase.Length - 1, 0.8), MouseButton.Left); Pump();
+            Check(viewer.HasSelection && viewer.SelectedText == phrase && viewer.SelectionPage == 1,
+                $"a single-line selection of several words has no stray breaks ({Show(viewer.SelectedText)})");
 
             var menu = Named<ScrollViewer>(viewer, "Scroller").ContextMenu!;
             var item = menu.Items.OfType<MenuItem>().Single(i => i.Name == "AddToNotesMenuItem");
@@ -131,7 +152,9 @@ internal static class PdfNotesTests
             static string Norm(string s) => s.Replace("\r\n", "\n").Replace('\r', '\n');
             var expected = PdfNotes.ApplyAppend("kept", viewer.SelectedText, good, 1);
             Check(Norm(notesDoc.Text) == expected && Norm(File.ReadAllText(notesPath)) == expected,
-                $"Add to notes appends a blank line, the quote and a relative page link ({notesDoc.Text})");
+                $"Add to notes appends a blank line, the quote and a relative page link ({Show(notesDoc.Text)})");
+            Check(Norm(expected) == "kept\n\n> hello mdhub\n[p. 1](../my%20report.pdf#page=1)\n",
+                "the quote is a single line, then the literal [p. N] link");
             Check(expected.Contains("../my%20report.pdf#page=1"), "spaces in the PDF file name are URL-encoded in the link");
             Check(Panes()[0].FindControl<PdfViewer>("PdfViewer")!.IsVisible && (EditorPane)typeof(MainView).GetProperty("ActivePane", Flags)!.GetValue(v)! == Panes()[0],
                 "focus stays on the PDF after Add to notes");

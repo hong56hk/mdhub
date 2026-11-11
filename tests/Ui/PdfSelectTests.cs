@@ -22,6 +22,7 @@ internal static class PdfSelectTests
         void Check(bool ok, string name) { if (!ok) throw new Exception(name); passed++; Console.WriteLine("PASS: " + name); }
         void Pump() { using var t = new CancellationTokenSource(50); Dispatcher.UIThread.MainLoop(t.Token); }
         void Wait(Task t) { var end = DateTime.UtcNow.AddSeconds(10); while (!t.IsCompleted && DateTime.UtcNow < end) Pump(); t.GetAwaiter().GetResult(); Pump(); }
+        static string Show(string s) => s.Replace("\r", "\\r").Replace("\n", "\\n");
 
         Check(Shortcuts.Get("pdf.copy").Area == ShortcutArea.Pdf && Shortcuts.Get("pdf.copy").PdfOnly,
             "pdf.copy is a Pdf-area, PDF-only shortcut");
@@ -111,6 +112,23 @@ internal static class PdfSelectTests
             Check(copied.Result == viewer.SelectedText && viewer.LastCopiedText == viewer.SelectedText,
                 $"Ctrl+C copies the selected PDF text as plain text ({copied.Result})");
 
+            const string phrase = "hello mdhub";
+            var phraseAt = IndexOf(glyphs, phrase);
+            Check(phraseAt >= 0, "hello mdhub is on page 1");
+            var phraseStart = OnPage(glyphs[phraseAt], 0.2, 0.5);
+            var phraseStop = OnPage(glyphs[phraseAt + phrase.Length - 1], 0.8, 0.5);
+            w.MouseDown(phraseStart, MouseButton.Left); Pump();
+            w.MouseMove(phraseStop); Pump();
+            w.MouseUp(phraseStop, MouseButton.Left); Pump(); Pump();
+            Check(viewer.SelectedText == phrase,
+                $"a single-line selection of several words has no stray breaks ({Show(viewer.SelectedText)})");
+            Wait(w.Clipboard!.SetTextAsync("sentinel"));
+            viewer.Focus(); Pump();
+            Key(Avalonia.Input.Key.C, ctrl);
+            var phraseCopy = w.Clipboard!.TryGetTextAsync(); Wait(phraseCopy);
+            Check(phraseCopy.Result == phrase && viewer.LastCopiedText == phrase,
+                $"pdf.copy copies the words as one line ({Show(phraseCopy.Result ?? "")})");
+
             // Click well below the text line (letter page, text is near the top in image space or near y=700 in PDF space).
             var emptyLocal = new Point(image.Bounds.Width * 0.5, 220);
             var empty = image.TranslatePoint(emptyLocal, w)!.Value;
@@ -133,6 +151,58 @@ internal static class PdfSelectTests
             Key(Avalonia.Input.Key.C, ctrl);
             var noteCopy = w.Clipboard!.TryGetTextAsync(); Wait(noteCopy);
             Check(noteCopy.Result == "note body text", $"Ctrl+C in the editor copies the note, not PDF text ({noteCopy.Result})");
+
+            var linesPath = Path.Combine(root, "lines.pdf");
+            File.WriteAllBytes(linesPath, PdfFixtures.Lines("Most important", "second line"));
+            Wait(Invoke("OpenPathAsync", linesPath));
+            Pump(); Pump();
+            viewer = Viewer();
+            for (var i = 0; i < 20 && viewer.ZoomPercent != 100; i++) { if (viewer.ZoomPercent > 100) viewer.StepZoom(-1); else viewer.StepZoom(1); }
+            Pump(); Pump();
+            viewer.Tool = PdfTool.Select;
+            viewer.Focus(); Pump();
+            var lineImage = viewer.GetVisualDescendants().OfType<Image>().First(img => img.IsVisible && img.Source is not null);
+            var lineGlyphs = viewer.Document!.Characters(0);
+            var mostAt = IndexOf(lineGlyphs, "Most important");
+            var secondAt = IndexOf(lineGlyphs, "second line");
+            Check(mostAt >= 0 && secondAt >= 0, "both lines are on the two-line fixture page");
+            Point OnLine(int i, double xFrac)
+            {
+                var c = lineGlyphs[i];
+                var height = viewer.Document!.Pages[0].Height;
+                var left = Math.Min(c.Left, c.Right);
+                var right = Math.Max(c.Left, c.Right);
+                double top, bottom;
+                if (c.Top <= c.Bottom) { top = c.Top; bottom = c.Bottom; }
+                else
+                {
+                    top = height - c.Top;
+                    bottom = height - c.Bottom;
+                    if (top > bottom) (top, bottom) = (bottom, top);
+                }
+                var sx = lineImage.Bounds.Width / viewer.Document.Pages[0].Width;
+                var sy = lineImage.Bounds.Height / height;
+                return lineImage.TranslatePoint(new Point((left + (right - left) * xFrac) * sx, (top + (bottom - top) * 0.5) * sy), w)!.Value;
+            }
+            var firstStart = OnLine(mostAt, 0.2);
+            var firstStop = OnLine(mostAt + "Most important".Length - 1, 0.8);
+            w.MouseDown(firstStart, MouseButton.Left); Pump();
+            w.MouseMove(firstStop); Pump();
+            w.MouseUp(firstStop, MouseButton.Left); Pump(); Pump();
+            Check(viewer.SelectedText == "Most important",
+                $"a single visual line still copies without a break ({Show(viewer.SelectedText)})");
+            var bothStop = OnLine(secondAt + "second line".Length - 1, 0.8);
+            w.MouseDown(firstStart, MouseButton.Left); Pump();
+            w.MouseMove(bothStop); Pump();
+            w.MouseUp(bothStop, MouseButton.Left); Pump(); Pump();
+            Check(viewer.SelectedText == "Most important\nsecond line",
+                $"pdf.copy keeps a real line break between visual lines ({Show(viewer.SelectedText)})");
+            Wait(w.Clipboard!.SetTextAsync("sentinel"));
+            viewer.Focus(); Pump();
+            Key(Avalonia.Input.Key.C, ctrl);
+            var lineCopy = w.Clipboard!.TryGetTextAsync(); Wait(lineCopy);
+            Check(lineCopy.Result == "Most important\nsecond line" && viewer.LastCopiedText == "Most important\nsecond line",
+                $"Ctrl+C copies the two lines with a break ({Show(lineCopy.Result ?? "")})");
         }
         finally { try { w.Close(); Pump(); } catch { } try { Directory.Delete(root, true); } catch { } }
         Console.WriteLine($"PDF selection tests passed: {passed}");

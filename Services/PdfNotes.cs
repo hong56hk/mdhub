@@ -20,11 +20,12 @@ public static class PdfNotes
 
     public static string Quote(string selected, string lineEnding = "\n")
     {
-        var text = selected.Replace("\r\n", "\n").Replace('\r', '\n');
-        return string.Join(lineEnding, text.Split('\n').Select(line => "> " + line));
+        // Item 106: always a single quoted line. The page link stays on the next line.
+        _ = lineEnding;
+        return "> " + PdfText.NormalizeForNotes(selected);
     }
 
-    // A blank line, then every selected line as a Markdown quote, then the page link, ending with a newline.
+    // A blank line, then the selection as one Markdown quote line, then the page link, ending with a newline.
     public static string ApplyAppend(string existing, string selected, string pdfPath, int page, string lineEnding = "\n")
     {
         var body = Quote(selected, lineEnding) + lineEnding + PageLink(pdfPath, page) + lineEnding;

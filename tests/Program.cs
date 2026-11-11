@@ -303,10 +303,25 @@ try
         var pdf = Path.Combine(root, "sub", "my report.pdf");
         Require(PdfNotes.PathFor(pdf) == Path.Combine(root, "sub", ".assets", "my report.notes.md"), "PDF notes live at .assets/<stem>.notes.md beside the PDF");
         Require(PdfNotes.PageLink(pdf, 3) == "[p. 3](../my%20report.pdf#page=3)", "the page link is relative to the notes file and encodes spaces");
-        Require(PdfNotes.Quote("hello") == "> hello" && PdfNotes.Quote("a\nb\r\nc") == "> a\n> b\n> c", "every line of a multi-line selection is quoted");
+        Require(PdfNotes.Quote("hello") == "> hello" && PdfNotes.Quote("a\nb\r\nc") == "> a b c", "a notes quote is a single line after whitespace is normalized");
         Require(PdfNotes.ApplyAppend("", "hello", pdf, 1) == "\n> hello\n[p. 1](../my%20report.pdf#page=1)\n", "an empty notes file gets a blank line, the quote and the page link");
         Require(PdfNotes.ApplyAppend("kept", "hello", pdf, 2) == "kept\n\n> hello\n[p. 2](../my%20report.pdf#page=2)\n", "appending after existing text leaves a blank line before the quote");
-        Require(PdfNotes.ApplyAppend("kept\n", "a\nb", pdf, 1, "\n") == "kept\n\n> a\n> b\n[p. 1](../my%20report.pdf#page=1)\n", "a multi-line append quotes every line");
+        Require(PdfNotes.ApplyAppend("kept\n", "a\nb", pdf, 1, "\n") == "kept\n\n> a b\n[p. 1](../my%20report.pdf#page=1)\n", "a multi-line selection is quoted as one line, then the page link");
+        Require(PdfText.NormalizeForNotes("Most\n \nimportant") == "Most important"
+            && PdfText.NormalizeForNotes("a\r\n\t b  ") == "a b"
+            && PdfText.NormalizeForNotes("x\u2028y\u2029z") == "x y z", "CR/LF, line/paragraph separators and whitespace runs collapse, then trim");
+        Require(PdfText.NormalizeForNotes("中 文") == "中文" && PdfText.NormalizeForNotes("ひら\nがな") == "ひらがな"
+            && PdfText.NormalizeForNotes("カタ カナ") == "カタカナ", "spaces and breaks between Han, Hiragana and Katakana are dropped");
+        Require(PdfText.NormalizeForNotes("안녕 하세요") == "안녕 하세요" && PdfText.NormalizeForNotes("안녕\n하세요") == "안녕 하세요",
+            "Hangul keeps a space between words when the source had whitespace or a line break");
+        Require(PdfText.NormalizeForNotes("中文 English") == "中文 English", "a space between CJK and Latin is kept");
+        static PdfText.Glyph G(char ch, double top, double bottom, double font = 18) => new(ch, top, bottom, font);
+        PdfText.Glyph[] most = [G('M', 79, 92), G('o', 82, 92), G('s', 82, 92), G('t', 79, 92), G(' ', 92, 92),
+            G('i', 79, 92), G('m', 82, 92), G('p', 82, 96), G('o', 82, 92), G('r', 82, 92), G('t', 79, 92), G('a', 82, 92), G('n', 82, 92), G('t', 79, 92)];
+        Require(PdfText.FromGlyphs(most) == "Most important", "glyphs on one visual line assemble without a break at the space");
+        PdfText.Glyph[] twoLines = [G('M', 79, 92), G('o', 82, 92), G('s', 82, 92), G('t', 79, 92), G('\r', 92, 92, 1), G('\n', 92, 92, 1),
+            G('i', 101, 114), G('m', 104, 114), G('p', 104, 118), G('o', 104, 114), G('r', 104, 114), G('t', 101, 114), G('a', 104, 114), G('n', 104, 114), G('t', 101, 114)];
+        Require(PdfText.FromGlyphs(twoLines) == "Most\nimportant", "a real line break is kept in the assembled text for copy");
         var notes = Path.Combine(root, "sub", ".assets", "my report.notes.md");
         Require(PdfNotes.TryParsePageLink("../my%20report.pdf#page=3", notes, out var resolved, out var page)
             && page == 3 && resolved == Path.GetFullPath(pdf), "a relative #page=N link resolves from the notes file and decodes spaces");
