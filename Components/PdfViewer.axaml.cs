@@ -2,17 +2,18 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
+using Avalonia.Threading;
 using Mdhub.Localization;
 using Mdhub.Services;
 
 namespace Mdhub.Components;
+
 
 public enum PdfTool { Hand, Select }
 
@@ -29,6 +30,7 @@ public partial class PdfViewer : UserControl
     double _scale = 1;
     int _currentPage = 1;
     bool _fitting;
+    bool _fitQueued;
     bool _dragging;
     bool _panning;
     Point _panStart;
@@ -39,10 +41,10 @@ public partial class PdfViewer : UserControl
     public PdfViewer()
     {
         InitializeComponent();
-        Scroller.ScrollChanged += (_, _) => { UpdateCurrentPage(); RefreshVisible(); };
+        Scroller.ScrollChanged += OnScroll;
+        Scroller.SizeChanged += (_, _) => QueueFit();
         AttachedToVisualTree += (_, _) => Loc.Changed += Relocalize;
         DetachedFromVisualTree += (_, _) => Loc.Changed -= Relocalize;
-        LayoutUpdated += (_, _) => { if (_fitting) FitToWindow(); };
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Bubble);
         HandButton.Click += (_, _) => Tool = PdfTool.Hand;
         SelectButton.Click += (_, _) => Tool = PdfTool.Select;
@@ -134,6 +136,7 @@ public partial class PdfViewer : UserControl
         UpdateZoomTips();
         ZoomChanged?.Invoke(ZoomPercent);
         PageChanged?.Invoke(_currentPage);
+        if (_fitting) QueueFit();
     }
 
     public bool StepZoom(int direction)
@@ -143,12 +146,40 @@ public partial class PdfViewer : UserControl
         return SetScale(ImageZoom.StepZoom(_scale, direction));
     }
 
+    // Pages.Margin is 16 per side (32) and each page Border is 1 per side (2). A 1 DIP slack
+    // keeps the fitted page strictly inside the viewport so an Auto scrollbar cannot appear,
+    // shrink the viewport, change the fit scale, and disappear again -- that oscillation is
+    // what Avalonia reports as "Infinite layout loop detected" (153 render-callback passes).
+    const double FitChromeX = 32 + 2 + 1;
+    const double FitChromeY = 32 + 2 + 16 + 1; // also the gap under each page slot
+
+    void OnScroll(object? sender, ScrollChangedEventArgs e)
+    {
+        UpdateCurrentPage();
+        RefreshVisible();
+        if (e.ViewportDelta.X != 0 || e.ViewportDelta.Y != 0) QueueFit();
+    }
+
+    // Defer off the current render/layout callback so a size change cannot re-enter
+    // MediaContext.FireInvokeOnRenderCallbacks in the same tick.
+    void QueueFit()
+    {
+        if (!_fitting || _fitQueued) return;
+        _fitQueued = true;
+        Dispatcher.UIThread.Post(() =>
+        {
+            _fitQueued = false;
+            if (_fitting) FitToWindow();
+        }, DispatcherPriority.Loaded);
+    }
+
     public bool FitToWindow()
     {
         if (_document is not { Error: PdfError.None, PageCount: > 0 }) return false;
         _fitting = true;
-        var viewW = Math.Max(0, Scroller.Viewport.Width - 32);
-        var viewH = Math.Max(0, Scroller.Viewport.Height - 32);
+        var viewW = Math.Max(0, Scroller.Viewport.Width - FitChromeX);
+        var viewH = Math.Max(0, Scroller.Viewport.Height - FitChromeY);
+        if (viewW <= 0 || viewH <= 0) return false;
         var (w, h) = _document.Pages[Math.Clamp(_currentPage - 1, 0, _document.PageCount - 1)];
         var next = ImageZoom.Fit(w, h, viewW, viewH);
         return SetScale(next);
@@ -182,7 +213,9 @@ public partial class PdfViewer : UserControl
     {
         scale = ImageZoom.Clamp(scale);
         var page = _currentPage;
-        if (Math.Abs(scale - _scale) < 1e-6) { SizeSlots(); RefreshVisible(); PaintSelection(); return true; }
+        // Unchanged scale must be a true no-op: rewriting Width/Height or rebuilding the
+        // selection overlay from a layout callback is enough to queue another layout pass.
+        if (Math.Abs(scale - _scale) < 1e-6) return true;
         _scale = scale;
         SizeSlots();
         UpdateZoomLabel();
@@ -440,35 +473,42 @@ public partial class PdfViewer : UserControl
 
     void PaintSelection()
     {
-        foreach (var slot in _slots) slot.ClearOverlay();
-        if (_document is null || _anchorIndex < 0 || _endIndex < 0) return;
+        // Draw in Render only (InvalidateVisual). Adding a Rectangle per glyph to a Canvas would
+        // invalidate layout on every pointer move; with the default fit-to-window hook that used
+        // to run from LayoutUpdated, that re-entered MediaContext.FireInvokeOnRenderCallbacks
+        // until Avalonia threw "Infinite layout loop detected" (Hong's crash when selecting text).
+        if (_document is null || _anchorIndex < 0 || _endIndex < 0)
+        {
+            foreach (var slot in _slots) slot.ClearOverlay();
+            return;
+        }
         var start = (Page: _anchorPage, Index: _anchorIndex);
         var end = (Page: _endPage, Index: _endIndex);
         if (start.CompareTo(end) > 0) (start, end) = (end, start);
         var brush = ThemeService.Brush("PreviewSelectionBackground");
-        for (var p = start.Page; p <= end.Page && p < _slots.Count; p++)
+        for (var p = 0; p < _slots.Count; p++)
         {
+            if (p < start.Page || p > end.Page)
+            {
+                _slots[p].ClearOverlay();
+                continue;
+            }
             var glyphs = Glyphs(p);
             var height = _document.Pages[p].Height;
             var from = p == start.Page ? start.Index : 0;
             var to = p == end.Page ? end.Index : glyphs.Count - 1;
             from = Math.Clamp(from, 0, Math.Max(0, glyphs.Count - 1));
             to = Math.Clamp(to, 0, Math.Max(0, glyphs.Count - 1));
-            if (glyphs.Count == 0) continue;
-            for (var i = from; i <= to; i++)
+            var rects = new List<Rect>();
+            if (glyphs.Count > 0)
             {
-                var r = ImageRect(glyphs[i], height);
-                if (r.Width <= 0 || r.Height <= 0) continue;
-                _slots[p].Overlay.Children.Add(new Rectangle
+                for (var i = from; i <= to; i++)
                 {
-                    Fill = brush,
-                    Width = r.Width,
-                    Height = r.Height,
-                    [Canvas.LeftProperty] = r.X,
-                    [Canvas.TopProperty] = r.Y,
-                    IsHitTestVisible = false
-                });
+                    var r = ImageRect(glyphs[i], height);
+                    if (r.Width > 0 && r.Height > 0) rects.Add(r);
+                }
             }
+            _slots[p].Overlay.Set(rects, brush);
         }
     }
 
@@ -577,7 +617,7 @@ public partial class PdfViewer : UserControl
             BorderThickness = new Thickness(1)
         };
         public Image Image { get; } = new() { Stretch = Stretch.Fill };
-        public Canvas Overlay { get; } = new() { IsHitTestVisible = false };
+        public SelectionLayer Overlay { get; } = new() { IsHitTestVisible = false };
         public WriteableBitmap? Bitmap { get; set; }
         public double Scale { get; set; }
         public PageSlot()
@@ -587,12 +627,38 @@ public partial class PdfViewer : UserControl
             grid.Children.Add(Overlay);
             Host.Child = grid;
         }
-        public void ClearOverlay() => Overlay.Children.Clear();
+        public void ClearOverlay() => Overlay.Clear();
         public void Release()
         {
             Image.Source = null;
             Bitmap?.Dispose();
             Bitmap = null;
+        }
+    }
+    // A non-layout overlay: highlights are drawn in Render so a selection change never
+    // invalidates measure/arrange (unlike adding Shape children to a Canvas).
+    sealed class SelectionLayer : Control
+    {
+        readonly List<Rect> _rects = [];
+        IBrush? _brush;
+        public void Set(IReadOnlyList<Rect> rects, IBrush? brush)
+        {
+            _rects.Clear();
+            _rects.AddRange(rects);
+            _brush = brush;
+            InvalidateVisual();
+        }
+        public void Clear()
+        {
+            if (_rects.Count == 0) return;
+            _rects.Clear();
+            _brush = null;
+            InvalidateVisual();
+        }
+        public override void Render(DrawingContext context)
+        {
+            if (_brush is null) return;
+            foreach (var r in _rects) context.FillRectangle(_brush, r);
         }
     }
 }

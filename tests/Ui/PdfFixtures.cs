@@ -26,6 +26,27 @@ internal static class PdfFixtures
         return Assemble(objs, encrypt: null, id: null);
     }
 
+    // Custom MediaBox for layout tests (item 105). MultiPage stays letter-size.
+    public static byte[] Pages(int width, int height, params string[] texts)
+    {
+        var objs = new List<string> { "" };
+        objs.Add("<< /Type /Catalog /Pages 2 0 R >>");
+        objs.Add("PLACEHOLDER_PAGES");
+        objs.Add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+        var kids = new List<int>();
+        for (var i = 0; i < texts.Length; i++)
+        {
+            var pageId = objs.Count;
+            var contentId = pageId + 1;
+            kids.Add(pageId);
+            var s = "BT /F1 18 Tf 50 50 Td (" + Esc(texts[i]) + ") Tj ET";
+            objs.Add($"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {width} {height}] /Contents {contentId} 0 R /Resources << /Font << /F1 3 0 R >> >> >>");
+            objs.Add($"<< /Length {s.Length} >> stream\n{s}\nendstream");
+        }
+        objs[2] = "<< /Type /Pages /Kids [" + string.Join(" ", kids.Select(k => k + " 0 R")) + "] /Count " + texts.Length + " >>";
+        return Assemble(objs, encrypt: null, id: null);
+    }
+
     public static byte[] Corrupt() => Encoding.ASCII.GetBytes("%PDF-1.4\nthis is not a pdf\n%%EOF\n");
 
     // Standard security V=1 R=2 (40-bit RC4), user password "test".
