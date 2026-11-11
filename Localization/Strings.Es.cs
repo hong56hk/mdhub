@@ -536,6 +536,9 @@ public static partial class Loc
         ["PdfToolbar"] = "Barra de herramientas PDF",
         ["PdfSelectTool"] = "Herramienta de seleccion",
         ["PdfPageInput"] = "Página",
+        ["PdfAddNotes"] = "Agregar notas",
+        ["PdfAddToNotes"] = "Agregar a las notas",
+        ["PdfNotesFailed"] = "No se pueden abrir las notas PDF: {0}",
         ["PathCopied"] = "Ruta copiada",
         ["CopyPathTip"] = "Haga clic para copiar la ruta",
     };

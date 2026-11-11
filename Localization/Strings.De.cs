@@ -536,6 +536,9 @@ public static partial class Loc
         ["PdfToolbar"] = "PDF-Werkzeugleiste",
         ["PdfSelectTool"] = "Auswahlwerkzeug",
         ["PdfPageInput"] = "Seite",
+        ["PdfAddNotes"] = "Notizen hinzufügen",
+        ["PdfAddToNotes"] = "Zu Notizen hinzufügen",
+        ["PdfNotesFailed"] = "PDF-Notizen konnten nicht geöffnet werden: {0}",
         ["PathCopied"] = "Pfad kopiert",
         ["CopyPathTip"] = "Klicken, um den Pfad zu kopieren",
     };

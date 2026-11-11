@@ -52,6 +52,8 @@ public partial class PdfViewer : UserControl
         {
             if (_document?.FilePath is { Length: > 0 } path) OpenDefaultRequested?.Invoke(path);
         };
+        NotesButton.Click += (_, _) => NotesRequested?.Invoke();
+        Scroller.ContextMenu = CreateNotesMenu();
         PageInput.KeyDown += OnPageKey;
         PageInput.LostFocus += (_, _) => CommitPageInput();
         AttachedToVisualTree += (_, _) => { Shortcuts.Changed += UpdateZoomTips; UpdateZoomTips(); };
@@ -70,6 +72,8 @@ public partial class PdfViewer : UserControl
     public event Action<int>? ZoomChanged;
     public event Action<int>? PageChanged;
     public event Action<string>? OpenDefaultRequested;
+    public event Action? NotesRequested;
+    public event Action? AddToNotesRequested;
     public PdfTool Tool
     {
         get => _tool;
@@ -471,13 +475,29 @@ public partial class PdfViewer : UserControl
         if (notify && changed) SelectionChanged?.Invoke();
     }
 
+    ContextMenu CreateNotesMenu()
+    {
+        var item = LocResources.Item("PdfAddToNotes");
+        item.Name = "AddToNotesMenuItem";
+        item.Click += (_, _) => AddToNotesRequested?.Invoke();
+        var menu = new ContextMenu();
+        menu.Items.Add(item);
+        menu.Localized();
+        menu.Opening += (_, e) =>
+        {
+            item.IsEnabled = HasSelection;
+            if (!HasSelection) e.Cancel = true;
+        };
+        return menu;
+    }
+
     bool HasUsableDocument => _document is { Error: PdfError.None, PageCount: > 0 };
 
     void UpdateTools()
     {
         var usable = HasUsableDocument;
         HandButton.IsEnabled = SelectButton.IsEnabled = PageInput.IsEnabled = usable;
-        OpenButton.IsEnabled = _document is { FilePath.Length: > 0 };
+        OpenButton.IsEnabled = NotesButton.IsEnabled = _document is { FilePath.Length: > 0 };
         UpdateZoomButtons();
         UpdateToolChrome();
         if (!usable)

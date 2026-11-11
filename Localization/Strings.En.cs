@@ -533,6 +533,9 @@ public static partial class Loc
         ["PdfToolbar"] = "PDF toolbar",
         ["PdfSelectTool"] = "Selection tool",
         ["PdfPageInput"] = "Page",
+        ["PdfAddNotes"] = "Add Notes",
+        ["PdfAddToNotes"] = "Add to notes",
+        ["PdfNotesFailed"] = "Unable to open PDF notes: {0}",
         ["PathCopied"] = "Path copied", ["CopyPathTip"] = "Click to copy the path",
     };
 }

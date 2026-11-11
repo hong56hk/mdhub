@@ -533,6 +533,9 @@ public static partial class Loc
         ["PdfToolbar"] = "PDF \ub3c4\uad6c \ubaa8\uc74c",
         ["PdfSelectTool"] = "선택 도구",
         ["PdfPageInput"] = "페이지",
+        ["PdfAddNotes"] = "노트 추가",
+        ["PdfAddToNotes"] = "노트에 추가",
+        ["PdfNotesFailed"] = "PDF 노트를 열 수 없습니다: {0}",
         ["PathCopied"] = "\uACBD\uB85C\uB97C \uBCF5\uC0AC\uD588\uC2B5\uB2C8\uB2E4", ["CopyPathTip"] = "\uD074\uB9AD\uD558\uC5EC \uACBD\uB85C \uBCF5\uC0AC",
     };
 }

@@ -54,6 +54,8 @@ public partial class MainView
         pane.PdfViewer.ZoomChanged += _ => { if (pane == _activePane && pane.PdfViewer.IsVisible) BottomStatusBar.Relocalize(); };
         pane.PdfViewer.PageChanged += page => { if (pane == _activePane && pane.PdfViewer.IsVisible) BottomStatusBar.SetPdfPage((page, pane.PdfViewer.PageCount)); };
         pane.PdfViewer.OpenDefaultRequested += async path => await OpenWithDefaultAppAsync(path);
+        pane.PdfViewer.NotesRequested += () => { if (!_busy) _ = RunAsync(() => TogglePdfNotesAsync(pane), focusEditor: false); };
+        pane.PdfViewer.AddToNotesRequested += () => { if (!_busy) _ = RunAsync(() => AddToPdfNotesAsync(pane), focusEditor: false); };
         pane.BinaryPlaceholder.OpenDefaultRequested += async () => { if (pane.Active is { IsBinary: true, Path: { } path }) await OpenWithDefaultAppAsync(path); };
         pane.BinaryPlaceholder.OpenAsTextRequested += async () => { if (_busy) return; ActivatePane(pane); if (_active is { IsBinary: true } document) await RunAsync(() => OpenAsTextAsync(document)); };
     }

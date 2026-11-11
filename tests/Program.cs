@@ -300,6 +300,15 @@ try
         && ImageAssets.MarkdownLink("a(1).png") == "![a(1)](.assets/a%281%29.png)", "Image link is relative with forward slashes and encoded spaces");
     Require(ImageAssets.IsImageFile("x.PNG") && !ImageAssets.IsImageFile("x.txt"), "Only image files are pasted as images");
     {
+        var pdf = Path.Combine(root, "sub", "my report.pdf");
+        Require(PdfNotes.PathFor(pdf) == Path.Combine(root, "sub", ".assets", "my report.notes.md"), "PDF notes live at .assets/<stem>.notes.md beside the PDF");
+        Require(PdfNotes.PageLink(pdf, 3) == "[p. 3](../my%20report.pdf#page=3)", "the page link is relative to the notes file and encodes spaces");
+        Require(PdfNotes.Quote("hello") == "> hello" && PdfNotes.Quote("a\nb\r\nc") == "> a\n> b\n> c", "every line of a multi-line selection is quoted");
+        Require(PdfNotes.ApplyAppend("", "hello", pdf, 1) == "\n> hello\n[p. 1](../my%20report.pdf#page=1)\n", "an empty notes file gets a blank line, the quote and the page link");
+        Require(PdfNotes.ApplyAppend("kept", "hello", pdf, 2) == "kept\n\n> hello\n[p. 2](../my%20report.pdf#page=2)\n", "appending after existing text leaves a blank line before the quote");
+        Require(PdfNotes.ApplyAppend("kept\n", "a\nb", pdf, 1, "\n") == "kept\n\n> a\n> b\n[p. 1](../my%20report.pdf#page=1)\n", "a multi-line append quotes every line");
+    }
+    {
         string Spans(FindResult r) => string.Join(",", r.Matches.Select(m => $"{m.Start}:{m.Length}"));
         var sample = "Cat cat CAT concat cat_x";
         Require(Spans(FindReplace.FindAll(sample, "cat", new())) == "0:3,4:3,8:3,15:3,19:3", "Find is case-insensitive by default");

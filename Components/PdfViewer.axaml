@@ -63,7 +63,11 @@
         </StackPanel>
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="1" Margin="4,0" VerticalAlignment="Center">
           <!-- Item 102c: Notes / Add Notes lands in this slot, before Open with default app. -->
-          <Border x:Name="NotesSlot" MinWidth="8" />
+          <Border x:Name="NotesSlot" MinWidth="8">
+            <Button x:Name="NotesButton" Classes="imageTool" ToolTip.Tip="{DynamicResource PdfAddNotes}" AutomationProperties.Name="{DynamicResource PdfAddNotes}">
+              <Path Data="M4 2.5h6.5L13 5v8.5A1.5 1.5 0 0 1 11.5 15h-7A1.5 1.5 0 0 1 3 13.5v-10A1.5 1.5 0 0 1 4 2.5Z M10.5 2.5V5H13 M5.5 8h5 M5.5 10.5h5 M5.5 13h3" />
+            </Button>
+          </Border>
           <Button x:Name="OpenButton" Classes="imageTool" ToolTip.Tip="{DynamicResource OpenWithDefaultApp}" AutomationProperties.Name="{DynamicResource OpenWithDefaultApp}">
             <Path Data="M8 3H3.5A1.5 1.5 0 0 0 2 4.5v8A1.5 1.5 0 0 0 3.5 14h8A1.5 1.5 0 0 0 13 12.5V8 M10 2h4v4 M14 2L7 9" />
           </Button>

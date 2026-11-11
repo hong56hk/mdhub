@@ -533,6 +533,9 @@ public static partial class Loc
         ["PdfToolbar"] = "PDF \u5de5\u5177\u5217",
         ["PdfSelectTool"] = "選取工具",
         ["PdfPageInput"] = "頁碼",
+        ["PdfAddNotes"] = "新增筆記",
+        ["PdfAddToNotes"] = "加入筆記",
+        ["PdfNotesFailed"] = "無法開啟 PDF 筆記：{0}",
         ["PathCopied"] = "\u5df2\u8907\u88fd\u8def\u5f91", ["CopyPathTip"] = "\u6309\u4e00\u4e0b\u4ee5\u8907\u88fd\u8def\u5f91",
     };
 }
