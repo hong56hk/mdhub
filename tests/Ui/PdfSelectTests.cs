@@ -68,6 +68,7 @@ internal static class PdfSelectTests
             for (var i = 0; i < 20 && viewer.ZoomPercent < 100; i++) viewer.StepZoom(1);
             Pump(); Pump();
             Check(viewer.ZoomPercent == 100, $"zoom is 100% for hit testing ({viewer.ZoomPercent})");
+            viewer.Tool = PdfTool.Select;
             viewer.Focus(); Pump();
 
             var image = viewer.GetVisualDescendants().OfType<Image>().First(img => img.IsVisible && img.Source is not null);

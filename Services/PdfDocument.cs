@@ -18,6 +18,7 @@ public sealed class PdfDocument : IDisposable
     double _readerScale;
     bool _disposed;
 
+    public string FilePath => _path;
     public PdfError Error { get; }
     public int PageCount { get; }
     // Page size at 100% (1 PDF point = 1 DIP).

@@ -53,6 +53,7 @@ public partial class MainView
         pane.ImageViewer.CursorPixelChanged += pixel => { if (pane == _activePane && pane.ImageViewer.IsVisible) BottomStatusBar.SetImageCursor(pixel); };
         pane.PdfViewer.ZoomChanged += _ => { if (pane == _activePane && pane.PdfViewer.IsVisible) BottomStatusBar.Relocalize(); };
         pane.PdfViewer.PageChanged += page => { if (pane == _activePane && pane.PdfViewer.IsVisible) BottomStatusBar.SetPdfPage((page, pane.PdfViewer.PageCount)); };
+        pane.PdfViewer.OpenDefaultRequested += async path => await OpenWithDefaultAppAsync(path);
         pane.BinaryPlaceholder.OpenDefaultRequested += async () => { if (pane.Active is { IsBinary: true, Path: { } path }) await OpenWithDefaultAppAsync(path); };
         pane.BinaryPlaceholder.OpenAsTextRequested += async () => { if (_busy) return; ActivatePane(pane); if (_active is { IsBinary: true } document) await RunAsync(() => OpenAsTextAsync(document)); };
     }

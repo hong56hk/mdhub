@@ -534,6 +534,8 @@ public static partial class Loc
         ["KindPdf"] = "PDF",
         ["PdfViewOnly"] = "Les PDF sont en lecture seule.",
         ["PdfToolbar"] = "Barre d'outils PDF",
+        ["PdfSelectTool"] = "Outil de selection",
+        ["PdfPageInput"] = "Page courante",
         ["PathCopied"] = "Chemin copié",
         ["CopyPathTip"] = "Cliquez pour copier le chemin",
     };

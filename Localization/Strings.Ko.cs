@@ -531,6 +531,8 @@ public static partial class Loc
         ["KindPdf"] = "PDF",
         ["PdfViewOnly"] = "PDF\ub294 \uc77d\uae30 \uc804\uc6a9\uc785\ub2c8\ub2e4.",
         ["PdfToolbar"] = "PDF \ub3c4\uad6c \ubaa8\uc74c",
+        ["PdfSelectTool"] = "선택 도구",
+        ["PdfPageInput"] = "페이지",
         ["PathCopied"] = "\uACBD\uB85C\uB97C \uBCF5\uC0AC\uD588\uC2B5\uB2C8\uB2E4", ["CopyPathTip"] = "\uD074\uB9AD\uD558\uC5EC \uACBD\uB85C \uBCF5\uC0AC",
     };
 }

@@ -531,6 +531,8 @@ public static partial class Loc
         ["KindPdf"] = "PDF",
         ["PdfViewOnly"] = "PDF \u50c5\u4f9b\u700f\u89bd\u3002",
         ["PdfToolbar"] = "PDF \u5de5\u5177\u5217",
+        ["PdfSelectTool"] = "選取工具",
+        ["PdfPageInput"] = "頁碼",
         ["PathCopied"] = "\u5df2\u8907\u88fd\u8def\u5f91", ["CopyPathTip"] = "\u6309\u4e00\u4e0b\u4ee5\u8907\u88fd\u8def\u5f91",
     };
 }

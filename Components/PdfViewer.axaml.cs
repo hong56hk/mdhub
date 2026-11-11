@@ -14,6 +14,8 @@ using Mdhub.Services;
 
 namespace Mdhub.Components;
 
+public enum PdfTool { Hand, Select }
+
 // Item 102a: a read-only PDF tab. Pages scroll vertically and are rendered lazily (the visible page and its
 // neighbours stay in memory). Zoom uses the image viewer's step presets (Ctrl+= / Ctrl+- / Ctrl+0) through the
 // shortcut registry while this viewer is shown. ScrollToPage is the hook for item 102d.
@@ -28,6 +30,10 @@ public partial class PdfViewer : UserControl
     int _currentPage = 1;
     bool _fitting;
     bool _dragging;
+    bool _panning;
+    Point _panStart;
+    Vector _panOffset;
+    PdfTool _tool = PdfTool.Hand;
     int _anchorPage, _anchorIndex, _endPage, _endIndex;
 
     public PdfViewer()
@@ -38,6 +44,20 @@ public partial class PdfViewer : UserControl
         DetachedFromVisualTree += (_, _) => Loc.Changed -= Relocalize;
         LayoutUpdated += (_, _) => { if (_fitting) FitToWindow(); };
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Bubble);
+        HandButton.Click += (_, _) => Tool = PdfTool.Hand;
+        SelectButton.Click += (_, _) => Tool = PdfTool.Select;
+        ZoomInButton.Click += (_, _) => StepZoom(1);
+        ZoomOutButton.Click += (_, _) => StepZoom(-1);
+        OpenButton.Click += (_, _) =>
+        {
+            if (_document?.FilePath is { Length: > 0 } path) OpenDefaultRequested?.Invoke(path);
+        };
+        PageInput.KeyDown += OnPageKey;
+        PageInput.LostFocus += (_, _) => CommitPageInput();
+        AttachedToVisualTree += (_, _) => { Shortcuts.Changed += UpdateZoomTips; UpdateZoomTips(); };
+        DetachedFromVisualTree += (_, _) => Shortcuts.Changed -= UpdateZoomTips;
+        UpdateToolChrome();
+        UpdateTools();
     }
 
     public PdfDocument? Document => _document;
@@ -49,6 +69,17 @@ public partial class PdfViewer : UserControl
     public IReadOnlyList<int> CachedPages => _slots.Select((s, i) => (s, i)).Where(x => x.s.Bitmap is not null).Select(x => x.i).ToList();
     public event Action<int>? ZoomChanged;
     public event Action<int>? PageChanged;
+    public event Action<string>? OpenDefaultRequested;
+    public PdfTool Tool
+    {
+        get => _tool;
+        set
+        {
+            if (_tool == value) return;
+            _tool = value;
+            UpdateToolChrome();
+        }
+    }
 
     // Item 102b / 102c: the current selection as plain text, and the 1-based page where it starts.
     public string SelectedText { get; private set; } = "";
@@ -85,6 +116,9 @@ public partial class PdfViewer : UserControl
             }
             SizeSlots();
         }
+        UpdateTools();
+        UpdatePageField();
+        UpdateZoomTips();
         ZoomChanged?.Invoke(ZoomPercent);
         PageChanged?.Invoke(_currentPage);
     }
@@ -119,6 +153,7 @@ public partial class PdfViewer : UserControl
         Scroller.Offset = new Vector(Scroller.Offset.X, y);
         _currentPage = index + 1;
         PageChanged?.Invoke(_currentPage);
+        UpdatePageField();
         RefreshVisible();
     }
 
@@ -139,6 +174,7 @@ public partial class PdfViewer : UserControl
         SizeSlots();
         UpdateZoomLabel();
         ZoomChanged?.Invoke(ZoomPercent);
+        UpdateZoomButtons();
         // Re-render at the new scale (old bitmaps are the wrong size).
         foreach (var slot in _slots) slot.Release();
         ScrollToPage(page);
@@ -214,6 +250,7 @@ public partial class PdfViewer : UserControl
         if (page == _currentPage) return;
         _currentPage = page;
         PageChanged?.Invoke(_currentPage);
+        UpdatePageField();
     }
 
     void Relocalize()
@@ -245,6 +282,16 @@ public partial class PdfViewer : UserControl
     {
         Focus();
         if (!e.GetCurrentPoint(_slots[page].Host).Properties.IsLeftButtonPressed) return;
+        if (Tool == PdfTool.Hand)
+        {
+            _panning = true;
+            _panStart = e.GetPosition(Scroller);
+            _panOffset = Scroller.Offset;
+            e.Pointer.Capture(_slots[page].Host);
+            e.Handled = true;
+            return;
+        }
+        if (Tool != PdfTool.Select) return;
         if (Hit(page, e.GetPosition(_slots[page].Image), nearOnly: true) is { } hit)
         {
             _dragging = true;
@@ -259,7 +306,15 @@ public partial class PdfViewer : UserControl
 
     void OnPageMoved(int page, PointerEventArgs e)
     {
-        if (!_dragging) return;
+        if (_panning)
+        {
+            var now = e.GetPosition(Scroller);
+            var delta = now - _panStart;
+            Scroller.Offset = new Vector(Math.Max(0, _panOffset.X - delta.X), Math.Max(0, _panOffset.Y - delta.Y));
+            e.Handled = true;
+            return;
+        }
+        if (!_dragging || Tool != PdfTool.Select) return;
         var pos = e.GetPosition(_slots[page].Image);
         if (Hit(page, pos, nearOnly: false) is { } hit)
         {
@@ -272,10 +327,13 @@ public partial class PdfViewer : UserControl
 
     void OnPageReleased(PointerReleasedEventArgs e)
     {
-        if (!_dragging) return;
-        _dragging = false;
-        e.Pointer.Capture(null);
-        e.Handled = true;
+        if (_panning || _dragging)
+        {
+            _panning = false;
+            _dragging = false;
+            e.Pointer.Capture(null);
+            e.Handled = true;
+        }
     }
 
     (int Page, int Index)? Hit(int page, Point imagePoint, bool nearOnly)
@@ -413,11 +471,78 @@ public partial class PdfViewer : UserControl
         if (notify && changed) SelectionChanged?.Invoke();
     }
 
+    bool HasUsableDocument => _document is { Error: PdfError.None, PageCount: > 0 };
+
+    void UpdateTools()
+    {
+        var usable = HasUsableDocument;
+        HandButton.IsEnabled = SelectButton.IsEnabled = PageInput.IsEnabled = usable;
+        OpenButton.IsEnabled = _document is { FilePath.Length: > 0 };
+        UpdateZoomButtons();
+        UpdateToolChrome();
+        if (!usable)
+        {
+            PageInput.Text = "";
+            PageCountLabel.Text = "";
+        }
+    }
+
+    void UpdateToolChrome()
+    {
+        HandButton.Classes.Set("on", Tool == PdfTool.Hand);
+        SelectButton.Classes.Set("on", Tool == PdfTool.Select);
+        var cursor = Tool == PdfTool.Hand ? new Cursor(StandardCursorType.Hand) : new Cursor(StandardCursorType.Ibeam);
+        foreach (var slot in _slots) slot.Host.Cursor = cursor;
+        Scroller.Cursor = Tool == PdfTool.Hand ? new Cursor(StandardCursorType.Hand) : Cursor.Default;
+    }
+
+    void UpdateZoomButtons()
+    {
+        var usable = HasUsableDocument;
+        ZoomInButton.IsEnabled = usable && ImageZoom.StepZoom(_scale, 1) > _scale + 1e-9;
+        ZoomOutButton.IsEnabled = usable && ImageZoom.StepZoom(_scale, -1) < _scale - 1e-9;
+    }
+
+    static string Hint(string id) => Shortcuts.Format(id, ShortcutKeys.IsMac).Split(" / ")[0];
+
+    void UpdateZoomTips()
+    {
+        ToolTip.SetTip(ZoomInButton, Loc.F("ImageZoomInTip", Hint("zoom.in")));
+        ToolTip.SetTip(ZoomOutButton, Loc.F("ImageZoomOutTip", Hint("zoom.out")));
+    }
+
+    void UpdatePageField()
+    {
+        if (!HasUsableDocument) { if (!PageInput.IsFocused) { PageInput.Text = ""; PageCountLabel.Text = ""; } return; }
+        PageCountLabel.Text = PageCount.ToString();
+        if (!PageInput.IsFocused) PageInput.Text = CurrentPage.ToString();
+    }
+
+    void OnPageKey(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter) { CommitPageInput(); e.Handled = true; }
+        else if (e.Key == Key.Escape) { UpdatePageFieldForce(); e.Handled = true; }
+    }
+
+    void CommitPageInput()
+    {
+        if (!HasUsableDocument) { UpdatePageFieldForce(); return; }
+        if (!int.TryParse(PageInput.Text, out var n)) { UpdatePageFieldForce(); return; }
+        ScrollToPage(Math.Clamp(n, 1, PageCount));
+        UpdatePageFieldForce();
+    }
+
+    void UpdatePageFieldForce()
+    {
+        PageCountLabel.Text = HasUsableDocument ? PageCount.ToString() : "";
+        PageInput.Text = HasUsableDocument ? CurrentPage.ToString() : "";
+    }
+
     sealed class PageSlot
     {
         public Border Host { get; } = new()
         {
-            Background = ThemeService.Brush("EditorBackground"),
+            Background = ThemeService.Brush("PdfPageBackground"),
             BorderBrush = ThemeService.Brush("BorderSubtle"),
             BorderThickness = new Thickness(1)
         };

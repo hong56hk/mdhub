@@ -534,6 +534,8 @@ public static partial class Loc
         ["KindPdf"] = "PDF",
         ["PdfViewOnly"] = "PDF \u4ec5\u4f9b\u6d4f\u89c8\u3002",
         ["PdfToolbar"] = "PDF \u5de5\u5177\u680f",
+        ["PdfSelectTool"] = "选择工具",
+        ["PdfPageInput"] = "页码",
         ["PathCopied"] = "已复制路径",
         ["CopyPathTip"] = "单击以复制路径",
     };

@@ -3,15 +3,71 @@
              x:Class="Mdhub.Components.PdfViewer"
              Focusable="True"
              Background="{DynamicResource EditorBackground}">
+  <UserControl.Styles>
+    <!-- Same thin-stroke tool buttons as the image viewer, in theme colours. -->
+    <Style Selector="Button.imageTool">
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="5" />
+      <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="Foreground" Value="{DynamicResource PreviewToggleOff}" />
+    </Style>
+    <Style Selector="Button.imageTool.on">
+      <Setter Property="Foreground" Value="{DynamicResource AccentStrong}" />
+      <Setter Property="Background" Value="{DynamicResource PreviewToggleOnBackground}" />
+    </Style>
+    <Style Selector="Button.imageTool:disabled Path">
+      <Setter Property="Opacity" Value="0.35" />
+    </Style>
+    <Style Selector="Button.imageTool Path">
+      <Setter Property="Width" Value="16" />
+      <Setter Property="Height" Value="16" />
+      <Setter Property="Stretch" Value="None" />
+      <Setter Property="StrokeThickness" Value="1.2" />
+      <Setter Property="StrokeLineCap" Value="Round" />
+      <Setter Property="StrokeJoin" Value="Round" />
+      <Setter Property="Stroke" Value="{Binding $parent[Button].Foreground}" />
+      <Setter Property="Fill" Value="Transparent" />
+    </Style>
+  </UserControl.Styles>
   <Grid RowDefinitions="Auto,*">
-    <!-- Item 102c: the right-hand slot is reserved for the Notes button. -->
     <Border x:Name="Toolbar" Height="36"
             Background="{DynamicResource ToolbarBackground}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="0,0,0,1"
             AutomationProperties.Name="{DynamicResource PdfToolbar}">
-      <Grid ColumnDefinitions="*,Auto">
-        <TextBlock x:Name="ZoomLabel" VerticalAlignment="Center" Margin="12,0" FontSize="12"
-                   Foreground="{DynamicResource EditorForeground}" />
-        <Border Grid.Column="1" MinWidth="88" Margin="8,0" />
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <StackPanel x:Name="ToolRow" Orientation="Horizontal" Spacing="1" Margin="4,0" VerticalAlignment="Center">
+          <Button x:Name="HandButton" Classes="imageTool" ToolTip.Tip="{DynamicResource ImageHandTool}" AutomationProperties.Name="{DynamicResource ImageHandTool}">
+            <Path Data="M5.5 8.5V4a1 1 0 0 1 2 0v3.5 M7.5 7V2.8a1 1 0 0 1 2 0V7 M9.5 7V3.8a1 1 0 0 1 2 0V8 M11.5 8V5.8a1 1 0 0 1 2 0V10c0 2.8-2 4.8-4.6 4.8C6.6 14.8 5.4 13.9 4.4 12.3L2.6 9.4a1 1 0 0 1 1.6-1.2l1.3 1.5" />
+          </Button>
+          <Button x:Name="SelectButton" Classes="imageTool" ToolTip.Tip="{DynamicResource PdfSelectTool}" AutomationProperties.Name="{DynamicResource PdfSelectTool}">
+            <Path Data="M4 2.5h3 M7.5 2.5h3 M5.5 2.5v11 M4 13.5h3 M7.5 13.5h3" />
+          </Button>
+          <Border Width="1" Margin="5,6" Background="{DynamicResource BorderSubtle}" />
+          <TextBox x:Name="PageInput" Width="44" MinWidth="44" Height="24" Padding="2,0" Margin="2,0"
+                   TextAlignment="Center" VerticalContentAlignment="Center" FontSize="12"
+                   Background="{DynamicResource InputBackground}" Foreground="{DynamicResource EditorForeground}"
+                   BorderBrush="{DynamicResource BorderSubtle}"
+                   AutomationProperties.Name="{DynamicResource PdfPageInput}" />
+          <TextBlock Text="/" VerticalAlignment="Center" Margin="2,0" FontSize="12" Foreground="{DynamicResource EditorForeground}" />
+          <TextBlock x:Name="PageCountLabel" VerticalAlignment="Center" Margin="2,0" FontSize="12"
+                     Foreground="{DynamicResource EditorForeground}" />
+          <Border Width="1" Margin="5,6" Background="{DynamicResource BorderSubtle}" />
+          <Button x:Name="ZoomInButton" Classes="imageTool" AutomationProperties.Name="{DynamicResource ImageZoomIn}">
+            <Path Data="M7 2.5a4.5 4.5 0 1 0 0.01 0 M10.3 10.3L14 14 M5 7h4 M7 5v4" />
+          </Button>
+          <Button x:Name="ZoomOutButton" Classes="imageTool" AutomationProperties.Name="{DynamicResource ImageZoomOut}">
+            <Path Data="M7 2.5a4.5 4.5 0 1 0 0.01 0 M10.3 10.3L14 14 M5 7h4" />
+          </Button>
+          <TextBlock x:Name="ZoomLabel" VerticalAlignment="Center" Margin="8,0" FontSize="12"
+                     Foreground="{DynamicResource EditorForeground}" />
+        </StackPanel>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="1" Margin="4,0" VerticalAlignment="Center">
+          <!-- Item 102c: Notes / Add Notes lands in this slot, before Open with default app. -->
+          <Border x:Name="NotesSlot" MinWidth="8" />
+          <Button x:Name="OpenButton" Classes="imageTool" ToolTip.Tip="{DynamicResource OpenWithDefaultApp}" AutomationProperties.Name="{DynamicResource OpenWithDefaultApp}">
+            <Path Data="M8 3H3.5A1.5 1.5 0 0 0 2 4.5v8A1.5 1.5 0 0 0 3.5 14h8A1.5 1.5 0 0 0 13 12.5V8 M10 2h4v4 M14 2L7 9" />
+          </Button>
+        </StackPanel>
       </Grid>
     </Border>
     <ScrollViewer x:Name="Scroller" Grid.Row="1"
