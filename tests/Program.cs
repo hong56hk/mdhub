@@ -307,6 +307,14 @@ try
         Require(PdfNotes.ApplyAppend("", "hello", pdf, 1) == "\n> hello\n[p. 1](../my%20report.pdf#page=1)\n", "an empty notes file gets a blank line, the quote and the page link");
         Require(PdfNotes.ApplyAppend("kept", "hello", pdf, 2) == "kept\n\n> hello\n[p. 2](../my%20report.pdf#page=2)\n", "appending after existing text leaves a blank line before the quote");
         Require(PdfNotes.ApplyAppend("kept\n", "a\nb", pdf, 1, "\n") == "kept\n\n> a\n> b\n[p. 1](../my%20report.pdf#page=1)\n", "a multi-line append quotes every line");
+        var notes = Path.Combine(root, "sub", ".assets", "my report.notes.md");
+        Require(PdfNotes.TryParsePageLink("../my%20report.pdf#page=3", notes, out var resolved, out var page)
+            && page == 3 && resolved == Path.GetFullPath(pdf), "a relative #page=N link resolves from the notes file and decodes spaces");
+        Require(PdfNotes.TryParsePageLink("../my%20report.pdf#page=0", notes, out _, out var zero) && zero == 0, "page 0 parses so the viewer can clamp it");
+        Require(!PdfNotes.TryParsePageLink("https://example.com", notes, out _, out _) && !PdfNotes.TryParsePageLink("../note.md#page=1", notes, out _, out _), "non-PDF or fragment-less hrefs are ignored");
+        var md = "[p. 2](../my%20report.pdf#page=2)";
+        Require(PdfNotes.MarkdownHrefAt(md, 1) == "../my%20report.pdf#page=2" && PdfNotes.MarkdownHrefAt(md, md.Length - 2) == "../my%20report.pdf#page=2"
+            && PdfNotes.MarkdownHrefAt("before " + md + " after", 0) is null, "MarkdownHrefAt returns the destination for clicks on the label or the URL");
     }
     {
         string Spans(FindResult r) => string.Join(",", r.Matches.Select(m => $"{m.Start}:{m.Length}"));

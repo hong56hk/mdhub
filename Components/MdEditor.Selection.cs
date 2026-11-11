@@ -1,6 +1,7 @@
 using System.Text;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Documents;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -25,9 +26,12 @@ public partial class MdEditor
     private static readonly DataFormat<byte[]> RtfFormat = DataFormat.CreateBytesPlatformFormat(
         OperatingSystem.IsWindows() ? "Rich Text Format" : OperatingSystem.IsMacOS() ? "public.rtf" : "text/rtf");
 
+    public event Action<string>? LinkClicked;
     private PreviewSelection? _selection;
     private PreviewPosition _anchor, _caret;
     private bool _dragging;
+    private Point _linkPress;
+    private string? _linkHref;
     internal PreviewSelection? Selection => _selection;
     internal bool HasPreviewSelection => _selection is not null && _anchor != _caret;
     internal (PreviewPosition From, PreviewPosition To) PreviewSelectionRange => _anchor <= _caret ? (_anchor, _caret) : (_caret, _anchor);
@@ -39,7 +43,7 @@ public partial class MdEditor
         PreviewScroll.Focusable = true;
         PreviewScroll.AddHandler(PointerPressedEvent, OnSelectPressed, RoutingStrategies.Bubble, true);
         PreviewScroll.AddHandler(PointerMovedEvent, OnSelectMoved, RoutingStrategies.Bubble, true);
-        PreviewScroll.AddHandler(PointerReleasedEvent, (_, _) => _dragging = false, RoutingStrategies.Bubble, true);
+        PreviewScroll.AddHandler(PointerReleasedEvent, OnSelectReleased, RoutingStrategies.Bubble, true);
         PreviewScroll.AddHandler(KeyDownEvent, OnSelectKey, RoutingStrategies.Bubble);
         PreviewContent.LayoutUpdated += (_, _) => PreviewSelectionLayer.InvalidateVisual();
         PreviewSelectionLayer.Owner = this;
@@ -87,6 +91,8 @@ public partial class MdEditor
         if (!point.Properties.IsLeftButtonPressed) return;
         if (!IsEditingPreview) PreviewScroll.Focus();
         if (e.ClickCount > 1) return; // the second click of a double-click edits the block (DoubleTapped)
+        _linkHref = e.KeyModifiers.HasFlag(KeyModifiers.Shift) ? null : HrefAt(e.Source as Visual, point.Position);
+        _linkPress = point.Position;
         if (selection.HitTest(point.Position) is not { } at) return;
         if (e.KeyModifiers.HasFlag(KeyModifiers.Shift) && _selection is not null) _caret = at;
         else _anchor = _caret = at;
@@ -94,6 +100,60 @@ public partial class MdEditor
         PreviewSelectionLayer.InvalidateVisual();
     }
 
+    private void OnSelectReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        var dragged = _dragging && _anchor != _caret;
+        _dragging = false;
+        if (dragged || _linkHref is null || e.InitialPressMouseButton != MouseButton.Left) { _linkHref = null; return; }
+        var now = e.GetPosition(PreviewContent);
+        if (Math.Abs(now.X - _linkPress.X) >= 4 || Math.Abs(now.Y - _linkPress.Y) >= 4) { _linkHref = null; return; }
+        if (HrefAt(e.Source as Visual, now) != _linkHref) { _linkHref = null; return; }
+        var href = _linkHref;
+        _linkHref = null;
+        if (href.Contains(".pdf", StringComparison.OrdinalIgnoreCase) && href.Contains("#page=", StringComparison.OrdinalIgnoreCase))
+        {
+            e.Handled = true;
+            LinkClicked?.Invoke(href);
+        }
+    }
+
+    string? HrefAt(Visual? source, Point inContent)
+    {
+        TextBlock? block = null;
+        for (var v = source; v is not null && v != PreviewScroll; v = v.GetVisualParent())
+            if (v is TextBlock tb) { block = tb; break; }
+        if (block is null || block.TranslatePoint(new Point(0, 0), PreviewContent) is not { } origin) return null;
+        var inherited = PreviewTags.Kind(block) == "a" ? PreviewTags.Value(block) : null;
+        if (block.Inlines is not { Count: > 0 } inlines || block.TextLayout is null) return inherited;
+        var hit = block.TextLayout.HitTestPoint(inContent - origin);
+        return HrefAtOffset(inlines, hit.TextPosition, inherited);
+    }
+
+    static string? HrefAtOffset(InlineCollection inlines, int offset, string? inherited)
+    {
+        string? found = null;
+        var pos = 0;
+        void Walk(InlineCollection items, string? href)
+        {
+            foreach (var inline in items)
+            {
+                if (found is not null) return;
+                if (inline is LineBreak) { if (offset == pos) found = href; pos++; continue; }
+                if (inline is Run run)
+                {
+                    var len = run.Text?.Length ?? 0;
+                    if (href is not null && offset >= pos && offset <= pos + Math.Max(len, 0)) found = href;
+                    pos += len;
+                    continue;
+                }
+                if (inline is Span span)
+                    Walk(span.Inlines, PreviewTags.Kind(span) == "a" ? PreviewTags.Value(span) : href);
+                else { if (href is not null && offset == pos) found = href; pos++; }
+            }
+        }
+        Walk(inlines, inherited);
+        return found;
+    }
     private void OnSelectMoved(object? sender, PointerEventArgs e)
     {
         if (!_dragging || _selection is not { } selection) return;
