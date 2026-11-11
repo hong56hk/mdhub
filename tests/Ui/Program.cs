@@ -92,6 +92,7 @@ if (args.Contains("--pdfnotes-only")) { PdfNotesTests.Run(); return; }
 if (args.Contains("--pdfpagelink-only")) { PdfPageLinkTests.Run(); return; }
 if (args.Contains("--pdflayout-only")) { PdfLayoutTests.Run(); return; }
 if (args.Contains("--pdfword-only")) { PdfWordTests.Run(); return; }
+if (args.Contains("--pdfcursor-only")) { PdfCursorTests.Run(); return; }
 if (args.Contains("--search-bench")) { SearchBench.Run(args); return; }
 if (args.Contains("--search-only")) { SearchSpeedTests.Run(); WorkspaceSearchTests.Run(); SearchClickTests.Run(); return; }
 if (args.Contains("--shortcuts-only")) { ShortcutTests.Run(); return; }

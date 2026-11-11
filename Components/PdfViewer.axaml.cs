@@ -33,6 +33,7 @@ public partial class PdfViewer : UserControl
     bool _fitQueued;
     bool _dragging;
     bool _panning;
+    bool _rightDrag, _rightMoved, _suppressMenu, _panCursorApplied;
     Point _panStart;
     Vector _panOffset;
     PdfTool _tool = PdfTool.Hand;
@@ -46,6 +47,7 @@ public partial class PdfViewer : UserControl
         AttachedToVisualTree += (_, _) => Loc.Changed += Relocalize;
         DetachedFromVisualTree += (_, _) => Loc.Changed -= Relocalize;
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Bubble);
+        AddHandler(ContextRequestedEvent, OnContextRequested, RoutingStrategies.Tunnel);
         HandButton.Click += (_, _) => Tool = PdfTool.Hand;
         SelectButton.Click += (_, _) => Tool = PdfTool.Select;
         ZoomInButton.Click += (_, _) => StepZoom(1);
@@ -68,6 +70,12 @@ public partial class PdfViewer : UserControl
     public double Scale => _scale;
     public int ZoomPercent => ImageZoom.Percent(_scale);
     public bool IsFitting => _fitting;
+    // Item 109: open-hand cursor while panning; right-drag pans with any tool (click under the
+    // threshold still opens Add to notes). The image viewer is left unchanged.
+    public const double RightDragThreshold = 4;
+    public bool IsPanning => _panning && (!_rightDrag || _rightMoved);
+    public bool IsRightPanning => _rightDrag && _rightMoved;
+    public Cursor? PageCursor => _slots.Count == 0 ? null : _slots[0].Host.Cursor;
     public int PageCount => _document?.PageCount ?? 0;
     public int CurrentPage => _currentPage;
     // Pages that currently hold a bitmap (0-based). Exposed for the lazy-render test.
@@ -127,6 +135,7 @@ public partial class PdfViewer : UserControl
                 slot.Host.PointerPressed += (s, e) => OnPagePressed(page, e);
                 slot.Host.PointerMoved += (s, e) => OnPageMoved(page, e);
                 slot.Host.PointerReleased += (s, e) => OnPageReleased(e);
+                slot.Host.PointerCaptureLost += (_, _) => EndPan(clearDragging: true);
                 _slots.Add(slot);
                 Pages.Children.Add(slot.Host);
             }
@@ -328,15 +337,25 @@ public partial class PdfViewer : UserControl
     void OnPagePressed(int page, PointerPressedEventArgs e)
     {
         Focus();
-        if (!e.GetCurrentPoint(_slots[page].Host).Properties.IsLeftButtonPressed) return;
+        var point = e.GetCurrentPoint(_slots[page].Host);
+        // Item 109: the right button pans with any tool; a right click that does not move still opens Add to notes.
+        if (point.Properties.IsRightButtonPressed)
+        {
+            if (!HasUsableDocument) return;
+            _rightDrag = true;
+            _rightMoved = false;
+            _suppressMenu = false;
+            BeginPan(page, e, showCursor: false);
+            return;
+        }
+        if (!point.Properties.IsLeftButtonPressed) return;
         var pos = e.GetPosition(_slots[page].Image);
         // Item 108: double-click on a text char selects the word (Hand or Select). On empty space
         // the earlier "double-click always resets the view" decision still applies. Triple-click
         // selects the line.
         if (e.ClickCount >= 2)
         {
-            _panning = false;
-            _dragging = false;
+            EndPan(clearDragging: true);
             e.Pointer.Capture(null);
             if (Hit(page, pos, nearOnly: false, exact: true) is { } hit
                 && TrySelectClick(hit.Page, hit.Index, e.ClickCount >= 3))
@@ -351,10 +370,7 @@ public partial class PdfViewer : UserControl
         }
         if (Tool == PdfTool.Hand)
         {
-            _panning = true;
-            _panStart = e.GetPosition(Scroller);
-            _panOffset = Scroller.Offset;
-            e.Pointer.Capture(_slots[page].Host);
+            BeginPan(page, e, showCursor: true);
             e.Handled = true;
             return;
         }
@@ -369,6 +385,35 @@ public partial class PdfViewer : UserControl
         }
         else ClearSelection();
         e.Handled = true;
+    }
+
+    void BeginPan(int page, PointerPressedEventArgs e, bool showCursor)
+    {
+        _panning = true;
+        _panStart = e.GetPosition(Scroller);
+        _panOffset = Scroller.Offset;
+        e.Pointer.Capture(_slots[page].Host);
+        if (showCursor) ApplyPanCursor();
+    }
+
+    void ApplyPanCursor()
+    {
+        if (_panCursorApplied) return;
+        var scale = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1;
+        var open = PdfCursors.OpenHand(scale);
+        _panCursorApplied = true;
+        foreach (var slot in _slots) slot.Host.Cursor = open;
+        Scroller.Cursor = open;
+    }
+
+    void EndPan(bool clearDragging = false)
+    {
+        _panning = false;
+        _rightDrag = _rightMoved = false;
+        if (clearDragging) _dragging = false;
+        if (!_panCursorApplied) return;
+        _panCursorApplied = false;
+        UpdateToolChrome();
     }
 
     bool TrySelectClick(int page, int index, bool line)
@@ -395,6 +440,13 @@ public partial class PdfViewer : UserControl
         if (_panning)
         {
             var now = e.GetPosition(Scroller);
+            if (_rightDrag && !_rightMoved)
+            {
+                var preview = now - _panStart;
+                if (Math.Abs(preview.X) < RightDragThreshold && Math.Abs(preview.Y) < RightDragThreshold) return;
+                _rightMoved = true;
+                ApplyPanCursor();
+            }
             var delta = now - _panStart;
             Scroller.Offset = new Vector(Math.Max(0, _panOffset.X - delta.X), Math.Max(0, _panOffset.Y - delta.Y));
             e.Handled = true;
@@ -413,13 +465,21 @@ public partial class PdfViewer : UserControl
 
     void OnPageReleased(PointerReleasedEventArgs e)
     {
+        if (_rightDrag && e.InitialPressMouseButton != MouseButton.Right) return;
         if (_panning || _dragging)
         {
-            _panning = false;
-            _dragging = false;
+            var wasRight = _rightDrag;
+            _suppressMenu = wasRight && _rightMoved;
+            if (_dragging && e.InitialPressMouseButton == MouseButton.Left) _dragging = false;
+            EndPan();
             e.Pointer.Capture(null);
-            e.Handled = true;
+            if (!wasRight) e.Handled = true;
         }
+    }
+
+    void OnContextRequested(object? sender, ContextRequestedEventArgs e)
+    {
+        if (_suppressMenu || IsRightPanning) { e.Handled = true; _suppressMenu = false; }
     }
 
     (int Page, int Index)? Hit(int page, Point imagePoint, bool nearOnly, bool exact = false)
@@ -571,6 +631,7 @@ public partial class PdfViewer : UserControl
         menu.Localized();
         menu.Opening += (_, e) =>
         {
+            if (_suppressMenu) { e.Cancel = true; _suppressMenu = false; return; }
             item.IsEnabled = HasSelection;
             if (!HasSelection) e.Cancel = true;
         };
@@ -598,6 +659,7 @@ public partial class PdfViewer : UserControl
         HandButton.Classes.Set("on", Tool == PdfTool.Hand);
         SelectButton.Classes.Set("on", Tool == PdfTool.Select);
         NotesButton.Classes.Set("on", _notesOpen);
+        if (_panCursorApplied) return;
         var cursor = Tool == PdfTool.Hand ? new Cursor(StandardCursorType.Hand) : new Cursor(StandardCursorType.Ibeam);
         foreach (var slot in _slots) slot.Host.Cursor = cursor;
         Scroller.Cursor = Tool == PdfTool.Hand ? new Cursor(StandardCursorType.Hand) : Cursor.Default;
