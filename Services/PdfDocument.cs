@@ -82,6 +82,24 @@ public sealed class PdfDocument : IDisposable
         }
     }
 
+    public readonly record struct PdfChar(char Char, double Left, double Top, double Right, double Bottom, double FontSize);
+
+    // Glyph boxes in PDF points (1 unit = 1 DIP at 100%), same space as Render at scale 1.
+    public IReadOnlyList<PdfChar> Characters(int index)
+    {
+        if (Error != PdfError.None || index < 0 || index >= PageCount) return [];
+        lock (Pdfium)
+        {
+            EnsureReader(_readerScale > 0 ? _readerScale : 1);
+            if (_reader is null) return [];
+            var scale = _readerScale > 0 ? _readerScale : 1;
+            using var page = _reader.GetPageReader(index);
+            return page.GetCharacters()
+                .Select(c => new PdfChar(c.Char, c.Box.Left / scale, c.Box.Top / scale, c.Box.Right / scale, c.Box.Bottom / scale, c.FontSize / scale))
+                .ToList();
+        }
+    }
+
     // Ready for item 102b (text layer / selection).
     public string Text(int index)
     {

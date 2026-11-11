@@ -85,6 +85,7 @@ if (args.Contains("--longtext-only")) { LongTextLayoutTests.Run(); return; }
 if (args.Contains("--imagezoom-only")) { ImageZoomTests.Run(); return; }
 if (args.Contains("--imageview-only")) { ImageViewTests.Run(); return; }
 if (args.Contains("--pdfview-only")) { PdfViewTests.Run(); return; }
+if (args.Contains("--pdfselect-only")) { PdfSelectTests.Run(); return; }
 if (args.Contains("--search-bench")) { SearchBench.Run(args); return; }
 if (args.Contains("--search-only")) { SearchSpeedTests.Run(); WorkspaceSearchTests.Run(); SearchClickTests.Run(); return; }
 if (args.Contains("--shortcuts-only")) { ShortcutTests.Run(); return; }
@@ -1323,7 +1324,7 @@ finally
     var sdlg = sw.OwnedWindows.Single();
     var rows = sdlg.GetVisualDescendants().OfType<Grid>().Where(g => g.Classes.Contains("shortcut-row")).ToList();
     var areas = sdlg.GetVisualDescendants().OfType<TextBlock>().Where(b => b.Classes.Contains("shortcut-area")).Select(b => b.Text).ToList();
-    Require(sdlg.Title == "Shortcuts" && rows.Count == Mdhub.Services.Shortcuts.All.Count && areas.SequenceEqual(["File", "Edit", "View", "Find", "Zoom", "Editor", "Image"]),
+    Require(sdlg.Title == "Shortcuts" && rows.Count == Mdhub.Services.Shortcuts.All.Count && areas.SequenceEqual(["File", "Edit", "View", "Find", "Zoom", "Editor", "Image", "PDF"]),
         "The Shortcut dialog lists every shortcut grouped by area");
     var saveRow = rows.First(r => Equals(r.Tag, "file.saveAs"));
     Require(saveRow.Children.OfType<TextBlock>().Where(b => b.Name != "ShortcutCustomMark").Select(b => b.Text).SequenceEqual(["Save as", "Ctrl+Shift+S"]), "Dialog rows show the label and the gesture");

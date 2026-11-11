@@ -1,6 +1,11 @@
 using System.Runtime.InteropServices;
+using System.Text;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Shapes;
+using Avalonia.Input;
+using Avalonia.Input.Platform;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
@@ -12,14 +17,18 @@ namespace Mdhub.Components;
 // Item 102a: a read-only PDF tab. Pages scroll vertically and are rendered lazily (the visible page and its
 // neighbours stay in memory). Zoom uses the image viewer's step presets (Ctrl+= / Ctrl+- / Ctrl+0) through the
 // shortcut registry while this viewer is shown. ScrollToPage is the hook for item 102d.
+// Item 102b: drag to select text; Ctrl+C (Cmd+C) copies it as plain text via pdf.copy (ShortcutArea.Pdf).
 public partial class PdfViewer : UserControl
 {
     const int Neighbours = 1;
     PdfDocument? _document;
     readonly List<PageSlot> _slots = [];
+    IReadOnlyList<PdfDocument.PdfChar>[]? _glyphs;
     double _scale = 1;
     int _currentPage = 1;
     bool _fitting;
+    bool _dragging;
+    int _anchorPage, _anchorIndex, _endPage, _endIndex;
 
     public PdfViewer()
     {
@@ -28,6 +37,7 @@ public partial class PdfViewer : UserControl
         AttachedToVisualTree += (_, _) => Loc.Changed += Relocalize;
         DetachedFromVisualTree += (_, _) => Loc.Changed -= Relocalize;
         LayoutUpdated += (_, _) => { if (_fitting) FitToWindow(); };
+        AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Bubble);
     }
 
     public PdfDocument? Document => _document;
@@ -40,11 +50,20 @@ public partial class PdfViewer : UserControl
     public event Action<int>? ZoomChanged;
     public event Action<int>? PageChanged;
 
+    // Item 102b / 102c: the current selection as plain text, and the 1-based page where it starts.
+    public string SelectedText { get; private set; } = "";
+    public int SelectionPage { get; private set; }
+    public bool HasSelection => SelectedText.Length > 0;
+    public string? LastCopiedText { get; private set; }
+    public event Action? SelectionChanged;
+
     public void Show(PdfDocument? document)
     {
         if (ReferenceEquals(_document, document) && _slots.Count == (document?.PageCount ?? 0)) { Relocalize(); return; }
+        ClearSelection(notify: false);
         ClearSlots();
         _document = document;
+        _glyphs = null;
         _currentPage = 1;
         _scale = 1;
         _fitting = document is { Error: PdfError.None, PageCount: > 0 };
@@ -57,6 +76,10 @@ public partial class PdfViewer : UserControl
             for (var i = 0; i < document.PageCount; i++)
             {
                 var slot = new PageSlot();
+                var page = i;
+                slot.Host.PointerPressed += (s, e) => OnPagePressed(page, e);
+                slot.Host.PointerMoved += (s, e) => OnPageMoved(page, e);
+                slot.Host.PointerReleased += (s, e) => OnPageReleased(e);
                 _slots.Add(slot);
                 Pages.Children.Add(slot.Host);
             }
@@ -99,11 +122,19 @@ public partial class PdfViewer : UserControl
         RefreshVisible();
     }
 
+    public async Task CopyAsync()
+    {
+        if (!HasSelection) return;
+        LastCopiedText = SelectedText;
+        if (TopLevel.GetTopLevel(this)?.Clipboard is { } clipboard)
+            await clipboard.SetTextAsync(SelectedText);
+    }
+
     bool SetScale(double scale)
     {
         scale = ImageZoom.Clamp(scale);
         var page = _currentPage;
-        if (Math.Abs(scale - _scale) < 1e-6) { SizeSlots(); RefreshVisible(); return true; }
+        if (Math.Abs(scale - _scale) < 1e-6) { SizeSlots(); RefreshVisible(); PaintSelection(); return true; }
         _scale = scale;
         SizeSlots();
         UpdateZoomLabel();
@@ -111,6 +142,7 @@ public partial class PdfViewer : UserControl
         // Re-render at the new scale (old bitmaps are the wrong size).
         foreach (var slot in _slots) slot.Release();
         ScrollToPage(page);
+        PaintSelection();
         return true;
     }
 
@@ -196,9 +228,189 @@ public partial class PdfViewer : UserControl
 
     void ClearSlots()
     {
-        foreach (var slot in _slots) slot.Release();
+        foreach (var slot in _slots) { slot.ClearOverlay(); slot.Release(); }
         _slots.Clear();
         Pages.Children.Clear();
+    }
+
+    void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Handled) return;
+        if (ShortcutKeys.Match(e, s => s.PdfOnly) != "pdf.copy") return;
+        e.Handled = true;
+        _ = CopyAsync();
+    }
+
+    void OnPagePressed(int page, PointerPressedEventArgs e)
+    {
+        Focus();
+        if (!e.GetCurrentPoint(_slots[page].Host).Properties.IsLeftButtonPressed) return;
+        if (Hit(page, e.GetPosition(_slots[page].Image), nearOnly: true) is { } hit)
+        {
+            _dragging = true;
+            e.Pointer.Capture(_slots[page].Host);
+            _anchorPage = _endPage = hit.Page;
+            _anchorIndex = _endIndex = hit.Index;
+            ApplySelection();
+        }
+        else ClearSelection();
+        e.Handled = true;
+    }
+
+    void OnPageMoved(int page, PointerEventArgs e)
+    {
+        if (!_dragging) return;
+        var pos = e.GetPosition(_slots[page].Image);
+        if (Hit(page, pos, nearOnly: false) is { } hit)
+        {
+            _endPage = hit.Page;
+            _endIndex = hit.Index;
+            ApplySelection();
+        }
+        e.Handled = true;
+    }
+
+    void OnPageReleased(PointerReleasedEventArgs e)
+    {
+        if (!_dragging) return;
+        _dragging = false;
+        e.Pointer.Capture(null);
+        e.Handled = true;
+    }
+
+    (int Page, int Index)? Hit(int page, Point imagePoint, bool nearOnly)
+    {
+        var glyphs = Glyphs(page);
+        if (glyphs.Count == 0 || _document is null) return null;
+        var height = _document.Pages[page].Height;
+        var best = -1;
+        var bestDist = double.MaxValue;
+        for (var i = 0; i < glyphs.Count; i++)
+        {
+            var r = ImageRect(glyphs[i], height);
+            if (r.Width <= 0 || r.Height <= 0) continue;
+            if (r.Contains(imagePoint)) return (page, i);
+            var cx = Math.Clamp(imagePoint.X, r.X, r.X + r.Width);
+            var cy = Math.Clamp(imagePoint.Y, r.Y, r.Y + r.Height);
+            var dist = Math.Sqrt((imagePoint.X - cx) * (imagePoint.X - cx) + (imagePoint.Y - cy) * (imagePoint.Y - cy));
+            if (dist < bestDist) { bestDist = dist; best = i; }
+        }
+        if (best < 0) return null;
+        if (nearOnly)
+        {
+            var font = Math.Max(8, glyphs[best].FontSize) * _scale;
+            if (bestDist > Math.Max(12, font * 0.8)) return null;
+        }
+        return (page, best);
+    }
+
+    IReadOnlyList<PdfDocument.PdfChar> Glyphs(int page)
+    {
+        _glyphs ??= new IReadOnlyList<PdfDocument.PdfChar>[_document!.PageCount];
+        return _glyphs[page] ??= _document!.Characters(page);
+    }
+
+    Rect ImageRect(PdfDocument.PdfChar c, double pageHeight)
+    {
+        var left = Math.Min(c.Left, c.Right);
+        var right = Math.Max(c.Left, c.Right);
+        double top, bottom;
+        if (c.Top <= c.Bottom)
+        {
+            top = c.Top;
+            bottom = c.Bottom;
+        }
+        else
+        {
+            top = pageHeight - c.Top;
+            bottom = pageHeight - c.Bottom;
+            if (top > bottom) (top, bottom) = (bottom, top);
+        }
+        return new Rect(left * _scale, top * _scale, Math.Max(0.5, (right - left) * _scale), Math.Max(0.5, (bottom - top) * _scale));
+    }
+
+    void ApplySelection()
+    {
+        var start = (_anchorPage, _anchorIndex);
+        var end = (_endPage, _endIndex);
+        if (start.CompareTo(end) > 0) (start, end) = (end, start);
+        var text = BuildText(start, end);
+        SelectedText = text;
+        SelectionPage = start.Item1 + 1;
+        PaintSelection();
+        SelectionChanged?.Invoke();
+    }
+
+    string BuildText((int Page, int Index) start, (int Page, int Index) end)
+    {
+        var sb = new StringBuilder();
+        for (var p = start.Page; p <= end.Page; p++)
+        {
+            var glyphs = Glyphs(p);
+            if (glyphs.Count == 0) continue;
+            var from = p == start.Page ? start.Index : 0;
+            var to = p == end.Page ? end.Index : glyphs.Count - 1;
+            from = Math.Clamp(from, 0, glyphs.Count - 1);
+            to = Math.Clamp(to, 0, glyphs.Count - 1);
+            if (p > start.Page && sb.Length > 0) sb.Append('\n');
+            double? lastTop = null;
+            for (var i = from; i <= to; i++)
+            {
+                var ch = glyphs[i].Char;
+                if (ch == '\0') continue;
+                if (lastTop is { } y && Math.Abs(glyphs[i].Top - y) > Math.Max(2, glyphs[i].FontSize * 0.4))
+                    sb.Append('\n');
+                lastTop = glyphs[i].Top;
+                sb.Append(ch);
+            }
+        }
+        return sb.ToString();
+    }
+
+    void PaintSelection()
+    {
+        foreach (var slot in _slots) slot.ClearOverlay();
+        if (_document is null || _anchorIndex < 0 || _endIndex < 0) return;
+        var start = (Page: _anchorPage, Index: _anchorIndex);
+        var end = (Page: _endPage, Index: _endIndex);
+        if (start.CompareTo(end) > 0) (start, end) = (end, start);
+        var brush = ThemeService.Brush("PreviewSelectionBackground");
+        for (var p = start.Page; p <= end.Page && p < _slots.Count; p++)
+        {
+            var glyphs = Glyphs(p);
+            var height = _document.Pages[p].Height;
+            var from = p == start.Page ? start.Index : 0;
+            var to = p == end.Page ? end.Index : glyphs.Count - 1;
+            from = Math.Clamp(from, 0, Math.Max(0, glyphs.Count - 1));
+            to = Math.Clamp(to, 0, Math.Max(0, glyphs.Count - 1));
+            if (glyphs.Count == 0) continue;
+            for (var i = from; i <= to; i++)
+            {
+                var r = ImageRect(glyphs[i], height);
+                if (r.Width <= 0 || r.Height <= 0) continue;
+                _slots[p].Overlay.Children.Add(new Rectangle
+                {
+                    Fill = brush,
+                    Width = r.Width,
+                    Height = r.Height,
+                    [Canvas.LeftProperty] = r.X,
+                    [Canvas.TopProperty] = r.Y,
+                    IsHitTestVisible = false
+                });
+            }
+        }
+    }
+
+    void ClearSelection(bool notify = true)
+    {
+        _dragging = false;
+        _anchorPage = _endPage = 0;
+        _anchorIndex = _endIndex = -1;
+        var changed = HasSelection || SelectionPage != 0;
+        SelectedText = "";
+        SelectionPage = 0;
+        foreach (var slot in _slots) slot.ClearOverlay();
+        if (notify && changed) SelectionChanged?.Invoke();
     }
 
     sealed class PageSlot
@@ -210,9 +422,17 @@ public partial class PdfViewer : UserControl
             BorderThickness = new Thickness(1)
         };
         public Image Image { get; } = new() { Stretch = Stretch.Fill };
+        public Canvas Overlay { get; } = new() { IsHitTestVisible = false };
         public WriteableBitmap? Bitmap { get; set; }
         public double Scale { get; set; }
-        public PageSlot() { Host.Child = Image; }
+        public PageSlot()
+        {
+            var grid = new Grid();
+            grid.Children.Add(Image);
+            grid.Children.Add(Overlay);
+            Host.Child = grid;
+        }
+        public void ClearOverlay() => Overlay.Children.Clear();
         public void Release()
         {
             Image.Source = null;

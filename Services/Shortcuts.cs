@@ -1,6 +1,6 @@
 namespace Mdhub.Services;
 
-public enum ShortcutArea { File, Edit, View, Find, Zoom, Editor, Image }
+public enum ShortcutArea { File, Edit, View, Find, Zoom, Editor, Image, Pdf }
 
 // Command is Ctrl on Windows/Linux and Cmd on macOS. Control is the physical Ctrl key on macOS (item 90: Cmd+Ctrl);
 // on Windows/Linux it is the same key as Command.
@@ -39,7 +39,8 @@ public readonly record struct ShortcutGesture(string Key, ShortcutMods Mods, str
 // NoRepeat (bug 87): a one-shot command (save, close tab, a dialog) fires once per press; key auto-repeat is ignored until release.
 // ImageOnly (item 91): acts only while an image viewer has focus (plain H/Z/R/Space/Esc), so it never conflicts with the
 // editor's typing, editing or find keys.
-public sealed record Shortcut(string Id, ShortcutArea Area, string Label, IReadOnlyList<ShortcutGesture> Defaults, bool HandledByTextBox = false, bool ExplorerOnly = false, bool NoRepeat = false, bool ImageOnly = false)
+// PdfOnly (item 102b): acts only while a PDF viewer has focus, so Ctrl+C may be shared with edit.copy.
+public sealed record Shortcut(string Id, ShortcutArea Area, string Label, IReadOnlyList<ShortcutGesture> Defaults, bool HandledByTextBox = false, bool ExplorerOnly = false, bool NoRepeat = false, bool ImageOnly = false, bool PdfOnly = false)
 {
     public IReadOnlyList<ShortcutGesture> Gestures => Shortcuts.GesturesFor(this);
     // Only mdhub's own handlers read the live table; gestures built into the TextBox cannot be rebound.
@@ -127,6 +128,8 @@ public static class Shortcuts
         I("image.rotateTool", "Image: rotate view tool", P("R")),
         I("image.tempHand", "Image: hand while held", P("Space")),
         I("image.resetView", "Image: reset view", P("Escape")),
+        // Item 102b: only while a PDF viewer has focus, so Ctrl+C copies PDF text without conflicting with edit.copy.
+        S("pdf.copy", ShortcutArea.Pdf, "Copy selected PDF text", C("C")) with { PdfOnly = true },
         // Item 49: VS Code tab cycling (wraps at both ends); handled at window level so the editor never inserts a tab.
         S("view.nextTab", ShortcutArea.View, "Next tab", C("Tab")),
         S("view.previousTab", ShortcutArea.View, "Previous tab", CS("Tab")),
@@ -168,7 +171,8 @@ public static class Shortcuts
     // Whether two entries can both fire for the same key press: explorer-only entries never meet the editor's Edit keys.
     public static bool Overlap(Shortcut a, Shortcut b) =>
         !(a.ExplorerOnly && b.Area == ShortcutArea.Edit || b.ExplorerOnly && a.Area == ShortcutArea.Edit)
-        && !(a.ImageOnly != b.ImageOnly && (a.ImageOnly ? b : a).Area is ShortcutArea.Edit or ShortcutArea.Editor or ShortcutArea.Find);
+        && !(a.ImageOnly != b.ImageOnly && (a.ImageOnly ? b : a).Area is ShortcutArea.Edit or ShortcutArea.Editor or ShortcutArea.Find)
+        && !(a.PdfOnly && (b.Area == ShortcutArea.Edit || b.ExplorerOnly) || b.PdfOnly && (a.Area == ShortcutArea.Edit || a.ExplorerOnly));
 
     // Binds the gesture to the entry. With conflicts nothing changes unless reassign is set, and a gesture the
     // TextBox handles itself is never taken away. Returns false when nothing changed.
