@@ -19,8 +19,10 @@ internal sealed record PreviewClipboard(string Plain, string Html, string CfHtml
 public partial class MdEditor
 {
     internal static readonly IBrush SelectionBrush = ThemeService.Brush("PreviewSelectionBackground");
-    private static Cursor? _ibeam;
+    private static Cursor? _ibeam, _hand;
     internal static Cursor IBeam => _ibeam ??= new Cursor(StandardCursorType.Ibeam);
+    internal static Cursor Hand => _hand ??= new Cursor(StandardCursorType.Hand);
+    private TextBlock? _handBlock;
     private static readonly DataFormat<byte[]> HtmlFormat = DataFormat.CreateBytesPlatformFormat(
         OperatingSystem.IsWindows() ? "HTML Format" : OperatingSystem.IsMacOS() ? "public.html" : "text/html");
     private static readonly DataFormat<byte[]> RtfFormat = DataFormat.CreateBytesPlatformFormat(
@@ -44,6 +46,7 @@ public partial class MdEditor
         PreviewScroll.AddHandler(PointerPressedEvent, OnSelectPressed, RoutingStrategies.Bubble, true);
         PreviewScroll.AddHandler(PointerMovedEvent, OnSelectMoved, RoutingStrategies.Bubble, true);
         PreviewScroll.AddHandler(PointerReleasedEvent, OnSelectReleased, RoutingStrategies.Bubble, true);
+        PreviewScroll.AddHandler(PointerExitedEvent, (_, _) => RestoreLinkCursor(), RoutingStrategies.Bubble, true);
         PreviewScroll.AddHandler(KeyDownEvent, OnSelectKey, RoutingStrategies.Bubble);
         PreviewContent.LayoutUpdated += (_, _) => PreviewSelectionLayer.InvalidateVisual();
         PreviewSelectionLayer.Owner = this;
@@ -53,6 +56,7 @@ public partial class MdEditor
     private void ResetSelection()
     {
         _dragging = false;
+        RestoreLinkCursor();
         _selection = _render is null ? null : new PreviewSelection(PreviewContent);
         _anchor = _caret = default;
         if (_selection is not null)
@@ -142,7 +146,8 @@ public partial class MdEditor
                 if (inline is Run run)
                 {
                     var len = run.Text?.Length ?? 0;
-                    if (href is not null && offset >= pos && offset <= pos + Math.Max(len, 0)) found = href;
+                    var at = PreviewTags.Kind(run) == "a" ? PreviewTags.Value(run) : href;
+                    if (at is not null && offset >= pos && offset <= pos + Math.Max(len, 0)) found = at;
                     pos += len;
                     continue;
                 }
@@ -154,8 +159,34 @@ public partial class MdEditor
         Walk(inlines, inherited);
         return found;
     }
+    // Item 107: a hand cursor over any rendered preview link (ordinary, autolink, or PDF #page=), restored when the pointer leaves it.
+    void RestoreLinkCursor()
+    {
+        if (_handBlock is null) return;
+        _handBlock.Cursor = IBeam;
+        _handBlock = null;
+    }
+
+    void UpdateLinkCursor(Visual? source, Point inContent)
+    {
+        var href = HrefAt(source, inContent);
+        TextBlock? block = null;
+        for (var v = source; v is not null && v != PreviewScroll; v = v.GetVisualParent())
+            if (v is TextBlock tb) { block = tb; break; }
+        if (href is not null && block is not null)
+        {
+            if (_handBlock is not null && _handBlock != block) _handBlock.Cursor = IBeam;
+            block.Cursor = Hand;
+            _handBlock = block;
+            return;
+        }
+        RestoreLinkCursor();
+    }
+
     private void OnSelectMoved(object? sender, PointerEventArgs e)
     {
+        if (!_dragging && _selection is not null && !Ignored(e.Source))
+            UpdateLinkCursor(e.Source as Visual, e.GetPosition(PreviewContent));
         if (!_dragging || _selection is not { } selection) return;
         var point = e.GetCurrentPoint(PreviewContent);
         if (!point.Properties.IsLeftButtonPressed) { _dragging = false; return; }

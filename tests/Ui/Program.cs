@@ -70,6 +70,7 @@ if (args.Contains("--theme-only")) { ThemeTests.Run(); return; }
 if (args.Contains("--recent-only")) { RecentTests.Run(); return; }
 if (args.Contains("--l10n-only")) { LocalizationTests.Run(); return; }
 if (args.Contains("--selection-only")) { SelectionTests.Run(); return; }
+if (args.Contains("--linkcursor-only")) { LinkCursorTests.Run(); return; }
 if (args.Contains("--quickopen-only")) { QuickOpenTests.Run(); return; }
 if (args.Contains("--syntax-only")) { SyntaxTests.Run(); return; }
 if (args.Contains("--explorerkeys-only")) { ExplorerShortcutTests.Run(); return; }
