@@ -191,6 +191,7 @@ internal static class PdfSelectTests
             w.MouseUp(firstStop, MouseButton.Left); Pump(); Pump();
             Check(viewer.SelectedText == "Most important",
                 $"a single visual line still copies without a break ({Show(viewer.SelectedText)})");
+            Wait(Task.Delay(700));
             var bothStop = OnLine(secondAt + "second line".Length - 1, 0.8);
             w.MouseDown(firstStart, MouseButton.Left); Pump();
             w.MouseMove(bothStop); Pump();

@@ -82,23 +82,107 @@ public static class PdfText
     static bool IsLineSeparator(char ch) =>
         ch is '\n' or '\r' or '\u000B' or '\u000C' or '\u0085' or '\u2028' or '\u2029';
 
-    static bool IsCjkLetter(Rune rune)
+    static bool IsCjkLetter(Rune rune) => ScriptOf(rune) is Script.Han or Script.Hiragana or Script.Katakana;
+
+    // Item 108: a word is letters and digits, plus an apostrophe or hyphen between two of those.
+    // CJK (no spaces) is a run of the same script; a single character if no word can be formed.
+    // Whitespace is not a word (the viewer resets). Other punctuation is that one character.
+    public static (int From, int To)? WordRange(IReadOnlyList<Glyph> glyphs, int index)
+    {
+        if (index < 0 || index >= glyphs.Count) return null;
+        var ch = glyphs[index].Char;
+        if (ch == '\0' || IsLineSeparator(ch) || char.IsWhiteSpace(ch)) return null;
+        var script = ScriptOf(ch);
+        if (script is Script.Han or Script.Hiragana or Script.Katakana or Script.Hangul)
+        {
+            var from = index;
+            while (from > 0 && ScriptOf(glyphs[from - 1].Char) == script) from--;
+            var to = index;
+            while (to + 1 < glyphs.Count && ScriptOf(glyphs[to + 1].Char) == script) to++;
+            return (from, to);
+        }
+        if (IsLatinWordChar(ch) || IsConnectorBetweenWords(glyphs, index))
+        {
+            var from = index;
+            while (from > 0 && JoinsWord(glyphs, from, from - 1)) from--;
+            var to = index;
+            while (to + 1 < glyphs.Count && JoinsWord(glyphs, to, to + 1)) to++;
+            return (from, to);
+        }
+        return (index, index);
+    }
+
+    public static (int From, int To)? LineRange(IReadOnlyList<Glyph> glyphs, int index)
+    {
+        if (index < 0 || index >= glyphs.Count) return null;
+        var ch = glyphs[index].Char;
+        if (ch == '\0' || IsLineSeparator(ch)) return null;
+        double? baseLine = Baseline(glyphs[index]);
+        if (baseLine is null)
+        {
+            for (var j = index - 1; j >= 0 && baseLine is null; j--) baseLine = Baseline(glyphs[j]);
+            for (var j = index + 1; j < glyphs.Count && baseLine is null; j++) baseLine = Baseline(glyphs[j]);
+        }
+        if (baseLine is null) return (index, index);
+        var from = index;
+        while (from > 0 && OnSameLine(glyphs[from - 1], baseLine.Value, glyphs[index].FontSize)) from--;
+        var to = index;
+        while (to + 1 < glyphs.Count && OnSameLine(glyphs[to + 1], baseLine.Value, glyphs[index].FontSize)) to++;
+        return (from, to);
+    }
+
+    static bool JoinsWord(IReadOnlyList<Glyph> glyphs, int from, int toward)
+    {
+        var other = glyphs[toward].Char;
+        if (IsLatinWordChar(other)) return true;
+        if (!IsConnector(other)) return false;
+        var far = toward + Math.Sign(toward - from);
+        return far >= 0 && far < glyphs.Count && IsLatinWordChar(glyphs[far].Char);
+    }
+
+    static bool IsConnectorBetweenWords(IReadOnlyList<Glyph> glyphs, int index) =>
+        IsConnector(glyphs[index].Char)
+        && index > 0 && IsLatinWordChar(glyphs[index - 1].Char)
+        && index + 1 < glyphs.Count && IsLatinWordChar(glyphs[index + 1].Char);
+
+    static bool IsLatinWordChar(char ch) => char.IsLetterOrDigit(ch) && ScriptOf(ch) == Script.Other;
+
+    static bool IsConnector(char ch) => ch is '\'' or '\u2019' or '\u02BC' or '-' or '\u2010';
+
+    static double? Baseline(Glyph g) =>
+        g.Char == '\0' || IsLineSeparator(g.Char) || char.IsWhiteSpace(g.Char) ? null : Math.Max(g.Top, g.Bottom);
+
+    static bool OnSameLine(Glyph g, double baseline, double font)
+    {
+        if (IsLineSeparator(g.Char) || g.Char == '\0') return false;
+        var y = Baseline(g) ?? Math.Max(g.Top, g.Bottom);
+        var thresh = Math.Max(2, Math.Max(font, g.FontSize) * 0.5);
+        return Math.Abs(y - baseline) <= thresh;
+    }
+
+    enum Script { Other, Han, Hiragana, Katakana, Hangul }
+
+    static Script ScriptOf(char ch) => ScriptOf(new Rune(ch));
+
+    static Script ScriptOf(Rune rune)
     {
         var v = rune.Value;
-        if (v is >= 0x3040 and <= 0x309F) return true; // Hiragana
-        if (v is >= 0x30A0 and <= 0x30FF) return true; // Katakana
-        if (v is >= 0x31F0 and <= 0x31FF) return true; // Katakana Phonetic Extensions
-        if (v is >= 0xFF66 and <= 0xFF9D) return true; // Halfwidth Katakana letters
-        if (v is >= 0x3400 and <= 0x4DBF) return true; // CJK Ext A
-        if (v is >= 0x4E00 and <= 0x9FFF) return true; // CJK Unified Ideographs
-        if (v is >= 0xF900 and <= 0xFAFF) return true; // CJK Compatibility Ideographs
-        if (v is >= 0x20000 and <= 0x2A6DF) return true;
-        if (v is >= 0x2A700 and <= 0x2B73F) return true;
-        if (v is >= 0x2B740 and <= 0x2B81F) return true;
-        if (v is >= 0x2B820 and <= 0x2CEAF) return true;
-        if (v is >= 0x2CEB0 and <= 0x2EBEF) return true;
-        if (v is >= 0x30000 and <= 0x3134F) return true;
-        if (v is >= 0x31350 and <= 0x323AF) return true;
-        return false;
+        if (v is >= 0x3040 and <= 0x309F) return Script.Hiragana;
+        if (v is >= 0x30A0 and <= 0x30FF) return Script.Katakana;
+        if (v is >= 0x31F0 and <= 0x31FF) return Script.Katakana;
+        if (v is >= 0xFF66 and <= 0xFF9D) return Script.Katakana;
+        if (v is (>= 0x1100 and <= 0x11FF) or (>= 0x3130 and <= 0x318F) or (>= 0xA960 and <= 0xA97F)
+            or (>= 0xAC00 and <= 0xD7AF) or (>= 0xD7B0 and <= 0xD7FF)) return Script.Hangul;
+        if (v is >= 0x3400 and <= 0x4DBF) return Script.Han;
+        if (v is >= 0x4E00 and <= 0x9FFF) return Script.Han;
+        if (v is >= 0xF900 and <= 0xFAFF) return Script.Han;
+        if (v is >= 0x20000 and <= 0x2A6DF) return Script.Han;
+        if (v is >= 0x2A700 and <= 0x2B73F) return Script.Han;
+        if (v is >= 0x2B740 and <= 0x2B81F) return Script.Han;
+        if (v is >= 0x2B820 and <= 0x2CEAF) return Script.Han;
+        if (v is >= 0x2CEB0 and <= 0x2EBEF) return Script.Han;
+        if (v is >= 0x30000 and <= 0x3134F) return Script.Han;
+        if (v is >= 0x31350 and <= 0x323AF) return Script.Han;
+        return Script.Other;
     }
 }

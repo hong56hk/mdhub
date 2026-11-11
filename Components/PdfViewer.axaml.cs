@@ -67,6 +67,7 @@ public partial class PdfViewer : UserControl
     public PdfDocument? Document => _document;
     public double Scale => _scale;
     public int ZoomPercent => ImageZoom.Percent(_scale);
+    public bool IsFitting => _fitting;
     public int PageCount => _document?.PageCount ?? 0;
     public int CurrentPage => _currentPage;
     // Pages that currently hold a bitmap (0-based). Exposed for the lazy-render test.
@@ -328,6 +329,26 @@ public partial class PdfViewer : UserControl
     {
         Focus();
         if (!e.GetCurrentPoint(_slots[page].Host).Properties.IsLeftButtonPressed) return;
+        var pos = e.GetPosition(_slots[page].Image);
+        // Item 108: double-click on a text char selects the word (Hand or Select). On empty space
+        // the earlier "double-click always resets the view" decision still applies. Triple-click
+        // selects the line.
+        if (e.ClickCount >= 2)
+        {
+            _panning = false;
+            _dragging = false;
+            e.Pointer.Capture(null);
+            if (Hit(page, pos, nearOnly: false, exact: true) is { } hit
+                && TrySelectClick(hit.Page, hit.Index, e.ClickCount >= 3))
+            { }
+            else
+            {
+                ClearSelection();
+                FitToWindow();
+            }
+            e.Handled = true;
+            return;
+        }
         if (Tool == PdfTool.Hand)
         {
             _panning = true;
@@ -338,16 +359,35 @@ public partial class PdfViewer : UserControl
             return;
         }
         if (Tool != PdfTool.Select) return;
-        if (Hit(page, e.GetPosition(_slots[page].Image), nearOnly: true) is { } hit)
+        if (Hit(page, pos, nearOnly: true) is { } start)
         {
             _dragging = true;
             e.Pointer.Capture(_slots[page].Host);
-            _anchorPage = _endPage = hit.Page;
-            _anchorIndex = _endIndex = hit.Index;
+            _anchorPage = _endPage = start.Page;
+            _anchorIndex = _endIndex = start.Index;
             ApplySelection();
         }
         else ClearSelection();
         e.Handled = true;
+    }
+
+    bool TrySelectClick(int page, int index, bool line)
+    {
+        var glyphs = Glyphs(page);
+        if (glyphs.Count == 0) return false;
+        var mapped = new PdfText.Glyph[glyphs.Count];
+        for (var i = 0; i < glyphs.Count; i++)
+        {
+            var c = glyphs[i];
+            mapped[i] = new PdfText.Glyph(c.Char, c.Top, c.Bottom, c.FontSize);
+        }
+        var range = line ? PdfText.LineRange(mapped, index) : PdfText.WordRange(mapped, index);
+        if (range is not { } span) return false;
+        _anchorPage = _endPage = page;
+        _anchorIndex = span.From;
+        _endIndex = span.To;
+        ApplySelection();
+        return true;
     }
 
     void OnPageMoved(int page, PointerEventArgs e)
@@ -382,7 +422,7 @@ public partial class PdfViewer : UserControl
         }
     }
 
-    (int Page, int Index)? Hit(int page, Point imagePoint, bool nearOnly)
+    (int Page, int Index)? Hit(int page, Point imagePoint, bool nearOnly, bool exact = false)
     {
         var glyphs = Glyphs(page);
         if (glyphs.Count == 0 || _document is null) return null;
@@ -399,7 +439,7 @@ public partial class PdfViewer : UserControl
             var dist = Math.Sqrt((imagePoint.X - cx) * (imagePoint.X - cx) + (imagePoint.Y - cy) * (imagePoint.Y - cy));
             if (dist < bestDist) { bestDist = dist; best = i; }
         }
-        if (best < 0) return null;
+        if (exact || best < 0) return null;
         if (nearOnly)
         {
             var font = Math.Max(8, glyphs[best].FontSize) * _scale;

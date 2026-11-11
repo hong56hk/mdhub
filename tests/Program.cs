@@ -322,6 +322,21 @@ try
         PdfText.Glyph[] twoLines = [G('M', 79, 92), G('o', 82, 92), G('s', 82, 92), G('t', 79, 92), G('\r', 92, 92, 1), G('\n', 92, 92, 1),
             G('i', 101, 114), G('m', 104, 114), G('p', 104, 118), G('o', 104, 114), G('r', 104, 114), G('t', 101, 114), G('a', 104, 114), G('n', 104, 114), G('t', 101, 114)];
         Require(PdfText.FromGlyphs(twoLines) == "Most\nimportant", "a real line break is kept in the assembled text for copy");
+        static string Word(string s, int i) { var g = s.Select(c => new PdfText.Glyph(c, 0, 10, 12)).ToArray(); var r = PdfText.WordRange(g, i); return r is { } x ? s[x.From..(x.To + 1)] : ""; }
+        static bool NoWord(string s, int i) => PdfText.WordRange(s.Select(c => new PdfText.Glyph(c, 0, 10, 12)).ToArray(), i) is null;
+        var sample = "don't well-known hello, world";
+        Require(Word(sample, sample.IndexOf('n')) == "don't" && Word(sample, sample.IndexOf('\'')) == "don't", "an apostrophe between letters is part of the word");
+        Require(Word(sample, sample.IndexOf("known", StringComparison.Ordinal)) == "well-known", "a hyphen between letters is part of the word");
+        Require(Word(sample, sample.IndexOf("hello", StringComparison.Ordinal)) == "hello" && Word(sample, sample.IndexOf(',')) == ",", "punctuation is excluded from the word and selected alone");
+        Require(NoWord(sample, sample.IndexOf(' ')), "whitespace is not a word");
+        Require(Word("don\u2019t", 3) == "don\u2019t", "a typographic apostrophe between letters is part of the word");
+        Require(Word("\u4e2d\u6587\u6d4b\u8bd5", 1) == "\u4e2d\u6587\u6d4b\u8bd5" && Word("\u6f22\u5b57\u304b\u306a", 0) == "\u6f22\u5b57" && Word("\u6f22\u5b57\u304b\u306a", 2) == "\u304b\u306a",
+            "CJK with no spaces selects a run of the same script");
+        Require(Word("hello\u4e2d\u6587", 0) == "hello" && Word("hello\u4e2d\u6587", 5) == "\u4e2d\u6587", "Latin and Han runs stay separate");
+        Require(Word("\uc548\ub155\ud558\uc138\uc694", 2) == "\uc548\ub155\ud558\uc138\uc694", "a Hangul run is one word");
+        Require(PdfText.LineRange(twoLines, 1) is { } lineA && twoLines[lineA.From].Char == 'M' && twoLines[lineA.To].Char == 't'
+            && PdfText.LineRange(twoLines, 8) is { } lineB && twoLines[lineB.From].Char == 'i' && twoLines[lineB.To].Char == 't',
+            "LineRange covers one visual line and stops at a real break");
         var notes = Path.Combine(root, "sub", ".assets", "my report.notes.md");
         Require(PdfNotes.TryParsePageLink("../my%20report.pdf#page=3", notes, out var resolved, out var page)
             && page == 3 && resolved == Path.GetFullPath(pdf), "a relative #page=N link resolves from the notes file and decodes spaces");
