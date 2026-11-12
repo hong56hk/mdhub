@@ -10,7 +10,7 @@ using Mdhub.Components;
 using Mdhub.Services;
 using Mdhub.Views;
 
-// Item 109: while panning a PDF (Hand tool or right-drag), show a cached generated open-hand cursor
+// Item 114: while panning a PDF (Hand-tool left-drag or right-drag past 4 px), use StandardCursorType.Hand
 // and restore the previous cursor on release and on pointer capture lost.
 internal static class PdfCursorTests
 {
@@ -24,17 +24,6 @@ internal static class PdfCursorTests
         static string CursorName(Cursor? c) => c?.ToString() ?? "(null)";
         static string HandName() => new Cursor(StandardCursorType.Hand).ToString();
         static string IbeamName() => new Cursor(StandardCursorType.Ibeam).ToString();
-
-        var standard = PanCursors.OpenHand(1);
-        var alsoStandard = PanCursors.OpenHand(1.2);
-        var highDpi = PanCursors.OpenHand(2);
-        var alsoHigh = PanCursors.OpenHand(1.5);
-        Check(ReferenceEquals(standard, alsoStandard) && ReferenceEquals(highDpi, alsoHigh) && !ReferenceEquals(standard, highDpi),
-            "the open-hand cursor is cached, with a 32x32 and a 64x64 high-DPI variant");
-        Check(CursorName(standard) != HandName(),
-            "the pan cursor is a custom open hand, not StandardCursorType.Hand");
-        Check(PanCursors.Hotspot(32) == new PixelPoint(17, 20) && PanCursors.Hotspot(64) == new PixelPoint(34, 40),
-            "the hotspot is at the palm centre");
 
         var root = Path.Combine(Path.GetTempPath(), "mdhub-pdfcursor-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
@@ -56,8 +45,6 @@ internal static class PdfCursorTests
             viewer.ScrollToPage(1); Pump(); Pump();
             var image = viewer.GetVisualDescendants().OfType<Image>().First(img => img.IsVisible && img.Source is not null);
             var mid = image.TranslatePoint(new Point(image.Bounds.Width / 2, 200), w)!.Value;
-            var scale = TopLevel.GetTopLevel(viewer)?.RenderScaling ?? 1;
-            var open = PanCursors.OpenHand(scale);
 
             viewer.Tool = PdfTool.Hand; Pump();
             Check(CursorName(viewer.PageCursor) == HandName() && !viewer.IsPanning,
@@ -65,11 +52,11 @@ internal static class PdfCursorTests
 
             var before = scroller.Offset.Y;
             w.MouseDown(mid, MouseButton.Left); Pump();
-            Check(viewer.IsPanning && ReferenceEquals(viewer.PageCursor, open),
-                "a left-button Hand pan shows the open-hand cursor");
+            Check(viewer.IsPanning && CursorName(viewer.PageCursor) == HandName(),
+                "a left-button Hand pan shows StandardCursorType.Hand");
             w.MouseMove(mid + new Point(0, -80)); Pump();
-            Check(viewer.IsPanning && scroller.Offset.Y != before && ReferenceEquals(viewer.PageCursor, open),
-                "the open-hand cursor stays in place while the pages pan");
+            Check(viewer.IsPanning && scroller.Offset.Y != before && CursorName(viewer.PageCursor) == HandName(),
+                "the Hand cursor stays in place while the pages pan");
             w.MouseUp(mid + new Point(0, -80), MouseButton.Left); Pump();
             Check(!viewer.IsPanning && CursorName(viewer.PageCursor) == HandName(),
                 "releasing the left button restores the Hand cursor");
@@ -84,8 +71,8 @@ internal static class PdfCursorTests
             viewer.AddHandler(InputElement.PointerPressedEvent, (EventHandler<PointerPressedEventArgs>)Save, RoutingStrategies.Tunnel);
             w.MouseDown(mid, MouseButton.Left); Pump();
             viewer.RemoveHandler(InputElement.PointerPressedEvent, (EventHandler<PointerPressedEventArgs>)Save);
-            Check(viewer.IsPanning && ReferenceEquals(viewer.PageCursor, open) && pointer is not null,
-                "a second left pan shows the open-hand cursor again");
+            Check(viewer.IsPanning && CursorName(viewer.PageCursor) == HandName() && pointer is not null,
+                "a second left pan shows StandardCursorType.Hand again");
             pointer!.Capture(null);
             Pump();
             Check(!viewer.IsPanning && CursorName(viewer.PageCursor) == HandName(),
@@ -127,8 +114,8 @@ internal static class PdfCursorTests
                 "a right press under the move threshold does not pan or change the cursor");
             // Drag up so Offset.Y increases even when the scroller is already at the top.
             w.MouseMove(pRight + new Point(0, -80)); Pump();
-            Check(viewer.IsRightPanning && viewer.IsPanning && ReferenceEquals(viewer.PageCursor, open),
-                "right-drag panning with the Select tool shows the same open-hand cursor");
+            Check(viewer.IsRightPanning && viewer.IsPanning && CursorName(viewer.PageCursor) == HandName(),
+                "right-drag panning with the Select tool shows StandardCursorType.Hand");
             Check(scroller.Offset != offsetBeforeRight && viewer.SelectedText == selected,
                 "right-drag pans the pages and keeps the text selection");
             w.MouseUp(pRight + new Point(0, -80), MouseButton.Right); Pump();
@@ -148,8 +135,8 @@ internal static class PdfCursorTests
             var offsetBeforeHandRight = scroller.Offset;
             w.MouseDown(pRight, MouseButton.Right); Pump();
             w.MouseMove(pRight + new Point(0, -80)); Pump();
-            Check(viewer.IsRightPanning && ReferenceEquals(viewer.PageCursor, open),
-                "right-drag panning with the Hand tool also uses the open-hand cursor");
+            Check(viewer.IsRightPanning && CursorName(viewer.PageCursor) == HandName(),
+                "right-drag panning with the Hand tool also uses StandardCursorType.Hand");
             w.MouseUp(pRight + new Point(0, -80), MouseButton.Right); Pump();
             Check(!viewer.IsPanning && CursorName(viewer.PageCursor) == HandName() && scroller.Offset != offsetBeforeHandRight && !menu.IsOpen,
                 "releasing a Hand-tool right-drag restores the Hand cursor and does not open the menu");

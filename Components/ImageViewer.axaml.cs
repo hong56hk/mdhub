@@ -334,7 +334,7 @@ public partial class ImageViewer : UserControl
     public const double RightDragThreshold = 4;
     private bool _rightDrag, _rightMoved, _suppressMenu, _lastPressRight;
     public bool IsRightPanning => _rightDrag && _rightMoved;
-    // Item 110: left-drag pan, or a right-drag past the 4 px threshold.
+    // Item 110/114: left-drag pan, or a right-drag past the 4 px threshold.
     public bool IsPanning => _drag == Drag.Pan && (!_rightDrag || _rightMoved);
     public Cursor? CurrentCursor => Surface.Cursor;
     private void OnContextRequested(object? sender, ContextRequestedEventArgs e)
@@ -390,24 +390,14 @@ public partial class ImageViewer : UserControl
         UpdateCursor();
     }
 
-    // Avalonia has no built-in open-hand cursor: the Hand tool (and Rotate) keep their rest cursors;
-    // item 110 uses the shared generated open-hand cursor while panning (left-drag or right-drag past 4 px).
-    private void UpdateCursor()
-    {
-        if (IsPanning)
-        {
-            var scale = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1;
-            Surface.Cursor = PanCursors.OpenHand(scale);
-            return;
-        }
-        Surface.Cursor = new Cursor(CursorType);
-    }
-    public StandardCursorType CursorType => _drag switch
-    {
-        Drag.Pan when _rightDrag && !_rightMoved => EffectiveTool switch { ImageTool.Hand => StandardCursorType.Hand, _ => StandardCursorType.Cross },
-        Drag.Rotate => StandardCursorType.Cross,
-        _ => EffectiveTool switch { ImageTool.Hand => StandardCursorType.Hand, _ => StandardCursorType.Cross }
-    };
+    // Item 114: while panning (left-drag with the Hand tool, or right-drag past 4 px) use StandardCursorType.Hand.
+    // The Hand and Rotate tools keep their rest cursors; a Rotate left-drag stays Cross.
+    private void UpdateCursor() => Surface.Cursor = new Cursor(CursorType);
+    public StandardCursorType CursorType =>
+        IsPanning ? StandardCursorType.Hand
+        : _drag == Drag.Rotate ? StandardCursorType.Cross
+        : EffectiveTool == ImageTool.Hand ? StandardCursorType.Hand
+        : StandardCursorType.Cross;
 
     private void Arrange()
     {

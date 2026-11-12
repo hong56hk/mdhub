@@ -70,8 +70,8 @@ public partial class PdfViewer : UserControl
     public double Scale => _scale;
     public int ZoomPercent => ImageZoom.Percent(_scale);
     public bool IsFitting => _fitting;
-    // Item 109: open-hand cursor while panning; right-drag pans with any tool (click under the
-    // threshold still opens Add to notes). The image viewer is left unchanged.
+    // Item 109: right-drag pans with any tool (click under the threshold still opens Add to notes).
+    // Item 114: while panning, use StandardCursorType.Hand (left-drag with the Hand tool, or right-drag past 4 px).
     public const double RightDragThreshold = 4;
     public bool IsPanning => _panning && (!_rightDrag || _rightMoved);
     public bool IsRightPanning => _rightDrag && _rightMoved;
@@ -399,11 +399,10 @@ public partial class PdfViewer : UserControl
     void ApplyPanCursor()
     {
         if (_panCursorApplied) return;
-        var scale = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1;
-        var open = PanCursors.OpenHand(scale);
+        var hand = new Cursor(StandardCursorType.Hand);
         _panCursorApplied = true;
-        foreach (var slot in _slots) slot.Host.Cursor = open;
-        Scroller.Cursor = open;
+        foreach (var slot in _slots) slot.Host.Cursor = hand;
+        Scroller.Cursor = hand;
     }
 
     void EndPan(bool clearDragging = false)

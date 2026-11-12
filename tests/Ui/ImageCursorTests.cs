@@ -8,8 +8,8 @@ using Avalonia.Threading;
 using Mdhub;
 using Mdhub.Components;
 
-// Item 110: while panning an image (left-drag or right-drag past 4 px), show the shared open-hand cursor
-// from item 109 and restore the rest cursor on release and on pointer capture lost.
+// Item 114: while panning an image (left-drag or right-drag past 4 px), use StandardCursorType.Hand
+// and restore the rest cursor on release and on pointer capture lost.
 internal static class ImageCursorTests
 {
     public static void Run()
@@ -29,8 +29,6 @@ internal static class ImageCursorTests
         var bitmap = new RenderTargetBitmap(new PixelSize(800, 400));
         viewer.ShowImage(bitmap); Pump();
         viewer.ActualSize(); Pump();
-        var scale = TopLevel.GetTopLevel(viewer)?.RenderScaling ?? 1;
-        var open = PanCursors.OpenHand(scale);
         var p = new Point(200, 200);
         var menu = viewer.ContextMenu!;
 
@@ -40,11 +38,11 @@ internal static class ImageCursorTests
 
         var before = viewer.Offset;
         window.MouseDown(p, MouseButton.Left); Pump();
-        Check(viewer.IsPanning && ReferenceEquals(viewer.CurrentCursor, open),
-            "a left-button Hand pan shows the open-hand cursor");
+        Check(viewer.IsPanning && CursorName(viewer.CurrentCursor) == HandName() && viewer.CursorType == StandardCursorType.Hand,
+            "a left-button Hand pan shows StandardCursorType.Hand");
         window.MouseMove(p + new Point(40, -20), RawInputModifiers.LeftMouseButton); Pump();
-        Check(viewer.IsPanning && viewer.Offset == before + new Point(40, -20) && ReferenceEquals(viewer.CurrentCursor, open),
-            "the open-hand cursor stays in place while the image pans");
+        Check(viewer.IsPanning && viewer.Offset == before + new Point(40, -20) && CursorName(viewer.CurrentCursor) == HandName(),
+            "the Hand cursor stays in place while the image pans");
         window.MouseUp(p + new Point(40, -20), MouseButton.Left); Pump();
         Check(!viewer.IsPanning && CursorName(viewer.CurrentCursor) == HandName(),
             "releasing the left button restores the Hand cursor");
@@ -56,8 +54,8 @@ internal static class ImageCursorTests
         viewer.AddHandler(InputElement.PointerPressedEvent, (EventHandler<PointerPressedEventArgs>)Save, RoutingStrategies.Tunnel);
         window.MouseDown(p, MouseButton.Left); Pump();
         viewer.RemoveHandler(InputElement.PointerPressedEvent, (EventHandler<PointerPressedEventArgs>)Save);
-        Check(viewer.IsPanning && ReferenceEquals(viewer.CurrentCursor, open) && pointer is not null,
-            "a second left pan shows the open-hand cursor again");
+        Check(viewer.IsPanning && CursorName(viewer.CurrentCursor) == HandName() && pointer is not null,
+            "a second left pan shows StandardCursorType.Hand again");
         pointer!.Capture(null);
         Pump();
         Check(!viewer.IsPanning && CursorName(viewer.CurrentCursor) == HandName(),
@@ -78,8 +76,8 @@ internal static class ImageCursorTests
             Check(!viewer.IsPanning && !viewer.IsRightPanning && CursorName(viewer.CurrentCursor) == rest && viewer.Offset == origin,
                 $"{tool}: a right press under the 4 px threshold does not pan or change the cursor");
             window.MouseMove(p + new Point(30, 12), RawInputModifiers.RightMouseButton); Pump();
-            Check(viewer.IsRightPanning && viewer.IsPanning && ReferenceEquals(viewer.CurrentCursor, open),
-                $"{tool}: right-drag panning shows the same open-hand cursor");
+            Check(viewer.IsRightPanning && viewer.IsPanning && CursorName(viewer.CurrentCursor) == HandName() && viewer.CursorType == StandardCursorType.Hand,
+                $"{tool}: right-drag panning shows StandardCursorType.Hand");
             Check(viewer.Offset == origin + new Point(30, 12), $"{tool}: right-drag pans the image");
             window.MouseUp(p + new Point(30, 12), MouseButton.Right); Pump();
             Check(!viewer.IsPanning && !viewer.IsRightPanning && CursorName(viewer.CurrentCursor) == rest && !menu.IsOpen,

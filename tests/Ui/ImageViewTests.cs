@@ -185,13 +185,16 @@ internal static class ImageViewTests
             window.MouseMove(p97 + new Point(2, 1), RawInputModifiers.RightMouseButton); Pump();
             Check(viewer.Offset == o97 && !viewer.IsRightPanning, $"{tool}: under 4 px the right button does not pan yet");
             window.MouseMove(p97 + new Point(30, 12), RawInputModifiers.RightMouseButton); Pump();
-            var open = PanCursors.OpenHand(TopLevel.GetTopLevel(viewer)?.RenderScaling ?? 1);
-            Check(viewer.IsRightPanning && ReferenceEquals(viewer.CurrentCursor, open), $"{tool}: right-drag shows the open-hand cursor ({viewer.IsRightPanning} {viewer.CurrentCursor} {viewer.Offset})");
+            var handName = new Cursor(StandardCursorType.Hand).ToString();
+            var restName = new Cursor(tool == ImageTool.Hand ? StandardCursorType.Hand : StandardCursorType.Cross).ToString();
+            Check(viewer.IsRightPanning && (viewer.CurrentCursor?.ToString() ?? "") == handName && viewer.CursorType == StandardCursorType.Hand,
+                $"{tool}: right-drag shows StandardCursorType.Hand ({viewer.IsRightPanning} {viewer.CurrentCursor} {viewer.Offset})");
             Check(viewer.Offset == o97 + new Point(30, 12) && viewer.Rotation == rot && viewer.ZoomPercent == zoom, $"{tool}: right-drag pans the image by the pointer delta (no zoom/rotate)");
             window.MouseMove(new Point(500, 500), RawInputModifiers.RightMouseButton); Pump();
             Check(viewer.Offset == o97 + new Point(300, 300), $"{tool}: pointer captured: the pan follows outside the viewer");
             window.MouseUp(new Point(500, 500), MouseButton.Right); Pump();
-            Check(!menu97.IsOpen && !viewer.IsRightPanning, $"{tool}: no context menu after a right-drag pan");
+            Check(!menu97.IsOpen && !viewer.IsRightPanning && (viewer.CurrentCursor?.ToString() ?? "") == restName,
+                $"{tool}: no context menu after a right-drag pan, and the rest cursor is restored");
             window.MouseDown(p97, MouseButton.Right); Pump();
             window.MouseMove(p97 + new Point(3, -3), RawInputModifiers.RightMouseButton); Pump();
             window.MouseUp(p97 + new Point(3, -3), MouseButton.Right); Pump();
