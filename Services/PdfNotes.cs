@@ -94,7 +94,7 @@ public static class PdfNotes
                 if (close > i + 1 && index >= i && index <= close)
                 {
                     var inner = text[(i + 1)..close];
-                    if (!inner.Contains(' ')) return inner;
+                    if (!inner.Contains(' ') || inner.Contains('/') || inner.Contains('\\') || inner.Contains('.')) return inner;
                 }
             }
         }
@@ -125,9 +125,16 @@ public static class PdfNotes
                     else if (text[j] == ')' && paren-- == 0)
                     {
                         var raw = text[(i + 2)..j].Trim();
-                        if (raw.Length >= 2 && raw[0] == '<' && raw[^1] == '>') raw = raw[1..^1].Trim();
-                        var space = raw.IndexOfAny([' ', '\t']);
-                        if (space >= 0) raw = raw[..space].Trim();
+                        if (raw.Length >= 2 && raw[0] == '<')
+                        {
+                            var close = raw.IndexOf('>');
+                            if (close > 0) raw = raw[1..close].Trim();
+                        }
+                        else
+                        {
+                            var space = raw.IndexOfAny([' ', '\t']);
+                            if (space >= 0) raw = raw[..space].Trim();
+                        }
                         return (raw, j);
                     }
                 }

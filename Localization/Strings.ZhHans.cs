@@ -539,6 +539,8 @@ public static partial class Loc
         ["PdfAddNotes"] = "添加笔记",
         ["PdfAddToNotes"] = "添加到笔记",
         ["PdfNotesFailed"] = "无法打开 PDF 笔记：{0}",
+        ["LinkTargetMissing"] = "找不到链接目标。",
+        ["LinkBlocked"] = "此链接指向程序或脚本，因此未打开。",
         ["PathCopied"] = "已复制路径",
         ["CopyPathTip"] = "单击以复制路径",
     };

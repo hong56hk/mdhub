@@ -114,11 +114,8 @@ public partial class MdEditor
         if (HrefAt(e.Source as Visual, now) != _linkHref) { _linkHref = null; return; }
         var href = _linkHref;
         _linkHref = null;
-        if (href.Contains(".pdf", StringComparison.OrdinalIgnoreCase) && href.Contains("#page=", StringComparison.OrdinalIgnoreCase))
-        {
-            e.Handled = true;
-            LinkClicked?.Invoke(href);
-        }
+        e.Handled = true;
+        LinkClicked?.Invoke(href);
     }
 
     string? HrefAt(Visual? source, Point inContent)

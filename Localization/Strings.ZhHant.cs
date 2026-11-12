@@ -536,6 +536,8 @@ public static partial class Loc
         ["PdfAddNotes"] = "新增筆記",
         ["PdfAddToNotes"] = "加入筆記",
         ["PdfNotesFailed"] = "無法開啟 PDF 筆記：{0}",
+        ["LinkTargetMissing"] = "找不到連結目標。",
+        ["LinkBlocked"] = "此連結指向程式或指令碼，因此未開啟。",
         ["PathCopied"] = "\u5df2\u8907\u88fd\u8def\u5f91", ["CopyPathTip"] = "\u6309\u4e00\u4e0b\u4ee5\u8907\u88fd\u8def\u5f91",
     };
 }

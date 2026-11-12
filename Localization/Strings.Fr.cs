@@ -539,6 +539,8 @@ public static partial class Loc
         ["PdfAddNotes"] = "Ajouter des notes",
         ["PdfAddToNotes"] = "Ajouter aux notes",
         ["PdfNotesFailed"] = "Impossible d'ouvrir les notes PDF : {0}",
+        ["LinkTargetMissing"] = "La cible du lien est introuvable.",
+        ["LinkBlocked"] = "Ce lien n’a pas été ouvert car il pointe vers un programme ou un script.",
         ["PathCopied"] = "Chemin copié",
         ["CopyPathTip"] = "Cliquez pour copier le chemin",
     };

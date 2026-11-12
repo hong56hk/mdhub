@@ -102,28 +102,6 @@ public partial class MainView
         }
     }
 
-    // Item 102d: Ctrl+click (Cmd+click on macOS) a [text](file.pdf#page=N) in the source editor.
-    private void AttachPdfPageLinkFollow(NoteDocument document)
-    {
-        document.Editor.AddHandler(InputElement.PointerPressedEvent, (_, e) =>
-        {
-            var command = OperatingSystem.IsMacOS() ? KeyModifiers.Meta : KeyModifiers.Control;
-            if (!e.KeyModifiers.HasFlag(command) || !e.GetCurrentPoint(document.Editor).Properties.IsLeftButtonPressed) return;
-            if (document.Editor.GetVisualDescendants().OfType<TextPresenter>().FirstOrDefault()?.TextLayout is not { } layout) return;
-            var presenter = document.Editor.GetVisualDescendants().OfType<TextPresenter>().First();
-            var index = layout.HitTestPoint(e.GetPosition(presenter)).TextPosition;
-            if (PdfNotes.MarkdownHrefAt(document.Editor.Text ?? "", index) is not { } href) return;
-            if (!PdfNotes.TryParsePageLink(href, document.Path, out var pdf, out var page)) return;
-            e.Handled = true;
-            if (!_busy) _ = RunAsync(() => OpenPdfPageAsync(pdf, page), focusEditor: false);
-        }, RoutingStrategies.Tunnel);
-    }
-
-    internal Task FollowPdfPageLinkAsync(string href, string? fromDocumentPath) =>
-        PdfNotes.TryParsePageLink(href, fromDocumentPath, out var pdf, out var page)
-            ? OpenPdfPageAsync(pdf, page)
-            : Task.CompletedTask;
-
     private async Task OpenPdfPageAsync(string pdfPath, int page)
     {
         var existing = AllDocuments.FirstOrDefault(d => SamePath(d.Path, pdfPath));

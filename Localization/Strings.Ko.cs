@@ -536,6 +536,8 @@ public static partial class Loc
         ["PdfAddNotes"] = "노트 추가",
         ["PdfAddToNotes"] = "노트에 추가",
         ["PdfNotesFailed"] = "PDF 노트를 열 수 없습니다: {0}",
+        ["LinkTargetMissing"] = "링크 대상을 찾을 수 없습니다.",
+        ["LinkBlocked"] = "프로그램 또는 스크립트를 가리키므로 이 링크를 열지 않았습니다.",
         ["PathCopied"] = "\uACBD\uB85C\uB97C \uBCF5\uC0AC\uD588\uC2B5\uB2C8\uB2E4", ["CopyPathTip"] = "\uD074\uB9AD\uD558\uC5EC \uACBD\uB85C \uBCF5\uC0AC",
     };
 }

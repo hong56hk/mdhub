@@ -56,7 +56,7 @@ public partial class MainView
         pane.PdfViewer.OpenDefaultRequested += async path => await OpenWithDefaultAppAsync(path);
         pane.PdfViewer.NotesRequested += () => { if (!_busy) _ = RunAsync(() => TogglePdfNotesAsync(pane), focusEditor: false); };
         pane.PdfViewer.AddToNotesRequested += () => { if (!_busy) _ = RunAsync(() => AddToPdfNotesAsync(pane), focusEditor: false); };
-        pane.MdEditor.LinkClicked += href => { if (!_busy) _ = RunAsync(() => FollowPdfPageLinkAsync(href, pane.Active?.Path), focusEditor: false); };
+        pane.MdEditor.LinkClicked += href => { if (!_busy) _ = RunAsync(() => FollowLinkAsync(href, pane.Active?.Path), focusEditor: false); };
         pane.BinaryPlaceholder.OpenDefaultRequested += async () => { if (pane.Active is { IsBinary: true, Path: { } path }) await OpenWithDefaultAppAsync(path); };
         pane.BinaryPlaceholder.OpenAsTextRequested += async () => { if (_busy) return; ActivatePane(pane); if (_active is { IsBinary: true } document) await RunAsync(() => OpenAsTextAsync(document)); };
     }

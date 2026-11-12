@@ -59,7 +59,7 @@ public partial class MainView
                 UpdateCaretStatus();
         };
         if (document.IsReadOnlyText) document.Editor.IsReadOnly = true;
-        AttachPdfPageLinkFollow(document);
+        AttachLinkFollow(document);
     }
 
     private async Task OpenAsync()
