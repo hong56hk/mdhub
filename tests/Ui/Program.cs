@@ -56,6 +56,7 @@ if (args.Contains("--movetabsingle-only")) { MoveTabSingleTests.Run(); return; }
 if (args.Contains("--movetabkeys-only")) { MoveTabKeysTests.Run(); return; }
 if (args.Contains("--tabs-only")) { TabSettingsTests.Run(); return; }
 if (args.Contains("--fileicons-only")) { FileIconTests.Run(); return; }
+if (args.Contains("--fileicon-preview")) { FileIconPreview.Write(args.SkipWhile(a => a != "--fileicon-preview").Skip(1).First()); return; }
 if (args.Contains("--multiselect-only")) { MultiSelectTests.Run(); return; }
 if (args.Contains("--gears-only")) { GearsTests.Run(); return; }
 if (args.Contains("--export-only")) { ExportTests.Run(); return; }

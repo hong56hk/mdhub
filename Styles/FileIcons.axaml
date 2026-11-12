@@ -1,6 +1,7 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <!-- Item 78: file-type icon colours (Material Icon Theme palette, MIT; see THIRD-PARTY-NOTICES.md), one entry per icon and theme.
-       Kept out of Theme.axaml; FileTypeIcon reads them as dynamic resources so a theme switch applies live. -->
+       Item 112 adds FileIcon.C / Java / JavaAccent / Python / PythonAccent here, not in Theme.axaml.
+       FileTypeIcon reads them as dynamic resources so a theme switch applies live. -->
   <ResourceDictionary.ThemeDictionaries>
     <ResourceDictionary x:Key="Dark">
       <SolidColorBrush x:Key="FileIcon.Markdown" Color="#42A5F5" />
@@ -11,6 +12,11 @@
       <SolidColorBrush x:Key="FileIcon.Json" Color="#F9A825" />
       <SolidColorBrush x:Key="FileIcon.Yaml" Color="#FF5252" />
       <SolidColorBrush x:Key="FileIcon.CSharp" Color="#29B6F6" />
+      <SolidColorBrush x:Key="FileIcon.C" Color="#A3C5D4" />
+      <SolidColorBrush x:Key="FileIcon.Java" Color="#EF5350" />
+      <SolidColorBrush x:Key="FileIcon.JavaAccent" Color="#FFA726" />
+      <SolidColorBrush x:Key="FileIcon.Python" Color="#42A5F5" />
+      <SolidColorBrush x:Key="FileIcon.PythonAccent" Color="#FFD54F" />
       <SolidColorBrush x:Key="FileIcon.JavaScript" Color="#FFCA28" />
       <SolidColorBrush x:Key="FileIcon.TypeScript" Color="#29B6F6" />
       <SolidColorBrush x:Key="FileIcon.Html" Color="#F4511E" />
@@ -39,6 +45,11 @@
       <SolidColorBrush x:Key="FileIcon.Json" Color="#C17900" />
       <SolidColorBrush x:Key="FileIcon.Yaml" Color="#D32F2F" />
       <SolidColorBrush x:Key="FileIcon.CSharp" Color="#0277BD" />
+      <SolidColorBrush x:Key="FileIcon.C" Color="#3D6A80" />
+      <SolidColorBrush x:Key="FileIcon.Java" Color="#D32F2F" />
+      <SolidColorBrush x:Key="FileIcon.JavaAccent" Color="#EF6C00" />
+      <SolidColorBrush x:Key="FileIcon.Python" Color="#1565C0" />
+      <SolidColorBrush x:Key="FileIcon.PythonAccent" Color="#F9A825" />
       <SolidColorBrush x:Key="FileIcon.JavaScript" Color="#B28900" />
       <SolidColorBrush x:Key="FileIcon.TypeScript" Color="#0277BD" />
       <SolidColorBrush x:Key="FileIcon.Html" Color="#D84315" />
