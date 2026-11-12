@@ -152,6 +152,7 @@ public sealed class NoteDocument : INotifyPropertyChanged, IDisposable
         var box = (Mdhub.Components.MarkdownTextBox)Editor;
         var extension = System.IO.Path.GetExtension(Path ?? UntitledName);
         box.SourceLanguage = !IsViewOnly && !IsMarkdown ? Mdhub.Text.CodeHighlighter.LanguageForExtension(extension) : null;
+        box.EnableJsonAutoIndent = !IsViewOnly && Mdhub.Text.JsonAutoIndent.AppliesTo(Path ?? UntitledName);
         box.StyleInlineCode = extension.Equals(".md", StringComparison.OrdinalIgnoreCase);
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Title)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IconName)));

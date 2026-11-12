@@ -446,6 +446,7 @@ public static partial class Loc
         ["EditorAutoLists"] = "\ubaa9\ub85d \uc790\ub3d9 \uc644\uc131",
         ["EditorAutoTables"] = "\ud45c \uc790\ub3d9 \uc644\uc131",
         ["EditorAlignTables"] = "\ud45c \uc5f4 \uc790\ub3d9 \uc815\ub82c",
+        ["EditorAutoIndentJson"] = "JSON \uc790\ub3d9 \ub4e4\uc5ec\uc4f0\uae30",
         ["EditorSpelling"] = "\ub9de\ucda4\ubc95",
         ["EditorSpellCheck"] = "\ub9de\ucda4\ubc95 \uac80\uc0ac",
         ["EditorSpellLanguage"] = "\uc0ac\uc804",

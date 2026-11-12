@@ -60,6 +60,8 @@ public sealed record EditorBehaviorData
     public bool AutoLists { get; init; } = true;
     public bool AutoTables { get; init; } = true;
     public bool AlignTables { get; init; } = true;
+    // Item 113: VS Code-like indent for .json files (on by default).
+    public bool AutoIndentJson { get; init; } = true;
     // Item 74: spell checking (off by default) and its dictionary (null: the UI language's, else English).
     public bool SpellCheck { get; init; }
     public string? SpellLanguage { get; init; }

@@ -167,6 +167,7 @@ public static class EditorFontsFlyout
         Box("EditorAutoListsBox", "EditorAutoLists", s.AutoLists, (d, v) => d with { AutoLists = v });
         Box("EditorAutoTablesBox", "EditorAutoTables", s.AutoTables, (d, v) => d with { AutoTables = v });
         Box("EditorAlignTablesBox", "EditorAlignTables", s.AlignTables, (d, v) => d with { AlignTables = v });
+        Box("EditorAutoIndentJsonBox", "EditorAutoIndentJson", s.AutoIndentJson, (d, v) => d with { AutoIndentJson = v });
         return panel;
     }
 

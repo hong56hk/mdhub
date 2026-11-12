@@ -57,6 +57,7 @@ public sealed partial class MarkdownTextBox : TextBox
             e.Handled = true;
             return;
         }
+        if (HandleJsonCloser(e)) return;
         var text = Text;
         if (Mdhub.Services.EditorMode.Overwrite && !IsReadOnly && !string.IsNullOrEmpty(e.Text) && SelectionStart == SelectionEnd && text is not null)
         {
@@ -81,6 +82,7 @@ public sealed partial class MarkdownTextBox : TextBox
         // Same root cause: a plain Home / End with a selection went from the selection start; VS Code moves from the caret.
         if (e.Key is Avalonia.Input.Key.Home or Avalonia.Input.Key.End && e.KeyModifiers == Avalonia.Input.KeyModifiers.None && SelectionStart != SelectionEnd) SelectionStart = SelectionEnd;
         if (!IsReadOnly && HandleAutoComplete(e)) { e.Handled = true; return; }
+        if (!IsReadOnly && HandleJsonEnter(e)) { e.Handled = true; return; }
         var lengthBefore = Text?.Length ?? 0;
         if (e.Key == Avalonia.Input.Key.Tab && !IsReadOnly && AcceptsTab && (e.KeyModifiers is Avalonia.Input.KeyModifiers.None or Avalonia.Input.KeyModifiers.Shift))
         {
@@ -195,6 +197,28 @@ public sealed partial class MarkdownTextBox : TextBox
         SelectionStart = anchor;
         SelectionEnd = target;
         e.Handled = true;
+    }
+
+    // Item 113: VS Code-like indent for .json files (NoteDocument.Refresh sets this from the path).
+    public bool EnableJsonAutoIndent { get; set; }
+
+    private bool HandleJsonEnter(Avalonia.Input.KeyEventArgs e)
+    {
+        if (!EnableJsonAutoIndent || !Mdhub.Services.EditorBehavior.Current.AutoIndentJson || !AcceptsReturn) return false;
+        if (e.Key != Avalonia.Input.Key.Enter || e.KeyModifiers != Avalonia.Input.KeyModifiers.None) return false;
+        if (SelectionStart != SelectionEnd) return false;
+        ApplyEdit(Mdhub.Text.JsonAutoIndent.Enter(Text ?? "", CaretIndex, Mdhub.Services.EditorBehavior.Current.InsertSpaces, Mdhub.Services.EditorBehavior.Current.TabSize, NewLine ?? Environment.NewLine));
+        return true;
+    }
+
+    private bool HandleJsonCloser(Avalonia.Input.TextInputEventArgs e)
+    {
+        if (!EnableJsonAutoIndent || !Mdhub.Services.EditorBehavior.Current.AutoIndentJson || IsReadOnly) return false;
+        if (e.Text is not ( "}" or "]" ) || SelectionStart != SelectionEnd) return false;
+        if (Mdhub.Text.JsonAutoIndent.Close(Text ?? "", CaretIndex, e.Text[0]) is not { } edit) return false;
+        ApplyEdit(edit);
+        e.Handled = true;
+        return true;
     }
 
     public void ApplyEdit(Mdhub.Text.CaretEdit edit)

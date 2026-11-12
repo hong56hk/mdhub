@@ -449,6 +449,7 @@ public static partial class Loc
         ["EditorAutoLists"] = "Autocompletar listas",
         ["EditorAutoTables"] = "Autocompletar tablas",
         ["EditorAlignTables"] = "Alinear columnas de tablas",
+        ["EditorAutoIndentJson"] = "Sangría automática de JSON",
         ["EditorSpelling"] = "Ortograf\u00eda",
         ["EditorSpellCheck"] = "Revisar la ortograf\u00eda",
         ["EditorSpellLanguage"] = "Diccionario",
