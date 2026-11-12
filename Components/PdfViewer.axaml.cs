@@ -400,7 +400,7 @@ public partial class PdfViewer : UserControl
     {
         if (_panCursorApplied) return;
         var scale = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1;
-        var open = PdfCursors.OpenHand(scale);
+        var open = PanCursors.OpenHand(scale);
         _panCursorApplied = true;
         foreach (var slot in _slots) slot.Host.Cursor = open;
         Scroller.Cursor = open;

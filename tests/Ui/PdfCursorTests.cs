@@ -25,15 +25,15 @@ internal static class PdfCursorTests
         static string HandName() => new Cursor(StandardCursorType.Hand).ToString();
         static string IbeamName() => new Cursor(StandardCursorType.Ibeam).ToString();
 
-        var standard = PdfCursors.OpenHand(1);
-        var alsoStandard = PdfCursors.OpenHand(1.2);
-        var highDpi = PdfCursors.OpenHand(2);
-        var alsoHigh = PdfCursors.OpenHand(1.5);
+        var standard = PanCursors.OpenHand(1);
+        var alsoStandard = PanCursors.OpenHand(1.2);
+        var highDpi = PanCursors.OpenHand(2);
+        var alsoHigh = PanCursors.OpenHand(1.5);
         Check(ReferenceEquals(standard, alsoStandard) && ReferenceEquals(highDpi, alsoHigh) && !ReferenceEquals(standard, highDpi),
             "the open-hand cursor is cached, with a 32x32 and a 64x64 high-DPI variant");
         Check(CursorName(standard) != HandName(),
             "the pan cursor is a custom open hand, not StandardCursorType.Hand");
-        Check(PdfCursors.Hotspot(32) == new PixelPoint(17, 20) && PdfCursors.Hotspot(64) == new PixelPoint(34, 40),
+        Check(PanCursors.Hotspot(32) == new PixelPoint(17, 20) && PanCursors.Hotspot(64) == new PixelPoint(34, 40),
             "the hotspot is at the palm centre");
 
         var root = Path.Combine(Path.GetTempPath(), "mdhub-pdfcursor-" + Guid.NewGuid().ToString("N"));
@@ -57,7 +57,7 @@ internal static class PdfCursorTests
             var image = viewer.GetVisualDescendants().OfType<Image>().First(img => img.IsVisible && img.Source is not null);
             var mid = image.TranslatePoint(new Point(image.Bounds.Width / 2, 200), w)!.Value;
             var scale = TopLevel.GetTopLevel(viewer)?.RenderScaling ?? 1;
-            var open = PdfCursors.OpenHand(scale);
+            var open = PanCursors.OpenHand(scale);
 
             viewer.Tool = PdfTool.Hand; Pump();
             Check(CursorName(viewer.PageCursor) == HandName() && !viewer.IsPanning,

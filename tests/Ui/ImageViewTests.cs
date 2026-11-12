@@ -185,7 +185,8 @@ internal static class ImageViewTests
             window.MouseMove(p97 + new Point(2, 1), RawInputModifiers.RightMouseButton); Pump();
             Check(viewer.Offset == o97 && !viewer.IsRightPanning, $"{tool}: under 4 px the right button does not pan yet");
             window.MouseMove(p97 + new Point(30, 12), RawInputModifiers.RightMouseButton); Pump();
-            Check(viewer.IsRightPanning && viewer.CursorType == StandardCursorType.SizeAll, $"{tool}: right-drag shows the drag cursor ({viewer.IsRightPanning} {viewer.CursorType} {viewer.Offset})");
+            var open = PanCursors.OpenHand(TopLevel.GetTopLevel(viewer)?.RenderScaling ?? 1);
+            Check(viewer.IsRightPanning && ReferenceEquals(viewer.CurrentCursor, open), $"{tool}: right-drag shows the open-hand cursor ({viewer.IsRightPanning} {viewer.CurrentCursor} {viewer.Offset})");
             Check(viewer.Offset == o97 + new Point(30, 12) && viewer.Rotation == rot && viewer.ZoomPercent == zoom, $"{tool}: right-drag pans the image by the pointer delta (no zoom/rotate)");
             window.MouseMove(new Point(500, 500), RawInputModifiers.RightMouseButton); Pump();
             Check(viewer.Offset == o97 + new Point(300, 300), $"{tool}: pointer captured: the pan follows outside the viewer");

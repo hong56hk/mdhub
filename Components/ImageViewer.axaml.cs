@@ -334,6 +334,9 @@ public partial class ImageViewer : UserControl
     public const double RightDragThreshold = 4;
     private bool _rightDrag, _rightMoved, _suppressMenu, _lastPressRight;
     public bool IsRightPanning => _rightDrag && _rightMoved;
+    // Item 110: left-drag pan, or a right-drag past the 4 px threshold.
+    public bool IsPanning => _drag == Drag.Pan && (!_rightDrag || _rightMoved);
+    public Cursor? CurrentCursor => Surface.Cursor;
     private void OnContextRequested(object? sender, ContextRequestedEventArgs e)
     {
         if (_suppressMenu || IsRightPanning) { e.Handled = true; _suppressMenu = false; }
@@ -387,12 +390,21 @@ public partial class ImageViewer : UserControl
         UpdateCursor();
     }
 
-    // Avalonia has no grab/grabbing cursors: an open hand while the hand tool is ready, the move cursor while dragging.
-    private void UpdateCursor() => Surface.Cursor = new Cursor(CursorType);
+    // Avalonia has no built-in open-hand cursor: the Hand tool (and Rotate) keep their rest cursors;
+    // item 110 uses the shared generated open-hand cursor while panning (left-drag or right-drag past 4 px).
+    private void UpdateCursor()
+    {
+        if (IsPanning)
+        {
+            var scale = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1;
+            Surface.Cursor = PanCursors.OpenHand(scale);
+            return;
+        }
+        Surface.Cursor = new Cursor(CursorType);
+    }
     public StandardCursorType CursorType => _drag switch
     {
         Drag.Pan when _rightDrag && !_rightMoved => EffectiveTool switch { ImageTool.Hand => StandardCursorType.Hand, _ => StandardCursorType.Cross },
-        Drag.Pan => StandardCursorType.SizeAll,
         Drag.Rotate => StandardCursorType.Cross,
         _ => EffectiveTool switch { ImageTool.Hand => StandardCursorType.Hand, _ => StandardCursorType.Cross }
     };

@@ -6,10 +6,10 @@ using System.Runtime.InteropServices;
 
 namespace Mdhub.Components;
 
-// Item 109: a generated open-hand cursor (five fingers up, palm) used while panning a PDF.
+// Item 109/110: a generated open-hand cursor (five fingers up, palm) used while panning a PDF or an image.
 // Cached, drawn in code (white fill, thin black outline) so it reads on light and dark backgrounds.
 // No third-party asset and no change to the existing icon set.
-public static class PdfCursors
+public static class PanCursors
 {
     public const int Size = 32;
     public const int SizeHighDpi = 64;
