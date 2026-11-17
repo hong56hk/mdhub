@@ -79,7 +79,6 @@ public partial class MainView
         UpdateContentLayout();
         UpdateStatus();
         BottomStatusBar.SetSpellCount(pane.TextEditor.Spelling.Count);
-        if (_active?.IsMarkdown == true) BottomStatusBar.UpdateStatistics(Mdhub.Text.TextStatistics.Count(_active.Text));
     }
 
     private void FocusAdjacentPane(int step)

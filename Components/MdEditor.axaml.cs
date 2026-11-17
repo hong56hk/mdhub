@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
@@ -17,6 +18,9 @@ public partial class MdEditor : UserControl
     private NoteDocument? _active;
     private long _previewVersion;
     public event Action<TextStatistics>? StatisticsChanged;
+    internal static TimeSpan LastPreviewParse { get; private set; }
+    internal static TimeSpan LastPreviewRender { get; private set; }
+    internal static void ResetPreviewPerf() { LastPreviewParse = default; LastPreviewRender = default; }
     public event Action<string>? MessageChanged;
     public MdEditor()
     {
@@ -306,12 +310,21 @@ public partial class MdEditor : UserControl
         var text = document.Text;
         try
         {
-            var result = await Task.Run(() => (Stats: TextStatistics.Count(text),
-                Markdown: document.IsMarkdown ? MarkdownPreview.Parse(text) : null));
+            var result = await Task.Run(() =>
+            {
+                var clock = Stopwatch.StartNew();
+                var stats = TextStatistics.Count(text);
+                var markdown = document.IsMarkdown ? MarkdownPreview.Parse(text) : null;
+                LastPreviewParse = clock.Elapsed;
+                return (Stats: stats, Markdown: markdown);
+            });
             if (version != _previewVersion || document != _active) return;
             if (IsEditingPreview && text != _render?.Map.Source) CancelPreviewEdit(); // source changed elsewhere
             else if (IsEditingPreview) return; // nothing changed: keep the overlay over the current render
             StatisticsChanged?.Invoke(result.Stats);
+            // Hidden preview (editor-only mode): keep stats current, skip the UI-thread rebuild.
+            if (!IsVisible) return;
+            var renderClock = Stopwatch.StartNew();
             ClearHighlight();
             _render = null;
             PreviewContent.Children.Clear();
@@ -340,6 +353,7 @@ public partial class MdEditor : UserControl
             ResetSelection();
             ApplyHighlight(scroll: false);
             if (_pendingCenter is { } pending && _render is not null) CenterPreviewOnLine(pending);
+            LastPreviewRender = renderClock.Elapsed;
         }
         catch (Exception ex)
         {

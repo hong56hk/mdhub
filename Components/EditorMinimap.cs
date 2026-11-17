@@ -3,6 +3,9 @@ using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Media.TextFormatting;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Mdhub.Services;
 
@@ -16,12 +19,18 @@ public sealed class EditorMinimap : Control
     private TextPresenter? _presenter;
     private ScrollViewer? _scroll;
     private double? _dragOffset;
+    private readonly DispatcherTimer _snapshotTimer = new() { Interval = TimeSpan.FromMilliseconds(80) };
+    private RenderTargetBitmap? _snapshot;
+    private TextLayout? _snapshotLayout;
+    private Size _snapshotSize;
+    private bool _snapshotDirty = true;
 
     public EditorMinimap()
     {
         Width = 100;
         ClipToBounds = true;
         Cursor = new Cursor(StandardCursorType.Arrow);
+        _snapshotTimer.Tick += (_, _) => { _snapshotTimer.Stop(); RebuildSnapshot(); InvalidateVisual(); };
         AttachedToVisualTree += (_, _) =>
         {
             _editor = this.GetVisualAncestors().OfType<TextBox>().FirstOrDefault();
@@ -33,14 +42,23 @@ public sealed class EditorMinimap : Control
         {
             EditorBehavior.Changed -= UpdateVisibility;
             LayoutUpdated -= OnLayout;
+            _snapshotTimer.Stop();
             Unhook();
             _editor = null;
+            DisposeSnapshot();
         };
     }
 
     private void UpdateVisibility() => IsVisible = EditorBehavior.Current.Minimap;
 
-    private void OnLayout(object? sender, EventArgs e) { Hook(); InvalidateVisual(); }
+    private void OnLayout(object? sender, EventArgs e)
+    {
+        Hook();
+        var layout = _presenter?.TextLayout;
+        if (!ReferenceEquals(layout, _snapshotLayout) || _snapshotSize != Bounds.Size) _snapshotDirty = true;
+        if (_snapshotDirty) { _snapshotTimer.Stop(); _snapshotTimer.Start(); }
+        InvalidateVisual();
+    }
     private void OnScroll(object? sender, ScrollChangedEventArgs e) => InvalidateVisual();
     private void Hook()
     {
@@ -55,24 +73,57 @@ public sealed class EditorMinimap : Control
         _presenter = null;
         _scroll = null;
         _dragOffset = null;
+        _snapshotLayout = null;
+        _snapshotDirty = true;
     }
 
     private double Scale => _scroll is null ? 0 : Math.Min(0.16, Bounds.Height / Math.Max(1, _scroll.Extent.Height));
     internal Rect ViewportRect => _scroll is null ? default : new Rect(0, _scroll.Offset.Y * Scale,
         Bounds.Width, Math.Min(Bounds.Height, _scroll.Viewport.Height * Scale));
 
+    void DisposeSnapshot()
+    {
+        _snapshot?.Dispose();
+        _snapshot = null;
+        _snapshotLayout = null;
+    }
+
+    void RebuildSnapshot()
+    {
+        Hook();
+        if (_presenter is null || _scroll is null || Bounds.Width <= 0 || Bounds.Height <= 0) { DisposeSnapshot(); return; }
+        var width = Math.Max(1, (int)Math.Ceiling(Bounds.Width));
+        var height = Math.Max(1, (int)Math.Ceiling(Bounds.Height));
+        var bitmap = new RenderTargetBitmap(new PixelSize(width, height), new Vector(96, 96));
+        using (var context = bitmap.CreateDrawingContext())
+        {
+            context.FillRectangle(ThemeService.Brush("EditorTextBackground"), new Rect(0, 0, width, height));
+            var scale = Scale;
+            if (scale > 0)
+            {
+                using (context.PushClip(new Rect(0, 0, width, height)))
+                using (context.PushTransform(Matrix.CreateScale(0.16, scale)))
+                    _presenter.TextLayout.Draw(context, new Point(8, 0));
+            }
+        }
+        _snapshot?.Dispose();
+        _snapshot = bitmap;
+        _snapshotLayout = _presenter.TextLayout;
+        _snapshotSize = Bounds.Size;
+        _snapshotDirty = false;
+    }
+
     public override void Render(DrawingContext context)
     {
         Hook();
         context.FillRectangle(ThemeService.Brush("EditorTextBackground"), new Rect(Bounds.Size));
         if (_presenter is null || _scroll is null || Scale <= 0) return;
-        using (context.PushClip(new Rect(Bounds.Size)))
-        {
-            using (context.PushTransform(Matrix.CreateScale(0.16, Scale)))
-                _presenter.TextLayout.Draw(context, new Point(8, 0));
-            using (context.PushOpacity(0.22))
-                context.FillRectangle(ThemeService.Brush("EditorForeground"), ViewportRect);
-        }
+        // First paint (open) builds a snapshot now; later text changes are debounced so typing stays smooth.
+        if (_snapshot is null && _snapshotDirty) RebuildSnapshot();
+        if (_snapshot is not null)
+            context.DrawImage(_snapshot, new Rect(Bounds.Size));
+        using (context.PushOpacity(0.22))
+            context.FillRectangle(ThemeService.Brush("EditorForeground"), ViewportRect);
     }
 
     private void ScrollTo(double y, double grabOffset)

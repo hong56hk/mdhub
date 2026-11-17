@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls.Presenters;
 using Avalonia.Media;
@@ -106,7 +107,23 @@ public sealed class MarkdownTextPresenter : TextPresenter
     {
         base.OnPropertyChanged(change);
         if (change.Property == HighlightMarkdownProperty || change.Property == SourceLanguageProperty || change.Property == StyleInlineCodeProperty)
-        { _cachedText = null; InvalidateTextLayout(); SyntaxChanged?.Invoke(this, EventArgs.Empty); }
+        { _cachedText = null; _runCache = new TextRunCache(); InvalidateTextLayout(); SyntaxChanged?.Invoke(this, EventArgs.Empty); }
+        // Drop the shaping cache when typography itself changes; keep it across text edits (Item 116).
+        else switch (change.Property.Name)
+        {
+            case nameof(FontFamily):
+            case nameof(FontSize):
+            case nameof(FontStyle):
+            case nameof(FontWeight):
+            case nameof(FontStretch):
+            case nameof(FontFeatures):
+            case nameof(Foreground):
+            case nameof(LineHeight):
+            case nameof(LetterSpacing):
+            case nameof(FlowDirection):
+                _runCache = new TextRunCache();
+                break;
+        }
     }
 
     private GenericTextRunProperties Props(SyntaxColor color, SyntaxFont font, bool codeBackground)
@@ -124,15 +141,34 @@ public sealed class MarkdownTextPresenter : TextPresenter
         return _properties[(color, font, codeBackground)] = p;
     }
 
+    // Item 116: tests read the last layout cost; one TextLayout per invalidation (no throwaway base layout).
+    // Reuse Avalonia's TextRunCache across edits — a fresh cache makes every keystroke reshape the whole file.
+    private TextRunCache _runCache = new();
+    internal static TimeSpan LastCreateTextLayout { get; private set; }
+    internal static int CreateTextLayoutCount { get; private set; }
+    internal static void ResetLayoutPerf() { LastCreateTextLayout = default; CreateTextLayoutCount = 0; }
+
     protected override TextLayout CreateTextLayout()
     {
-        var original = base.CreateTextLayout();
-        if (!string.IsNullOrEmpty(PreeditText)) return original;
+        var clock = Stopwatch.StartNew();
+        try { return CreateTextLayoutCore(); }
+        finally { LastCreateTextLayout = clock.Elapsed; CreateTextLayoutCount++; }
+    }
+
+    private TextLayout CreateTextLayoutCore()
+    {
         var text = Text ?? "";
         var tabbed = text.Contains('\t');
-        if (!HighlightMarkdown && SourceLanguage is null) return tabbed ? Tabbed(original, text, null) : original;
-        if (_cachedText != text) { _cachedText = text; _syntax = HighlightMarkdown ? _highlighter.Run(text) : _sourceHighlighter.Run(text, SourceLanguage); SyntaxChanged?.Invoke(this, EventArgs.Empty); }
-        if (_syntax.Spans.Count == 0 && (_syntax.Blocks.Count == 0 || !Mdhub.Services.EditorFonts.SeparateCodeFont)) return tabbed ? Tabbed(original, text, null) : original;
+        if (!string.IsNullOrEmpty(PreeditText) || (!HighlightMarkdown && SourceLanguage is null && !tabbed))
+            return base.CreateTextLayout();
+        if (HighlightMarkdown || SourceLanguage is not null)
+        {
+            if (_cachedText != text) { _cachedText = text; _syntax = HighlightMarkdown ? _highlighter.Run(text) : _sourceHighlighter.Run(text, SourceLanguage); SyntaxChanged?.Invoke(this, EventArgs.Empty); }
+            if (_syntax.Spans.Count == 0 && (_syntax.Blocks.Count == 0 || !Mdhub.Services.EditorFonts.SeparateCodeFont))
+                return tabbed ? Tabbed(text, null) : base.CreateTextLayout();
+        }
+        else
+            return Tabbed(text, null);
         var typeface = new Typeface(FontFamily, FontStyle, FontWeight, FontStretch);
         var styles = new List<ValueSpan<TextRunProperties>>(_syntax.Spans.Count + 2);
         var selStart = Math.Min(SelectionStart, SelectionEnd);
@@ -161,40 +197,53 @@ public sealed class MarkdownTextPresenter : TextPresenter
             styles.Add(new(start, end - start, props));
         }
         if (selection is not null && !selectionAdded) styles.Add(new(selStart, selEnd - selStart, selection));
-        if (tabbed) return Tabbed(original, text, WithCodeFont(styles, text.Length));
-        try
-        {
-            return new TextLayout(text, typeface, FontSize, Foreground, TextAlignment, TextWrapping,
-                flowDirection: FlowDirection, maxWidth: original.MaxWidth, maxHeight: original.MaxHeight,
+        return tabbed
+            ? Tabbed(text, WithCodeFont(styles, text.Length))
+            : new TextLayout(text, typeface, FontSize, Foreground, TextAlignment, TextWrapping,
+                flowDirection: FlowDirection, maxWidth: MaxLayoutWidth, maxHeight: MaxLayoutHeight,
                 lineHeight: LineHeight, letterSpacing: LetterSpacing, fontFeatures: FontFeatures,
-                textStyleOverrides: WithCodeFont(styles, text.Length));
-        }
-        finally { original.Dispose(); }
+                textStyleOverrides: WithCodeFont(styles, text.Length),
+                textRunCache: _runCache);
     }
 
-    // Item 70: a tab character is TabSize spaces wide (the gear's tab size). Same text, styles and wrapping as the
-    // regular layout, built through a paragraph whose incremental tab is TabSize space widths.
+    // TextPresenter stores the last measure/arrange size in a private field (no public Constraint in 12.1).
+    static readonly System.Reflection.FieldInfo ConstraintField =
+        typeof(TextPresenter).GetField("_constraint", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+        ?? throw new InvalidOperationException("TextPresenter._constraint is not available.");
+
+    Size LayoutConstraint => ConstraintField.GetValue(this) is Size size ? size : default;
+    double MaxLayoutWidth { get { var w = LayoutConstraint.Width; return w <= 0 || double.IsNaN(w) ? double.PositiveInfinity : w; } }
+    double MaxLayoutHeight { get { var h = LayoutConstraint.Height; return h <= 0 || double.IsNaN(h) ? double.PositiveInfinity : h; } }
+
+    // Cached: measuring a space TextLayout on every tabbed layout is needless work.
+    private double? _tabWidthCache;
+    private (FontFamily Family, double Size, int Tabs)? _tabWidthKey;
+
     public double TabWidth
     {
         get
         {
+            var key = (Family: FontFamily, Size: FontSize, Tabs: Mdhub.Services.EditorBehavior.Current.TabSize);
+            if (_tabWidthCache is { } cached && _tabWidthKey == key) return cached;
             var typeface = new Typeface(FontFamily, FontStyle, FontWeight, FontStretch);
             using var space = new TextLayout(" ", typeface, FontSize, null);
-            return space.WidthIncludingTrailingWhitespace * Mdhub.Services.EditorBehavior.Current.TabSize;
+            _tabWidthKey = key;
+            _tabWidthCache = space.WidthIncludingTrailingWhitespace * key.Tabs;
+            return _tabWidthCache.Value;
         }
     }
 
-    private TextLayout Tabbed(TextLayout original, string text, IReadOnlyList<ValueSpan<TextRunProperties>>? styles)
+    private TextLayout Tabbed(string text, IReadOnlyList<ValueSpan<TextRunProperties>>? styles)
     {
-        try
-        {
-            var typeface = new Typeface(FontFamily, FontStyle, FontWeight, FontStretch);
-            var props = new GenericTextRunProperties(typeface, FontSize, foregroundBrush: Foreground, fontFeatures: FontFeatures);
-            var paragraph = new TabParagraph(FlowDirection, TextAlignment, TextWrapping, LineHeight, LetterSpacing, props, TabWidth);
-            return new TextLayout(new TabSource(text, props, styles), paragraph, TextTrimming.None, original.MaxWidth, original.MaxHeight, 0);
-        }
-        finally { original.Dispose(); }
+        var typeface = new Typeface(FontFamily, FontStyle, FontWeight, FontStretch);
+        var props = new GenericTextRunProperties(typeface, FontSize, foregroundBrush: Foreground, fontFeatures: FontFeatures);
+        var paragraph = new TabParagraph(FlowDirection, TextAlignment, TextWrapping, LineHeight, LetterSpacing, props, TabWidth);
+        return new TextLayout(new TabSource(text, props, styles), paragraph, TextTrimming.None, MaxLayoutWidth, MaxLayoutHeight, 0, _runCache);
     }
+
+    // Item 70: a tab character is TabSize spaces wide (the gear's tab size). Same text, styles and wrapping as the
+    // regular layout, built through a paragraph whose incremental tab is TabSize space widths.
+
 
     private sealed class TabParagraph(FlowDirection flow, TextAlignment alignment, TextWrapping wrapping, double lineHeight, double letterSpacing, TextRunProperties props, double tab) : TextParagraphProperties
     {

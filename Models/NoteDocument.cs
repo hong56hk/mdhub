@@ -54,6 +54,7 @@ public sealed class NoteDocument : INotifyPropertyChanged, IDisposable
     public string IconName => Path ?? UntitledName;
     public string Title => (IsDirty ? "● " : "") + (Path is null ? UntitledName : System.IO.Path.GetFileName(Path));
     public event PropertyChangedEventHandler? PropertyChanged;
+    private string? _notifiedTitle, _notifiedIcon;
 
     public NoteDocument() : this(new NoteBuffer()) { }
     public NoteDocument(NoteBuffer buffer)
@@ -154,7 +155,17 @@ public sealed class NoteDocument : INotifyPropertyChanged, IDisposable
         box.SourceLanguage = !IsViewOnly && !IsMarkdown ? Mdhub.Text.CodeHighlighter.LanguageForExtension(extension) : null;
         box.EnableJsonAutoIndent = !IsViewOnly && Mdhub.Text.JsonAutoIndent.AppliesTo(Path ?? UntitledName);
         box.StyleInlineCode = extension.Equals(".md", StringComparison.OrdinalIgnoreCase);
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Title)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IconName)));
+        var title = Title;
+        var icon = IconName;
+        if (title != _notifiedTitle)
+        {
+            _notifiedTitle = title;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Title)));
+        }
+        if (icon != _notifiedIcon)
+        {
+            _notifiedIcon = icon;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IconName)));
+        }
     }
 }
