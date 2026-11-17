@@ -3,7 +3,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Mdhub.Components;
 using Mdhub.Models;
@@ -152,47 +151,16 @@ public partial class MainView : UserControl
         UpdateCaretStatus();
         BottomStatusBar.Relocalize();
     }
-    private void UpdateStatus(string? message = null, bool deferStatistics = false)
+    private void UpdateStatus(string? message = null)
     {
         if (_active is null) return;
         _active.Refresh();
         TitleChanged?.Invoke(DocumentTitle);
         BottomStatusBar.UpdateDocument(_active, message ?? TransientStatus ?? _sessionNote);
         TextFormatter.UpdateInsertButtons(_active);
-        if (!deferStatistics) ScheduleStatistics(immediate: true);
+        if (!_active.IsMarkdown && !_active.IsViewOnly) BottomStatusBar.UpdateStatistics(Mdhub.Text.TextStatistics.Count(_active.Text));
         TextFormatter.SetFormattingEnabled(_active.HasPreview && !_busy, _active.IsMarkdown);
         UpdateCaretStatus();
-    }
-
-    private DispatcherTimer? _statsTimer;
-    private NoteDocument? _statsPending;
-
-    private void ScheduleStatistics(bool immediate = false)
-    {
-        if (_active is not { IsViewOnly: false } document) return;
-        // Markdown with a visible preview already publishes counts from MdEditor after its debounce.
-        if (document.IsMarkdown && _panes.Any(p => p.Active == document && p.MdEditor.IsVisible)) return;
-        _statsPending = document;
-        if (_statsTimer is null)
-        {
-            _statsTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(180) };
-            _statsTimer.Tick += (_, _) => { _statsTimer!.Stop(); RunStatistics(); };
-        }
-        _statsTimer.Stop();
-        if (immediate) RunStatistics();
-        else _statsTimer.Start();
-    }
-
-    private void RunStatistics()
-    {
-        var document = _statsPending;
-        if (document is null || document != _active || document.IsViewOnly) return;
-        var text = document.Text;
-        _ = System.Threading.Tasks.Task.Run(() => Mdhub.Text.TextStatistics.Count(text)).ContinueWith(task =>
-        {
-            if (task.Status != System.Threading.Tasks.TaskStatus.RanToCompletion) return;
-            Dispatcher.UIThread.Post(() => { if (_active == document) BottomStatusBar.UpdateStatistics(task.Result); });
-        });
     }
 
     // "Ln 12, Col 5 (9 selected)" for the active md/txt editor; hidden for images, no editor, or when the preview has focus.

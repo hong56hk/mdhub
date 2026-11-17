@@ -24,9 +24,7 @@ public partial class MainView
         var split = preview && mode == ViewMode.Split;
         var grid = pane.ContentGrid;
         if (pane.PreviewSplitter.IsVisible && !split) pane.PreviewWidth = grid.ColumnDefinitions[4].Width;
-        var previewWasVisible = pane.MdEditor.IsVisible;
         pane.MdEditor.IsVisible = preview;
-        if (preview && !previewWasVisible) pane.MdEditor.ScheduleRefresh();
         pane.PreviewSplitter.IsVisible = split;
         grid.ColumnDefinitions[3].Width = new GridLength(split ? 4 : 0);
         grid.ColumnDefinitions[4].Width = split ? pane.PreviewWidth : new GridLength(0);

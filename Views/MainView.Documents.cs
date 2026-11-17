@@ -47,8 +47,8 @@ public partial class MainView
         {
             document.Refresh();
             if (document.IsDirty) _sessionNote = null;
-            foreach (var pane in _panes.Where(p => p.Active == document && p.MdEditor.IsVisible)) pane.MdEditor.ScheduleRefresh();
-            if (_active == document) { UpdateStatus(deferStatistics: true); ScheduleStatistics(); ScheduleOutline(); }
+            foreach (var pane in _panes.Where(p => p.Active == document)) pane.MdEditor.ScheduleRefresh();
+            if (_active == document) { UpdateStatus(); ScheduleOutline(); }
             var textChanged = document.Editor.Text != searchedText;
             searchedText = document.Editor.Text;
             if (textChanged && GlobalSearch.IsVisible && !_busy) GlobalSearch.Schedule();

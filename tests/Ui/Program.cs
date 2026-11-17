@@ -74,7 +74,6 @@ if (args.Contains("--selection-only")) { SelectionTests.Run(); return; }
 if (args.Contains("--linkcursor-only")) { LinkCursorTests.Run(); return; }
 if (args.Contains("--linkfollow-only")) { LinkFollowTests.Run(); return; }
 if (args.Contains("--jsonindent-only")) { JsonIndentTests.Run(); return; }
-if (args.Contains("--perf-only")) { try { EditorPerfTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
 if (args.Contains("--quickopen-only")) { QuickOpenTests.Run(); return; }
 if (args.Contains("--syntax-only")) { SyntaxTests.Run(); return; }
 if (args.Contains("--explorerkeys-only")) { ExplorerShortcutTests.Run(); return; }
