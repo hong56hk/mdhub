@@ -1,9 +1,11 @@
 using System.Reflection;
+using System.Reflection.Emit;
 using Avalonia;
 using Avalonia.Controls.Presenters;
 using Avalonia.Media;
 using Avalonia.Media.TextFormatting;
 using Avalonia.Utilities;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Avalonia.Controls;
 using Mdhub.Text;
@@ -103,11 +105,100 @@ public sealed class MarkdownTextPresenter : TextPresenter
         return result.ToArray();
     }
 
+    // Item 119: skip the stock TextLayout invalidation when the selection stays collapsed (caret move only).
+    // TextPresenter.OnPropertyChanged always invalidates: it calls virtual InvalidateTextLayout when
+    // SelectionForegroundBrush is set, otherwise the private InvalidateTextLayoutKeepCache. The editor's
+    // brush is typically unset, so overriding InvalidateTextLayout cannot catch this path. For a skip we
+    // call Control.OnPropertyChanged (TextPresenter's base) so listeners still run, then InvalidateVisual
+    // for the caret, without disposing the layout or invalidating measure.
+    // SelectionStart and SelectionEnd are often updated as a pair, so the first change can look like a
+    // temporary range; the decision is finished at DispatcherPriority.Send once both have settled.
+    static readonly Action<TextPresenter, AvaloniaPropertyChangedEventArgs> CallControlOnPropertyChanged = CreateControlOnPropertyChanged();
+
+    static Action<TextPresenter, AvaloniaPropertyChangedEventArgs> CreateControlOnPropertyChanged()
+    {
+        var baseType = typeof(TextPresenter).BaseType
+            ?? throw new InvalidOperationException("TextPresenter has no base type.");
+        var method = baseType.GetMethod(nameof(OnPropertyChanged), BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, [typeof(AvaloniaPropertyChangedEventArgs)])
+            ?? throw new InvalidOperationException(baseType.Name + ".OnPropertyChanged is missing.");
+        var dm = new DynamicMethod("CallControlOnPropertyChanged", typeof(void),
+            [typeof(TextPresenter), typeof(AvaloniaPropertyChangedEventArgs)], typeof(TextPresenter).Module, skipVisibility: true);
+        var il = dm.GetILGenerator();
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Ldarg_1);
+        il.Emit(OpCodes.Call, method);
+        il.Emit(OpCodes.Ret);
+        return dm.CreateDelegate<Action<TextPresenter, AvaloniaPropertyChangedEventArgs>>();
+    }
+
+    bool _selectionBatchFromCollapsed;
+    bool _selectionDecisionPosted;
+
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
+        if (change.Property == SelectionStartProperty || change.Property == SelectionEndProperty)
+        {
+            HandleSelectionIndexChanged(change);
+            return;
+        }
         base.OnPropertyChanged(change);
         if (change.Property == HighlightMarkdownProperty || change.Property == SourceLanguageProperty || change.Property == StyleInlineCodeProperty)
         { _cachedText = null; InvalidateTextLayout(); SyntaxChanged?.Invoke(this, EventArgs.Empty); }
+    }
+
+    void HandleSelectionIndexChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        var other = change.Property == SelectionStartProperty ? SelectionEnd : SelectionStart;
+        var oldVal = change.GetOldValue<int>();
+        var newVal = change.GetNewValue<int>();
+        var wasEmpty = oldVal == other;
+        var isEmpty = newVal == other;
+
+        if (wasEmpty && isEmpty)
+        {
+            SkipStockSelectionInvalidation(change);
+            return;
+        }
+
+        if (wasEmpty && !isEmpty)
+        {
+            // First half of a collapsed caret move (Start then End), or a real selection starting from a caret.
+            _selectionBatchFromCollapsed = true;
+            SkipStockSelectionInvalidation(change);
+            if (!_selectionDecisionPosted)
+            {
+                _selectionDecisionPosted = true;
+                Dispatcher.UIThread.Post(FinishSelectionLayoutDecision, DispatcherPriority.Send);
+            }
+            return;
+        }
+
+        if (_selectionBatchFromCollapsed && isEmpty)
+        {
+            // Second half of a collapsed caret move: transient range, now collapsed again.
+            _selectionBatchFromCollapsed = false;
+            SkipStockSelectionInvalidation(change);
+            return;
+        }
+
+        // Real selection appeared, changed, or cleared (including non-empty to empty).
+        _selectionBatchFromCollapsed = false;
+        base.OnPropertyChanged(change);
+    }
+
+    void SkipStockSelectionInvalidation(AvaloniaPropertyChangedEventArgs change)
+    {
+        CallControlOnPropertyChanged(this, change);
+        InvalidateVisual();
+    }
+
+    void FinishSelectionLayoutDecision()
+    {
+        _selectionDecisionPosted = false;
+        if (!_selectionBatchFromCollapsed) return;
+        _selectionBatchFromCollapsed = false;
+        if (SelectionStart != SelectionEnd) InvalidateTextLayout();
+        else InvalidateVisual();
     }
 
     private GenericTextRunProperties Props(SyntaxColor color, SyntaxFont font, bool codeBackground)

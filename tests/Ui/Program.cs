@@ -33,6 +33,7 @@ if (args.Contains("--newfile-only")) { NewFileDialogTests.Run(); return; }
 if (args.Contains("--reveal-only")) { RevealTests.Run(); return; }
 if (args.Contains("--menu-only")) { MenuTests.Run(); return; }
 if (args.Contains("--outline-only")) { DocumentOutlineTests.Run(); return; }
+if (args.Contains("--selinvalidate-only")) { try { SelInvalidateTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
 if (args.Contains("--layoutbase-only")) { try { LayoutBaseTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
 if (args.Contains("--previewhidden-only")) { try { PreviewHiddenTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
 if (args.Contains("--previewtoggle-only")) { PreviewToggleTests.Run(); return; }
