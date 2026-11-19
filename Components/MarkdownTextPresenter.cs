@@ -1,3 +1,4 @@
+using System.Reflection;
 using Avalonia;
 using Avalonia.Controls.Presenters;
 using Avalonia.Media;
@@ -124,15 +125,49 @@ public sealed class MarkdownTextPresenter : TextPresenter
         return _properties[(color, font, codeBackground)] = p;
     }
 
+    // Avalonia 12.1.4 TextPresenter stores the measure/arrange size in a private field; maxWidth/maxHeight treat zero as infinity.
+    static readonly FieldInfo ConstraintField = typeof(TextPresenter).GetField("_constraint", BindingFlags.Instance | BindingFlags.NonPublic)
+        ?? throw new InvalidOperationException("TextPresenter._constraint is missing.");
+
+    // Avalonia.Utilities.MathUtilities is internal; this is the 12.1.4 IsZero used by CreateTextLayoutInternal.
+    const double DoubleEpsilon = 2.2204460492503131e-016;
+    static bool IsZero(double value) => Math.Abs(value) < 10.0 * DoubleEpsilon;
+
+    (double MaxWidth, double MaxHeight) LayoutMaxSize()
+    {
+        var constraint = ConstraintField.GetValue(this) is Size size ? size : default;
+        return (IsZero(constraint.Width) ? double.PositiveInfinity : constraint.Width,
+            IsZero(constraint.Height) ? double.PositiveInfinity : constraint.Height);
+    }
+
+    // Same arguments as Avalonia 12.1.4 CreateTextLayoutInternal, except no shared TextRunCache.
+    TextLayout StockLayout(string text, IReadOnlyList<ValueSpan<TextRunProperties>>? styles)
+    {
+        var (maxWidth, maxHeight) = LayoutMaxSize();
+        var typeface = new Typeface(FontFamily, FontStyle, FontWeight, FontStretch);
+        return new TextLayout(text, typeface, FontSize, Foreground, TextAlignment, TextWrapping, null, null,
+            FlowDirection, maxWidth, maxHeight, LineHeight, LetterSpacing, 0, FontFeatures, styles);
+    }
+
+    ValueSpan<TextRunProperties>[]? StockSelectionStyles()
+    {
+        var start = Math.Min(SelectionStart, SelectionEnd);
+        var length = Math.Max(SelectionStart, SelectionEnd) - start;
+        if (!ShowSelectionHighlight || length <= 0 || SelectionForegroundBrush is not { } brush) return null;
+        var typeface = new Typeface(FontFamily, FontStyle, FontWeight, FontStretch);
+        return [new ValueSpan<TextRunProperties>(start, length,
+            new GenericTextRunProperties(typeface, FontSize, foregroundBrush: brush, fontFeatures: FontFeatures))];
+    }
+
+    // Item 118: build one layout from _constraint. Preedit still uses the stock path (combined text + underline).
     protected override TextLayout CreateTextLayout()
     {
-        var original = base.CreateTextLayout();
-        if (!string.IsNullOrEmpty(PreeditText)) return original;
+        if (!string.IsNullOrEmpty(PreeditText)) return base.CreateTextLayout();
         var text = Text ?? "";
         var tabbed = text.Contains('\t');
-        if (!HighlightMarkdown && SourceLanguage is null) return tabbed ? Tabbed(original, text, null) : original;
+        if (!HighlightMarkdown && SourceLanguage is null) return tabbed ? Tabbed(text, StockSelectionStyles()) : StockLayout(text, StockSelectionStyles());
         if (_cachedText != text) { _cachedText = text; _syntax = HighlightMarkdown ? _highlighter.Run(text) : _sourceHighlighter.Run(text, SourceLanguage); SyntaxChanged?.Invoke(this, EventArgs.Empty); }
-        if (_syntax.Spans.Count == 0 && (_syntax.Blocks.Count == 0 || !Mdhub.Services.EditorFonts.SeparateCodeFont)) return tabbed ? Tabbed(original, text, null) : original;
+        if (_syntax.Spans.Count == 0 && (_syntax.Blocks.Count == 0 || !Mdhub.Services.EditorFonts.SeparateCodeFont)) return tabbed ? Tabbed(text, StockSelectionStyles()) : StockLayout(text, StockSelectionStyles());
         var typeface = new Typeface(FontFamily, FontStyle, FontWeight, FontStretch);
         var styles = new List<ValueSpan<TextRunProperties>>(_syntax.Spans.Count + 2);
         var selStart = Math.Min(SelectionStart, SelectionEnd);
@@ -161,15 +196,8 @@ public sealed class MarkdownTextPresenter : TextPresenter
             styles.Add(new(start, end - start, props));
         }
         if (selection is not null && !selectionAdded) styles.Add(new(selStart, selEnd - selStart, selection));
-        if (tabbed) return Tabbed(original, text, WithCodeFont(styles, text.Length));
-        try
-        {
-            return new TextLayout(text, typeface, FontSize, Foreground, TextAlignment, TextWrapping,
-                flowDirection: FlowDirection, maxWidth: original.MaxWidth, maxHeight: original.MaxHeight,
-                lineHeight: LineHeight, letterSpacing: LetterSpacing, fontFeatures: FontFeatures,
-                textStyleOverrides: WithCodeFont(styles, text.Length));
-        }
-        finally { original.Dispose(); }
+        if (tabbed) return Tabbed(text, WithCodeFont(styles, text.Length));
+        return StockLayout(text, WithCodeFont(styles, text.Length));
     }
 
     // Item 70: a tab character is TabSize spaces wide (the gear's tab size). Same text, styles and wrapping as the
@@ -184,16 +212,13 @@ public sealed class MarkdownTextPresenter : TextPresenter
         }
     }
 
-    private TextLayout Tabbed(TextLayout original, string text, IReadOnlyList<ValueSpan<TextRunProperties>>? styles)
+    private TextLayout Tabbed(string text, IReadOnlyList<ValueSpan<TextRunProperties>>? styles)
     {
-        try
-        {
-            var typeface = new Typeface(FontFamily, FontStyle, FontWeight, FontStretch);
-            var props = new GenericTextRunProperties(typeface, FontSize, foregroundBrush: Foreground, fontFeatures: FontFeatures);
-            var paragraph = new TabParagraph(FlowDirection, TextAlignment, TextWrapping, LineHeight, LetterSpacing, props, TabWidth);
-            return new TextLayout(new TabSource(text, props, styles), paragraph, TextTrimming.None, original.MaxWidth, original.MaxHeight, 0);
-        }
-        finally { original.Dispose(); }
+        var (maxWidth, maxHeight) = LayoutMaxSize();
+        var typeface = new Typeface(FontFamily, FontStyle, FontWeight, FontStretch);
+        var props = new GenericTextRunProperties(typeface, FontSize, foregroundBrush: Foreground, fontFeatures: FontFeatures);
+        var paragraph = new TabParagraph(FlowDirection, TextAlignment, TextWrapping, LineHeight, LetterSpacing, props, TabWidth);
+        return new TextLayout(new TabSource(text, props, styles), paragraph, TextTrimming.None, maxWidth, maxHeight, 0);
     }
 
     private sealed class TabParagraph(FlowDirection flow, TextAlignment alignment, TextWrapping wrapping, double lineHeight, double letterSpacing, TextRunProperties props, double tab) : TextParagraphProperties
