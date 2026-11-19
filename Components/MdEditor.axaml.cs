@@ -16,6 +16,8 @@ public partial class MdEditor : UserControl
     private readonly DispatcherTimer _previewTimer = new() { Interval = TimeSpan.FromMilliseconds(180) };
     private NoteDocument? _active;
     private long _previewVersion;
+    private bool _previewUiStale;
+    internal int PreviewUiRebuilds { get; private set; }
     public event Action<TextStatistics>? StatisticsChanged;
     public event Action<string>? MessageChanged;
     public MdEditor()
@@ -32,6 +34,8 @@ public partial class MdEditor : UserControl
         PreviewContent.Spacing = Mdhub.Services.PreviewSettings.Current.ParagraphSpacing;
         AttachedToVisualTree += (_, _) => { Mdhub.Services.PreviewSettings.Changed += OnPreviewSettingsChanged; Mdhub.Services.EditorBehavior.Changed += OnPreviewSettingsChanged; };
         DetachedFromVisualTree += (_, _) => { Mdhub.Services.PreviewSettings.Changed -= OnPreviewSettingsChanged; Mdhub.Services.EditorBehavior.Changed -= OnPreviewSettingsChanged; };
+        // Item 117: skip the preview UI rebuild while hidden; refresh when shown if the text (or typography) changed.
+        PropertyChanged += (_, e) => { if (e.Property == IsVisibleProperty && IsVisible) RefreshPreviewIfStale(); };
     }
     internal int SettingsRefreshes { get; private set; }
     private void OnPreviewSettingsChanged()
@@ -299,6 +303,17 @@ public partial class MdEditor : UserControl
         _previewTimer.Stop();
         _previewTimer.Start();
     }
+
+    // Rebuild immediately when the preview is shown again and the last hidden pass (or a typography change) left it stale.
+    internal void RefreshPreviewIfStale()
+    {
+        if (_active is not { } document) return;
+        if (!_previewUiStale && _render is { } render && document.Text == render.Map.Source) return;
+        ++_previewVersion;
+        _previewTimer.Stop();
+        _ = RefreshPreviewAsync();
+    }
+
     private async Task RefreshPreviewAsync()
     {
         if (_active is not { } document) return;
@@ -306,6 +321,16 @@ public partial class MdEditor : UserControl
         var text = document.Text;
         try
         {
+            // Item 117: keep off-thread word/character counts while hidden, but skip parse and the UI rebuild.
+            if (!IsVisible)
+            {
+                _previewUiStale = true;
+                var hiddenStats = await Task.Run(() => TextStatistics.Count(text));
+                if (version != _previewVersion || document != _active) return;
+                StatisticsChanged?.Invoke(hiddenStats);
+                return;
+            }
+
             var result = await Task.Run(() => (Stats: TextStatistics.Count(text),
                 Markdown: document.IsMarkdown ? MarkdownPreview.Parse(text) : null));
             if (version != _previewVersion || document != _active) return;
@@ -340,6 +365,8 @@ public partial class MdEditor : UserControl
             ResetSelection();
             ApplyHighlight(scroll: false);
             if (_pendingCenter is { } pending && _render is not null) CenterPreviewOnLine(pending);
+            _previewUiStale = false;
+            PreviewUiRebuilds++;
         }
         catch (Exception ex)
         {
