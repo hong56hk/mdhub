@@ -219,6 +219,10 @@ public sealed class MarkdownTextPresenter : TextPresenter
     // Avalonia 12.1.4 TextPresenter stores the measure/arrange size in a private field; maxWidth/maxHeight treat zero as infinity.
     static readonly FieldInfo ConstraintField = typeof(TextPresenter).GetField("_constraint", BindingFlags.Instance | BindingFlags.NonPublic)
         ?? throw new InvalidOperationException("TextPresenter._constraint is missing.");
+    static readonly FieldInfo TextLayoutField = typeof(TextPresenter).GetField("_textLayout", BindingFlags.Instance | BindingFlags.NonPublic)
+        ?? throw new InvalidOperationException("TextPresenter._textLayout is missing.");
+    static readonly MethodInfo EnsureCaretBoundsMethod = typeof(TextPresenter).GetMethod("EnsureCaretBounds", BindingFlags.Instance | BindingFlags.NonPublic)
+        ?? throw new InvalidOperationException("TextPresenter.EnsureCaretBounds is missing.");
 
     // Avalonia.Utilities.MathUtilities is internal; this is the 12.1.4 IsZero used by CreateTextLayoutInternal.
     const double DoubleEpsilon = 2.2204460492503131e-016;
@@ -227,8 +231,47 @@ public sealed class MarkdownTextPresenter : TextPresenter
     (double MaxWidth, double MaxHeight) LayoutMaxSize()
     {
         var constraint = ConstraintField.GetValue(this) is Size size ? size : default;
-        return (IsZero(constraint.Width) ? double.PositiveInfinity : constraint.Width,
+        return MaxSizeFromConstraint(constraint);
+    }
+
+    static (double MaxWidth, double MaxHeight) MaxSizeFromConstraint(Size constraint) =>
+        (IsZero(constraint.Width) ? double.PositiveInfinity : constraint.Width,
             IsZero(constraint.Height) ? double.PositiveInfinity : constraint.Height);
+
+    // Avalonia 12.1.4 MathUtilities.AreClose (the class is internal).
+    static bool AreClose(double value1, double value2)
+    {
+        if (value1 == value2) return true;
+        var eps = (Math.Abs(value1) + Math.Abs(value2) + 10.0) * DoubleEpsilon;
+        return Math.Abs(value1 - value2) < eps;
+    }
+
+    // A still-valid layout can be kept across MeasureOverride: wrap-off ignores width,
+    // wrap-on needs an equivalent width, and a tighter height must not start clipping.
+    bool CanReuseLayout(TextLayout layout, Size availableSize)
+    {
+        var (maxWidth, maxHeight) = MaxSizeFromConstraint(availableSize);
+        if (TextWrapping != TextWrapping.NoWrap && !AreClose(layout.MaxWidth, maxWidth)) return false;
+        if (AreClose(layout.MaxHeight, maxHeight)) return true;
+        var clipped = !double.IsPositiveInfinity(layout.MaxHeight) && layout.Height >= layout.MaxHeight - 0.5;
+        return !clipped && (double.IsPositiveInfinity(maxHeight) || layout.Height <= maxHeight);
+    }
+
+    // Item 121: stock MeasureOverride always disposes the layout. Reuse it when the new
+    // constraint would produce the same line breaking; text/font/theme/highlighting/selection/wrap
+    // still go through InvalidateTextLayout and force a rebuild. Does not touch ArrangeOverride.
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        if (TextLayoutField.GetValue(this) is TextLayout existing && !CanReuseLayout(existing, availableSize))
+        {
+            existing.Dispose();
+            TextLayoutField.SetValue(this, null);
+        }
+        ConstraintField.SetValue(this, availableSize);
+        InvalidateArrange();
+        var layout = TextLayout;
+        EnsureCaretBoundsMethod.Invoke(this, null);
+        return new Size(layout.WidthIncludingTrailingWhitespace, layout.Height);
     }
 
     // Same arguments as Avalonia 12.1.4 CreateTextLayoutInternal, except no shared TextRunCache.
