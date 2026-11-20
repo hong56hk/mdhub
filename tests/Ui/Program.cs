@@ -19,6 +19,7 @@ if (args.Contains("--reopentab-only")) { ReopenTabTests.Run(); return; }
 if (args.Contains("--multicaret-only")) { MultiCaretTests.Run(); return; }
 if (args.Contains("--tabreorder-only")) { TabReorderTests.Run(); return; }
 if (args.Contains("--code-syntax-only")) { CodeSyntaxTests.Run(); return; }
+if (args.Contains("--arrangereuse-only")) { try { ArrangeReuseTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
 if (args.Contains("--measurereuse-only")) { try { MeasureReuseTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
 if (args.Contains("--minimapdebounce-only")) { try { MinimapDebounceTests.Run(); } catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; } return; }
 if (args.Contains("--minimap-only")) { MinimapTests.Run(); return; }

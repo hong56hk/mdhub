@@ -259,7 +259,7 @@ public sealed class MarkdownTextPresenter : TextPresenter
 
     // Item 121: stock MeasureOverride always disposes the layout. Reuse it when the new
     // constraint would produce the same line breaking; text/font/theme/highlighting/selection/wrap
-    // still go through InvalidateTextLayout and force a rebuild. Does not touch ArrangeOverride.
+    // still go through InvalidateTextLayout and force a rebuild.
     protected override Size MeasureOverride(Size availableSize)
     {
         if (TextLayoutField.GetValue(this) is TextLayout existing && !CanReuseLayout(existing, availableSize))
@@ -272,6 +272,31 @@ public sealed class MarkdownTextPresenter : TextPresenter
         var layout = TextLayout;
         EnsureCaretBoundsMethod.Invoke(this, null);
         return new Size(layout.WidthIncludingTrailingWhitespace, layout.Height);
+    }
+
+    // Item 122: stock ArrangeOverride rebuilds whenever measure wrote a different width
+    // (Infinity vs a finite arrange width with wrap off). Reuse the layout when the
+    // arranged width would not change line breaking; still update _constraint like stock.
+    protected override Size ArrangeOverride(Size finalSize)
+    {
+        var finalWidth = finalSize.Width;
+        var textWidth = Math.Ceiling(TextLayout.WidthIncludingTrailingWhitespace);
+        if (finalSize.Width < textWidth) finalSize = finalSize.WithWidth(textWidth);
+
+        var constraint = ConstraintField.GetValue(this) is Size size ? size : default;
+        if (!AreClose(constraint.Width, finalWidth))
+        {
+            var arranged = new Size(Math.Ceiling(finalWidth), double.PositiveInfinity);
+            if (TextLayoutField.GetValue(this) is TextLayout existing && !CanReuseLayout(existing, arranged))
+            {
+                existing.Dispose();
+                TextLayoutField.SetValue(this, null);
+            }
+            ConstraintField.SetValue(this, arranged);
+            _ = TextLayout;
+            EnsureCaretBoundsMethod.Invoke(this, null);
+        }
+        return finalSize;
     }
 
     // Same arguments as Avalonia 12.1.4 CreateTextLayoutInternal, except no shared TextRunCache.
