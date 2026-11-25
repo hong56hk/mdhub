@@ -52,7 +52,7 @@ public partial class MainView
         }
         document.Refresh();
         if (document.IsDirty) _sessionNote = null;
-        if (_active == document) { UpdateStatus(message); MdEditor.ScheduleRefresh(); }
+        if (_active == document) { UpdateStatus(message); MdEditor.RefreshNow(); }
         return true;
     }
 

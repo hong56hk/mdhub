@@ -125,7 +125,7 @@ internal static class PreviewHiddenTests
             var edited = box.Text ?? "";
             Check(edited == before.Insert(insertAt, "Hid"), "edits while the preview is hidden are applied to the source");
 
-            // Past the 180 ms preview debounce, plus the off-thread count.
+            // Past the typing-driven preview debounce, plus the off-thread count.
             WaitUntil(() =>
             {
                 var stats = TextStatistics.Count(edited);

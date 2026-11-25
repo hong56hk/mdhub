@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
@@ -13,7 +14,11 @@ namespace Mdhub.Components;
 // The existing formatted Markdown pane; source editing remains in TextEditor.
 public partial class MdEditor : UserControl
 {
-    private readonly DispatcherTimer _previewTimer = new() { Interval = TimeSpan.FromMilliseconds(180) };
+    // Item 124: typing-driven refreshes wait for idle; DispatcherTimer would be flushed by typetext RunJobs.
+    internal const int TypingDebounceMilliseconds = 450;
+    private System.Threading.Timer? _previewTimer;
+    private long _lastTypingTs;
+    private bool _promptRefresh;
     private NoteDocument? _active;
     private long _previewVersion;
     private bool _previewUiStale;
@@ -23,9 +28,8 @@ public partial class MdEditor : UserControl
     public MdEditor()
     {
         InitializeComponent();
-        _previewTimer.Tick += async (_, _) => { _previewTimer.Stop(); await RefreshPreviewAsync(); };
         DetachedFromVisualTree += (_, _) => Stop();
-        AttachedToVisualTree += (_, _) => ScheduleRefresh();
+        AttachedToVisualTree += (_, _) => RefreshNow();
         _selectionTimer.Tick += (_, _) => { _selectionTimer.Stop(); ApplyHighlight(scroll: true); };
         PreviewContent.LayoutUpdated += (_, _) => PreviewBlockHighlights.InvalidateVisual();
         PreviewContent.DoubleTapped += OnPreviewDoubleTapped;
@@ -42,7 +46,7 @@ public partial class MdEditor : UserControl
     {
         PreviewContent.Spacing = Mdhub.Services.PreviewSettings.Current.ParagraphSpacing;
         SettingsRefreshes++;
-        if (_active is not null) { ++_previewVersion; _previewTimer.Stop(); _ = RefreshPreviewAsync(); }
+        if (_active is not null) RefreshNow();
     }
     public void ShowDocument(NoteDocument? document)
     {
@@ -61,7 +65,7 @@ public partial class MdEditor : UserControl
             return;
         }
         document.Editor.PropertyChanged += OnEditorPropertyChanged;
-        ScheduleRefresh();
+        RefreshNow();
     }
 
     // ---- Selection highlight: the editor selection is mirrored in the preview (debounced). ----
@@ -151,7 +155,7 @@ public partial class MdEditor : UserControl
     public void CenterPreviewOnLine(int caret)
     {
         _pendingCenter = null;
-        if (_render is not { } render || _active?.Editor is not { } editor || editor.Text != render.Map.Source) { _pendingCenter = caret; ScheduleRefresh(); return; }
+        if (_render is not { } render || _active?.Editor is not { } editor || editor.Text != render.Map.Source) { _pendingCenter = caret; RefreshNow(); return; }
         var source = render.Map.Source;
         var (start, end) = CaretLine.At(source, caret);
         var id = render.Map.BlockForLine(start, end);
@@ -296,28 +300,69 @@ public partial class MdEditor : UserControl
         return null;
     }
     private string Report(string message) { MessageChanged?.Invoke(message); return message; }
-    public void Stop() { ++_previewVersion; _previewTimer.Stop(); }
+    public void Stop()
+    {
+        ++_previewVersion;
+        CancelTypingTimer(dispose: true);
+    }
+
+    // Typing-driven: restart the idle timer and drop any in-flight parse so it cannot apply mid-burst.
     public void ScheduleRefresh()
     {
         ++_previewVersion;
-        _previewTimer.Stop();
-        _previewTimer.Start();
+        _lastTypingTs = Stopwatch.GetTimestamp();
+        ArmTypingTimer();
     }
+
+    // File open, tab switch, show preview, theme/typography, and other non-typing refreshes apply immediately.
+    public void RefreshNow()
+    {
+        if (_active is null) return;
+        ++_previewVersion;
+        CancelTypingTimer(dispose: false);
+        _promptRefresh = true;
+        _ = RefreshPreviewAsync();
+    }
+
+    void ArmTypingTimer()
+    {
+        _previewTimer ??= new System.Threading.Timer(_ => Dispatcher.UIThread.Post(FlushTypingRefresh), null, Timeout.Infinite, Timeout.Infinite);
+        _previewTimer.Change(TypingDebounceMilliseconds, Timeout.Infinite);
+    }
+
+    void CancelTypingTimer(bool dispose)
+    {
+        if (_previewTimer is null) return;
+        _previewTimer.Change(Timeout.Infinite, Timeout.Infinite);
+        if (!dispose) return;
+        _previewTimer.Dispose();
+        _previewTimer = null;
+    }
+
+    void FlushTypingRefresh()
+    {
+        if (_active is null) return;
+        if (IdleMilliseconds() < TypingDebounceMilliseconds) { ArmTypingTimer(); return; }
+        _promptRefresh = false;
+        _ = RefreshPreviewAsync();
+    }
+
+    double IdleMilliseconds() => (Stopwatch.GetTimestamp() - _lastTypingTs) * 1000.0 / Stopwatch.Frequency;
 
     // Rebuild immediately when the preview is shown again and the last hidden pass (or a typography change) left it stale.
     internal void RefreshPreviewIfStale()
     {
         if (_active is not { } document) return;
         if (!_previewUiStale && _render is { } render && document.Text == render.Map.Source) return;
-        ++_previewVersion;
-        _previewTimer.Stop();
-        _ = RefreshPreviewAsync();
+        RefreshNow();
     }
 
     private async Task RefreshPreviewAsync()
     {
         if (_active is not { } document) return;
         var version = _previewVersion;
+        var prompt = _promptRefresh;
+        _promptRefresh = false;
         var text = document.Text;
         try
         {
@@ -327,13 +372,17 @@ public partial class MdEditor : UserControl
                 _previewUiStale = true;
                 var hiddenStats = await Task.Run(() => TextStatistics.Count(text));
                 if (version != _previewVersion || document != _active) return;
+                if (!prompt && IdleMilliseconds() < TypingDebounceMilliseconds) { ArmTypingTimer(); return; }
                 StatisticsChanged?.Invoke(hiddenStats);
                 return;
             }
 
             var result = await Task.Run(() => (Stats: TextStatistics.Count(text),
                 Markdown: document.IsMarkdown ? MarkdownPreview.Parse(text) : null));
+            // A newer keystroke or explicit refresh makes this parse stale; do not apply it.
             if (version != _previewVersion || document != _active) return;
+            // Never Children.Clear / RenderMapped mid-burst: postpone until idle if a key landed during the parse.
+            if (!prompt && IdleMilliseconds() < TypingDebounceMilliseconds) { ArmTypingTimer(); return; }
             if (IsEditingPreview && text != _render?.Map.Source) CancelPreviewEdit(); // source changed elsewhere
             else if (IsEditingPreview) return; // nothing changed: keep the overlay over the current render
             StatisticsChanged?.Invoke(result.Stats);

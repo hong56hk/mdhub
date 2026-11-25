@@ -161,7 +161,7 @@ public partial class MainView
         RefreshPaneDocuments();
         UpdateStatus(Loc.F("Saved", path));
         if (GlobalSearch.IsVisible) GlobalSearch.Schedule();
-        MdEditor.ScheduleRefresh();
+        MdEditor.RefreshNow();
         await FlushRecoveryAsync();
         if (isNewPath && FolderExplorer.Contains(path)) await FolderExplorer.RevealCreatedAsync(path);
         return true;
