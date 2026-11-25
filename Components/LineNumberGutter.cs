@@ -92,35 +92,114 @@ public sealed class LineNumberGutter : Control
     {
         Hook();
         var result = new List<(int, double)>();
-        if (_editor is null || _presenter?.TextLayout is not { } layout) return result;
-        var text = _editor.Text ?? "";
-        var number = 1;
-        var scanned = 0;
-        double y = 0;
-        foreach (var line in layout.TextLines)
-        {
-            var start = line.FirstTextSourceIndex;
-            for (; scanned < Math.Min(start, text.Length); scanned++)
-                if (text[scanned] == '\n' || (text[scanned] == '\r' && (scanned + 1 >= text.Length || text[scanned + 1] != '\n'))) number++;
-            var logicalStart = start == 0 || (start <= text.Length && start > 0 && (text[start - 1] == '\n' || text[start - 1] == '\r'));
-            if (logicalStart)
-            {
-                var top = _presenter.TranslatePoint(new Point(0, y), this)?.Y;
-                if (top is { } t && t + line.Height >= 0 && t <= Bounds.Height) result.Add((number, t));
-            }
-            y += line.Height;
-        }
+        foreach (var row in ViewportRows(includeMargin: false))
+            result.Add((row.Number, row.Top));
         return result;
     }
+
+    // Set by Render; used by tests to prove we draw a viewport-sized set, not every document line.
+    internal int LastDrawnCount { get; private set; }
 
     public override void Render(DrawingContext context)
     {
         var right = Bounds.Width - RightPadding;
+        var drawn = 0;
         using (context.PushClip(new Rect(Bounds.Size)))
-            foreach (var (number, top) in VisibleNumbers())
+            foreach (var (number, top, _) in ViewportRows(includeMargin: true))
             {
                 var formatted = Format(number.ToString(CultureInfo.InvariantCulture));
                 context.DrawText(formatted, new Point(right - formatted.WidthIncludingTrailingWhitespace, top));
+                drawn++;
             }
+        LastDrawnCount = drawn;
     }
+
+    readonly record struct GutterRow(int Number, double Top, double Height);
+
+    // Tops are computed from the current TextLayout on every call and not stored on the instance
+    // (item 116: do not keep line offsets that can survive an edit).
+    IEnumerable<GutterRow> ViewportRows(bool includeMargin)
+    {
+        if (_editor is null || _presenter?.TextLayout is not { } layout) yield break;
+        var lines = layout.TextLines;
+        if (lines.Count == 0) yield break;
+        if (_presenter.TranslatePoint(new Point(0, 0), this) is not { } origin) yield break;
+        var text = _editor.Text ?? "";
+
+        var tops = new double[lines.Count];
+        var y = 0.0;
+        for (var i = 0; i < lines.Count; i++)
+        {
+            tops[i] = y;
+            y += lines[i].Height;
+        }
+
+        // Gutter Y = origin.Y + layout Y. Visible when top+height >= 0 and top <= Bounds.Height.
+        var viewTop = -origin.Y;
+        var viewBottom = Bounds.Height - origin.Y;
+        var first = FindFirstVisible(lines, tops, viewTop);
+        var last = FindLastVisible(lines, tops, viewBottom);
+        if (includeMargin)
+        {
+            first = Math.Max(0, first - 1);
+            last = Math.Min(lines.Count - 1, last + 1);
+        }
+        if (first >= lines.Count || first > last) yield break;
+
+        var number = LogicalNumber(text, lines[first].FirstTextSourceIndex);
+        var scanned = lines[first].FirstTextSourceIndex;
+        for (var i = first; i <= last; i++)
+        {
+            var line = lines[i];
+            var start = line.FirstTextSourceIndex;
+            for (; scanned < Math.Min(start, text.Length); scanned++)
+                if (IsLineBreak(text, scanned)) number++;
+            if (scanned < start) scanned = start;
+            if (!IsLogicalStart(text, start)) continue;
+            var top = origin.Y + tops[i];
+            if (includeMargin || (top + line.Height >= 0 && top <= Bounds.Height))
+                yield return new GutterRow(number, top, line.Height);
+        }
+    }
+
+    static int FindFirstVisible(IReadOnlyList<Avalonia.Media.TextFormatting.TextLine> lines, double[] tops, double viewTop)
+    {
+        var lo = 0;
+        var hi = lines.Count;
+        while (lo < hi)
+        {
+            var mid = (lo + hi) >>> 1;
+            if (tops[mid] + lines[mid].Height >= viewTop) hi = mid;
+            else lo = mid + 1;
+        }
+        return lo;
+    }
+
+    static int FindLastVisible(IReadOnlyList<Avalonia.Media.TextFormatting.TextLine> lines, double[] tops, double viewBottom)
+    {
+        var lo = 0;
+        var hi = lines.Count;
+        while (lo < hi)
+        {
+            var mid = (lo + hi) >>> 1;
+            if (tops[mid] <= viewBottom) lo = mid + 1;
+            else hi = mid;
+        }
+        return lo - 1;
+    }
+
+    static int LogicalNumber(string text, int start)
+    {
+        var number = 1;
+        var end = Math.Min(Math.Max(0, start), text.Length);
+        for (var i = 0; i < end; i++)
+            if (IsLineBreak(text, i)) number++;
+        return number;
+    }
+
+    static bool IsLogicalStart(string text, int start) =>
+        start == 0 || (start > 0 && start <= text.Length && (text[start - 1] is '\n' or '\r'));
+
+    static bool IsLineBreak(string text, int i) =>
+        text[i] == '\n' || (text[i] == '\r' && (i + 1 >= text.Length || text[i + 1] != '\n'));
 }
