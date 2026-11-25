@@ -14,7 +14,7 @@ using Mdhub.Text;
 namespace Mdhub.Rendering;
 
 // Native controls only: no browser, script execution, or network fetching.
-public static class MarkdownPreview
+public static partial class MarkdownPreview
 {
     private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder().UsePreciseSourceLocation().UsePipeTables().UseEmphasisExtras().Build();
     public static MarkdownDocument Parse(string text)
@@ -81,7 +81,11 @@ public static class MarkdownPreview
         var previousInline = _suppressInlineCode;
         _suppressInlineCode = !styleInlineCode;
         (_baseDirectory, _result, _block, _fallback) = (baseDirectory, result, -1, -1);
-        try { result.Controls.AddRange(Render(document)); return result; }
+        try
+        {
+            FillTopLevels(result, document, source, RenderFingerprint(baseDirectory, styleInlineCode));
+            return result;
+        }
         finally { (_baseDirectory, _result, _block, _fallback) = previous; _suppressInlineCode = previousInline; }
     }
 
@@ -128,9 +132,14 @@ public static class MarkdownPreview
     public static IEnumerable<Control> Render(ContainerBlock document)
     {
         foreach (var block in document)
+            foreach (var control in RenderBlock(block))
+                yield return control;
+    }
+
+    private static IEnumerable<Control> RenderBlock(Block block)
+    {
+        switch (block)
         {
-            switch (block)
-            {
                 case HeadingBlock heading:
                     var title = InlineText(heading.Inline, heading);
                     // Item 35: headings keep their proportions to the body size (15 px -> 28/23/19/16).
@@ -235,7 +244,6 @@ public static class MarkdownPreview
                     yield return Stack(Render(container));
                     break;
             }
-        }
     }
 
     private static StackPanel Stack(IEnumerable<Control> controls)
@@ -421,7 +429,11 @@ public static class MarkdownPreview
 public sealed class PreviewRender(PreviewSourceMap map)
 {
     public List<Control> Controls { get; } = [];
+    public List<PreviewTopLevel> TopLevels { get; } = [];
     public PreviewSourceMap Map { get; } = map;
+    public int ReusedCount { get; set; }
+    public int ReplacedCount { get; set; }
+    public int InsertedCount { get; set; }
     public Dictionary<int, Control> Blocks { get; } = [];
     public Dictionary<int, (InlineCollection Parent, Run Run)> Runs { get; } = [];
     // Segments that are inline code (edited without Markdown escaping).

@@ -22,7 +22,10 @@ public partial class MdEditor : UserControl
     private NoteDocument? _active;
     private long _previewVersion;
     private bool _previewUiStale;
+    private bool _forceFullRebuild = true;
     internal int PreviewUiRebuilds { get; private set; }
+    internal int PreviewFullRebuilds { get; private set; }
+    internal int PreviewIncrementalApplies { get; private set; }
     public event Action<TextStatistics>? StatisticsChanged;
     public event Action<string>? MessageChanged;
     public MdEditor()
@@ -36,8 +39,8 @@ public partial class MdEditor : UserControl
         InitSelection();
         // Item 35: typography changes apply live to the open preview.
         PreviewContent.Spacing = Mdhub.Services.PreviewSettings.Current.ParagraphSpacing;
-        AttachedToVisualTree += (_, _) => { Mdhub.Services.PreviewSettings.Changed += OnPreviewSettingsChanged; Mdhub.Services.EditorBehavior.Changed += OnPreviewSettingsChanged; };
-        DetachedFromVisualTree += (_, _) => { Mdhub.Services.PreviewSettings.Changed -= OnPreviewSettingsChanged; Mdhub.Services.EditorBehavior.Changed -= OnPreviewSettingsChanged; };
+        AttachedToVisualTree += (_, _) => { Mdhub.Services.PreviewSettings.Changed += OnPreviewSettingsChanged; Mdhub.Services.EditorBehavior.Changed += OnPreviewSettingsChanged; Mdhub.Services.ThemeService.Changed += OnThemeChanged; };
+        DetachedFromVisualTree += (_, _) => { Mdhub.Services.PreviewSettings.Changed -= OnPreviewSettingsChanged; Mdhub.Services.EditorBehavior.Changed -= OnPreviewSettingsChanged; Mdhub.Services.ThemeService.Changed -= OnThemeChanged; };
         // Item 117: skip the preview UI rebuild while hidden; refresh when shown if the text (or typography) changed.
         PropertyChanged += (_, e) => { if (e.Property == IsVisibleProperty && IsVisible) RefreshPreviewIfStale(); };
     }
@@ -46,11 +49,18 @@ public partial class MdEditor : UserControl
     {
         PreviewContent.Spacing = Mdhub.Services.PreviewSettings.Current.ParagraphSpacing;
         SettingsRefreshes++;
+        _forceFullRebuild = true;
+        if (_active is not null) RefreshNow();
+    }
+    private void OnThemeChanged(Mdhub.Services.AppTheme _)
+    {
+        _forceFullRebuild = true;
         if (_active is not null) RefreshNow();
     }
     public void ShowDocument(NoteDocument? document)
     {
         CancelPreviewEdit();
+        _forceFullRebuild = true;
         if (_active?.Editor is { } old) old.PropertyChanged -= OnEditorPropertyChanged;
         _active = document;
         if (document is null)
@@ -387,30 +397,53 @@ public partial class MdEditor : UserControl
             else if (IsEditingPreview) return; // nothing changed: keep the overlay over the current render
             StatisticsChanged?.Invoke(result.Stats);
             ClearHighlight();
-            _render = null;
-            PreviewContent.Children.Clear();
             if (text.Length == 0)
             {
+                _render = null;
+                PreviewContent.Children.Clear();
                 var placeholder = new TextBlock { Foreground = Mdhub.Services.ThemeService.Brush("PreviewPlaceholderForeground"), Margin = new Thickness(0, 12) };
                 // Follows a language switch while it is shown (resolved from the app resources once attached).
                 placeholder.Bind(TextBlock.TextProperty, placeholder.GetResourceObservable("PreviewPlaceholder"));
                 PreviewContent.Children.Add(placeholder);
+                PreviewFullRebuilds++;
             }
             else if (document.IsHtml && Mdhub.Services.EditorBehavior.Current.HtmlFormatting)
             {
+                _render = null;
+                PreviewContent.Children.Clear();
                 var control = HtmlPreview.Render(text, document.Path is { } htmlPath ? Path.GetDirectoryName(htmlPath) : null);
                 _render = new PreviewRender(new PreviewSourceMap(text));
                 _render.Controls.Add(control);
                 _render.Blocks[_render.Map.AddBlock(0, text.Length)] = control;
                 PreviewContent.Children.Add(control);
+                PreviewFullRebuilds++;
             }
             else if (result.Markdown is not null)
             {
-                _render = MarkdownPreview.RenderMapped(result.Markdown, text, document.Path is { } notePath ? Path.GetDirectoryName(notePath) : null,
-                    Path.GetExtension(document.Path ?? document.UntitledName).Equals(".md", StringComparison.OrdinalIgnoreCase));
-                foreach (var control in _render.Controls) PreviewContent.Children.Add(control);
+                var baseDir = document.Path is { } notePath ? Path.GetDirectoryName(notePath) : null;
+                var styleInline = Path.GetExtension(document.Path ?? document.UntitledName).Equals(".md", StringComparison.OrdinalIgnoreCase);
+                var force = _forceFullRebuild || _render is not { TopLevels.Count: > 0 };
+                _forceFullRebuild = false;
+                if (!force && MarkdownPreview.TryApplyMapped(_render!, PreviewContent.Children, result.Markdown, text, baseDir, styleInline, out var updated))
+                {
+                    _render = updated;
+                    PreviewIncrementalApplies++;
+                }
+                else
+                {
+                    _render = MarkdownPreview.RenderMapped(result.Markdown, text, baseDir, styleInline);
+                    PreviewContent.Children.Clear();
+                    foreach (var control in _render.Controls) PreviewContent.Children.Add(control);
+                    PreviewFullRebuilds++;
+                }
             }
-            else PreviewContent.Children.Add(new SelectableTextBlock { Text = text, TextWrapping = TextWrapping.Wrap, FontSize = Mdhub.Services.PreviewSettings.Current.BodySize });
+            else
+            {
+                _render = null;
+                PreviewContent.Children.Clear();
+                PreviewContent.Children.Add(new SelectableTextBlock { Text = text, TextWrapping = TextWrapping.Wrap, FontSize = Mdhub.Services.PreviewSettings.Current.BodySize });
+                PreviewFullRebuilds++;
+            }
             ResetSelection();
             ApplyHighlight(scroll: false);
             if (_pendingCenter is { } pending && _render is not null) CenterPreviewOnLine(pending);
